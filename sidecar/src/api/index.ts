@@ -43,9 +43,46 @@ export const getRaycastApi = () => {
 	const List = createWrapperComponent('List');
 	const ListSection = createWrapperComponent('List.Section');
 	const ListItem = createWrapperComponent('List.Item');
+	const ListEmptyView = createWrapperComponent('List.EmptyView');
+	const ListDropdown = createWrapperComponent('List.Dropdown');
+	const ListDropdownItem = createWrapperComponent('List.Dropdown.Item');
+	const ListDropdownSection = createWrapperComponent('List.Dropdown.Section');
+	const ListItemDetail = createWrapperComponent('List.Item.Detail');
+	const ListItemDetailMetadata = createWrapperComponent('List.Item.Detail.Metadata');
+	const ListItemDetailMetadataLabel = createWrapperComponent('List.Item.Detail.Metadata.Label');
+	const ListItemDetailMetadataLink = createWrapperComponent('List.Item.Detail.Metadata.Link');
+	const ListItemDetailMetadataTagList = createWrapperComponent('List.Item.Detail.Metadata.TagList');
+	const ListItemDetailMetadataTagListItem = createWrapperComponent(
+		'List.Item.Detail.Metadata.TagList.Item'
+	);
+	const ListItemDetailMetadataSeparator = createWrapperComponent(
+		'List.Item.Detail.Metadata.Separator'
+	);
+
 	Object.assign(List, {
 		Item: ListItem,
-		Section: ListSection
+		Section: ListSection,
+		Dropdown: ListDropdown,
+		EmptyView: ListEmptyView
+	});
+	Object.assign(ListDropdown, {
+		Item: ListDropdownItem,
+		Section: ListDropdownSection
+	});
+	Object.assign(ListItem, {
+		Detail: ListItemDetail
+	});
+	Object.assign(ListItemDetail, {
+		Metadata: ListItemDetailMetadata
+	});
+	Object.assign(ListItemDetailMetadata, {
+		Label: ListItemDetailMetadataLabel,
+		Link: ListItemDetailMetadataLink,
+		TagList: ListItemDetailMetadataTagList,
+		Separator: ListItemDetailMetadataSeparator
+	});
+	Object.assign(ListItemDetailMetadataTagList, {
+		Item: ListItemDetailMetadataTagListItem
 	});
 
 	const Grid = createWrapperComponent('Grid');
