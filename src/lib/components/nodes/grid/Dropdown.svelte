@@ -4,8 +4,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import NodeRenderer from '$lib/components/NodeRenderer.svelte';
 	import { ChevronsUpDown } from '@lucide/svelte';
-	import { getTypedProps, RaycastIconSchema, type GridDropdownItemProps } from '$lib/props';
-	import { convertFileSrc } from '@tauri-apps/api/core';
+	import { getTypedProps, type GridDropdownItemProps } from '$lib/props';
 	import Icon from '$lib/components/Icon.svelte';
 
 	type Props = {
@@ -78,29 +77,6 @@
 	});
 
 	const selectedItem = $derived(itemsMap.get(value ?? ''));
-
-	const selectedItemIconInfo = $derived.by(() => {
-		const icon = selectedItem?.icon;
-		if (!icon) return null;
-
-		const absolutePath = '/home/byte/code/raycast-linux/sidecar/dist/plugin/assets/';
-
-		if (typeof icon === 'string') {
-			if (RaycastIconSchema.safeParse(icon).success) {
-				return { type: 'raycast' as const, name: icon };
-			}
-			return { type: 'image' as const, src: convertFileSrc(absolutePath + icon) };
-		}
-
-		if (typeof icon === 'object' && 'source' in icon) {
-			return {
-				type: 'image' as const,
-				src: convertFileSrc(absolutePath + icon.source),
-				mask: icon.mask
-			};
-		}
-		return null;
-	});
 </script>
 
 {#if node && dropdownProps}
@@ -111,16 +87,7 @@
 		>
 			{#if selectedItem?.icon}
 				<div class="mr-2 flex size-4 shrink-0 items-center justify-center">
-					{#if selectedItemIconInfo?.type === 'raycast'}
-						<Icon iconName={selectedItemIconInfo.name} class="size-4" />
-					{:else if selectedItemIconInfo?.type === 'image'}
-						<img
-							src={selectedItemIconInfo.src}
-							alt=""
-							class="size-full object-cover"
-							style={selectedItemIconInfo.mask === 'Circle' ? 'border-radius: 50%;' : ''}
-						/>
-					{/if}
+					<Icon icon={selectedItem.icon} class="size-4" />
 				</div>
 			{/if}
 			<span>{selectedItem?.title ?? dropdownProps?.placeholder ?? 'Select...'}</span>
