@@ -1,71 +1,48 @@
 <script lang="ts">
 	import { sidecarService } from '$lib/sidecar.svelte';
 	import { uiStore } from '$lib/ui.svelte';
-	import NodeRenderer from '$lib/components/NodeRenderer.svelte';
-	import List from '$lib/components/nodes/List.svelte';
-	import Grid from '$lib/components/nodes/Grid.svelte';
-	import Detail from '$lib/components/nodes/detail/Detail.svelte';
-	import { untrack } from 'svelte';
 	import type { UINode } from '$lib/types';
-	import { Separator } from '$lib/components/ui/separator';
+	import { untrack } from 'svelte';
+	import MainLayout from '$lib/components/layout/MainLayout.svelte';
+	import Header from '$lib/components/layout/Header.svelte';
+	import Content from '$lib/components/layout/Content.svelte';
+	import Footer from '$lib/components/layout/Footer.svelte';
 
 	const { uiTree, rootNodeId, selectedNodeId } = $derived(uiStore);
 
 	$effect(() => {
 		return untrack(() => {
 			sidecarService.start();
-			return () => {
-				sidecarService.stop();
-			};
+			return () => sidecarService.stop();
 		});
 	});
 
 	const rootNode = $derived(uiTree.get(rootNodeId!));
 	const selectedItemNode = $derived(uiTree.get(selectedNodeId!));
-	const isShowingDetail = $derived(rootNode?.type === 'List' && rootNode.props.isShowingDetail);
-	const detailNodeId = $derived(selectedItemNode?.namedChildren?.detail);
+	let searchText = $state('');
 
 	const actionInfo = $derived.by(() => {
 		const actionsNodeId =
 			rootNode?.type === 'Detail'
 				? rootNode.namedChildren?.['actions']
 				: selectedItemNode?.namedChildren?.['actions'];
-
-		if (!actionsNodeId) {
-			return { primary: undefined, secondary: undefined, panel: undefined };
-		}
-
+		if (!actionsNodeId) return { primary: undefined, panel: undefined };
 		const panelNode = uiTree.get(actionsNodeId);
-		if (!panelNode || panelNode.type !== 'Action.Panel') {
-			return { primary: undefined, secondary: undefined, panel: undefined };
-		}
+		if (!panelNode || panelNode.type !== 'Action.Panel')
+			return { primary: undefined, panel: undefined };
 
 		const foundActions: UINode[] = [];
-		function findActionsRecursive(nodeId: number) {
+		function findActions(nodeId: number) {
 			const node = uiTree.get(nodeId);
 			if (!node) return;
-
-			const isAction = (n: UINode) =>
-				n.type.startsWith('Action.') &&
-				n.type !== 'Action.Panel' &&
-				n.type !== 'Action.Panel.Section';
-
-			if (isAction(node)) {
+			if (node.type.startsWith('Action.') && !node.type.includes('Panel')) {
 				foundActions.push(node);
-			} else if (node.type === 'Action.Panel' || node.type === 'Action.Panel.Section') {
-				for (const childId of node.children) {
-					findActionsRecursive(childId);
-				}
+			} else if (node.type.includes('Panel')) {
+				for (const childId of node.children) findActions(childId);
 			}
 		}
-
-		findActionsRecursive(actionsNodeId);
-
-		return {
-			primary: foundActions[0],
-			secondary: foundActions[1],
-			panel: panelNode
-		};
+		findActions(actionsNodeId);
+		return { primary: foundActions[0], panel: panelNode };
 	});
 
 	function handleDispatch(instanceId: number, handlerName: string, args: any[]) {
@@ -74,6 +51,10 @@
 
 	function handleSelect(nodeId: number | undefined) {
 		uiStore.selectedNodeId = nodeId;
+	}
+
+	function handlePopView() {
+		sidecarService.dispatchEvent('pop-view');
 	}
 
 	function getActionHandlerName(type: string): string {
@@ -89,84 +70,56 @@
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
-			sidecarService.dispatchEvent('pop-view');
+			handlePopView();
 			return;
 		}
-
-		const isStandardView =
-			rootNode?.type === 'List' || rootNode?.type === 'Grid' || rootNode?.type === 'Detail';
-
 		if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
-			if (isStandardView && actionInfo.primary) {
+			if (actionInfo.primary) {
 				event.preventDefault();
 				const handlerName = getActionHandlerName(actionInfo.primary.type);
 				handleDispatch(actionInfo.primary.id, handlerName, []);
 			}
 		}
-
-		if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.shiftKey) {
-			if (isStandardView && actionInfo.secondary) {
-				event.preventDefault();
-				const handlerName = getActionHandlerName(actionInfo.secondary.type);
-				handleDispatch(actionInfo.secondary.id, handlerName, []);
-			}
-		}
 	}
+
+	$effect(() => {
+		if (rootNode) {
+			handleDispatch(rootNode.id, 'onSearchTextChange', [searchText]);
+		}
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<main class="flex h-screen flex-col">
-	<div
-		class="grid grow overflow-y-auto"
-		style:grid-template-columns={isShowingDetail ? 'minmax(0, 1.5fr) minmax(0, 2.5fr)' : '1fr'}
-	>
-		<div class="h-full">
-			{#if rootNode}
-				{#if rootNode.type === 'List'}
-					<List nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} onSelect={handleSelect} />
-				{:else if rootNode.type === 'Grid'}
-					<Grid nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} onSelect={handleSelect} />
-				{:else if rootNode.type === 'Detail'}
-					<Detail nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} />
-				{:else}
-					<NodeRenderer nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} />
-				{/if}
-			{/if}
-		</div>
-		{#if isShowingDetail}
-			<div class="h-full border-l">
-				{#if detailNodeId}
-					<NodeRenderer nodeId={detailNodeId} {uiTree} onDispatch={handleDispatch} />
-				{/if}
-			</div>
-		{/if}
-	</div>
+<MainLayout>
+	{#snippet header()}
+		<Header
+			{rootNode}
+			bind:searchText
+			onPopView={handlePopView}
+			onDispatch={handleDispatch}
+			{uiTree}
+			showBackButton={true}
+		/>
+	{/snippet}
 
-	<aside class="bg-card flex h-12 shrink-0 items-center justify-between border-t px-4">
-		<span>{rootNode?.props.navigationTitle ?? 'Raycast Linux'}</span>
+	{#snippet content()}
+		<Content
+			{rootNode}
+			{selectedItemNode}
+			{uiTree}
+			onDispatch={handleDispatch}
+			onSelect={handleSelect}
+			{searchText}
+		/>
+	{/snippet}
 
-		{#if actionInfo.panel}
-			<div class="group flex items-center">
-				{#if actionInfo.primary}
-					<NodeRenderer
-						nodeId={actionInfo.primary?.id}
-						{uiTree}
-						onDispatch={handleDispatch}
-						displayAs="button"
-					/>
-					<Separator
-						orientation="vertical"
-						class="!h-4 !w-0.5 !rounded-full transition-opacity group-hover:opacity-0"
-					/>
-				{/if}
-				<NodeRenderer
-					nodeId={actionInfo.panel?.id}
-					{uiTree}
-					onDispatch={handleDispatch}
-					primaryActionNodeId={actionInfo.primary?.id}
-				/>
-			</div>
-		{/if}
-	</aside>
-</main>
+	{#snippet footer()}
+		<Footer
+			{uiTree}
+			onDispatch={handleDispatch}
+			primaryAction={actionInfo.primary}
+			actionPanel={actionInfo.panel}
+		/>
+	{/snippet}
+</MainLayout>

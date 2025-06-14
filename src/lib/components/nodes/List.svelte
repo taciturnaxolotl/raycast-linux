@@ -12,11 +12,11 @@
 		uiTree: Map<number, UINode>;
 		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
 		onSelect: (nodeId: number | undefined) => void;
+		searchText: string;
 	};
-	let { nodeId, uiTree, onDispatch, onSelect }: Props = $props();
+	let { nodeId, uiTree, onDispatch, onSelect, searchText }: Props = $props();
 
 	const { props: listProps } = $derived.by(useTypedNode(() => ({ nodeId, uiTree, type: 'List' })));
-	let searchText = $state('');
 
 	const view = useListView(() => ({
 		nodeId,
@@ -44,16 +44,6 @@
 <svelte:window onkeydown={view.handleKeydown} />
 
 <div class="flex h-full flex-col">
-	<!-- svelte-ignore a11y_autofocus -->
-	<input
-		type="text"
-		class="w-full border-b border-gray-300 px-4 py-3 text-lg focus:border-blue-500 focus:outline-none"
-		placeholder="Search..."
-		bind:value={searchText}
-		oninput={() => onDispatch(nodeId, 'onSearchTextChange', [searchText])}
-		autofocus
-	/>
-
 	<div class="flex-grow">
 		<VList bind:this={vlistInstance} data={listData} getKey={(item) => item.id} class="h-full">
 			{#snippet children(item, index)}
