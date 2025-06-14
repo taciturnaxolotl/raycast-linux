@@ -1,10 +1,9 @@
 import { createInterface } from 'readline';
 import { writeLog, writeOutput } from './io';
 import { runPlugin } from './plugin';
-import { currentRootElement, instances, navigationStack } from './state';
+import { instances, navigationStack } from './state';
 import { batchedUpdates, updateContainer } from './reconciler';
 import type { RaycastInstance } from './types';
-import React from 'react';
 
 process.on('unhandledRejection', (reason: unknown) => {
 	writeLog(`--- UNHANDLED PROMISE REJECTION ---`);
@@ -48,26 +47,6 @@ rl.on('line', (line) => {
 					}
 
 					const raycastInstance = instance as RaycastInstance;
-
-					// TODO: is there any way we can move this logic into the component itself?
-					if (raycastInstance.type === 'Action.Push' && handlerName === 'onAction') {
-						const props = raycastInstance._unserializedProps;
-						const target = props?.target;
-						const onPush = props?.onPush;
-
-						if (React.isValidElement(target)) {
-							if (currentRootElement) {
-								navigationStack.push(currentRootElement);
-							}
-							updateContainer(target);
-							if (onPush && typeof onPush === 'function') {
-								onPush();
-							}
-						} else {
-							writeLog(`Action.Push (id: ${instanceId}) was triggered without a valid target.`);
-						}
-						return;
-					}
 
 					const props = raycastInstance._unserializedProps;
 					const handler = props?.[handlerName];

@@ -102,7 +102,7 @@ function createInstanceFromElement(
 		.filter(React.isValidElement)
 		.flatMap((child) => createInstanceFromElement(child as React.ReactElement));
 
-	const { propsToSerialize, namedChildren } = processProps(props, element.type as ComponentType);
+	const { propsToSerialize, namedChildren } = processProps(props);
 
 	const instance: RaycastInstance = {
 		id,
@@ -130,17 +130,14 @@ function createInstanceFromElement(
 	return instance;
 }
 
-function processProps(props: Record<string, unknown>, componentType: ComponentType) {
+function processProps(props: Record<string, unknown>) {
 	const propsToSerialize: Record<string, unknown> = {};
 	const namedChildren: { [key: string]: number } = {};
-	const displayName = getComponentDisplayName(componentType);
 
 	for (const [key, value] of Object.entries(props)) {
 		if (key === 'children') continue;
 
-		const isPushTarget = displayName === 'Action.Push' && key === 'target';
-
-		if (React.isValidElement(value) && !isPushTarget) {
+		if (React.isValidElement(value)) {
 			const result = createInstanceFromElement(value);
 
 			if (Array.isArray(result)) {
@@ -200,7 +197,7 @@ export const hostConfig: HostConfig<
 			typeof type === 'string' ? type : type.displayName || type.name || 'Anonymous';
 		const id = getNextInstanceId();
 
-		const { propsToSerialize, namedChildren } = processProps(props, type);
+		const { propsToSerialize, namedChildren } = processProps(props);
 
 		const instance: RaycastInstance = {
 			id,
@@ -247,7 +244,7 @@ export const hostConfig: HostConfig<
 	removeChildFromContainer: removeChildFromParent,
 
 	commitUpdate(instance, type, oldProps, newProps) {
-		const { propsToSerialize, namedChildren } = processProps(newProps, type);
+		const { propsToSerialize, namedChildren } = processProps(newProps);
 
 		instance.props = serializeProps(propsToSerialize);
 		instance._unserializedProps = newProps;

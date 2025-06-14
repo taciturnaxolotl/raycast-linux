@@ -70,7 +70,23 @@ export const getRaycastApi = () => {
 	const ActionPaste = createWrapperComponent('Action.Paste');
 	const ActionCopy = createWrapperComponent('Action.CopyToClipboard');
 	const ActionOpenInBrowser = createWrapperComponent('Action.OpenInBrowser');
-	const ActionPush = createWrapperComponent('Action.Push');
+	const ActionPush = ({
+		onPush,
+		target,
+		...props
+	}: {
+		onPush: () => void;
+		target: React.ReactElement;
+	}) => {
+		const handleAction = () => {
+			if (currentRootElement) {
+				navigationStack.push(currentRootElement);
+			}
+			updateContainer(target);
+			onPush?.();
+		};
+		return jsx('Action.Push', { ...props, onAction: handleAction });
+	};
 	Object.assign(Action, {
 		Paste: ActionPaste,
 		CopyToClipboard: ActionCopy,
