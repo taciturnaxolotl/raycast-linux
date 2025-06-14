@@ -1,11 +1,7 @@
 import { z } from 'zod/v4';
 import { ImageLikeSchema } from './image';
-import { ColorLikeSchema, RaycastColorSchema } from './color';
-
-const TextWithColorSchema = z.object({
-	value: z.string(),
-	color: RaycastColorSchema
-});
+import { ColorLikeSchema } from './color';
+import { TextWithColorSchema } from './text';
 
 export const DetailMetadataLabelPropsSchema = z.object({
 	title: z.string(),
