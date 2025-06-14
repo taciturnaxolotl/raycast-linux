@@ -7,6 +7,7 @@
 	import Detail from '$lib/components/nodes/detail/Detail.svelte';
 	import { untrack } from 'svelte';
 	import type { UINode } from '$lib/types';
+	import { Separator } from '$lib/components/ui/separator';
 
 	const { uiTree, rootNodeId, selectedNodeId } = $derived(uiStore);
 
@@ -129,17 +130,21 @@
 		{/if}
 	</div>
 
-	<aside class="bg-muted flex h-12 shrink-0 items-center justify-between border-t px-4">
+	<aside class="bg-card flex h-12 shrink-0 items-center justify-between border-t px-4">
 		<span>{rootNode?.props.navigationTitle ?? 'Raycast Linux'}</span>
 
 		{#if actionInfo.panel}
-			<div class="flex items-center gap-2">
+			<div class="group flex items-center">
 				{#if actionInfo.primary}
 					<NodeRenderer
 						nodeId={actionInfo.primary.id}
 						{uiTree}
 						onDispatch={handleDispatch}
 						displayAs="button"
+					/>
+					<Separator
+						orientation="vertical"
+						class="!h-4 !w-0.5 !rounded-full transition-opacity group-hover:opacity-0"
 					/>
 				{/if}
 				<NodeRenderer

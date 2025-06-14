@@ -1,11 +1,6 @@
-import type { Keyboard } from '@raycast/api';
+import type { KeyboardShortcut } from '$lib/props/actions';
 
-type ShortcutParts = {
-	modifiers: Keyboard.KeyModifier[];
-	key: Keyboard.KeyEquivalent;
-};
-
-function formatShortcutParts(parts: ShortcutParts, isMac: boolean): string {
+function formatShortcutParts(parts: KeyboardShortcut, isMac: boolean): string {
 	const modifierMap = {
 		mac: {
 			cmd: '⌘',
@@ -21,7 +16,7 @@ function formatShortcutParts(parts: ShortcutParts, isMac: boolean): string {
 		}
 	};
 
-	const keyMap: Partial<Record<Keyboard.KeyEquivalent, string>> = {
+	const keyMap: Partial<Record<KeyboardShortcut['key'], string>> = {
 		return: '⏎',
 		enter: '⏎',
 		delete: '⌫',
@@ -47,7 +42,7 @@ function formatShortcutParts(parts: ShortcutParts, isMac: boolean): string {
 	return allParts.join(' + ');
 }
 
-export function shortcutToText(shortcut: Keyboard.Shortcut, forceOS?: 'macOS' | 'windows'): string {
+export function shortcutToText(shortcut: KeyboardShortcut, forceOS?: 'macOS' | 'windows'): string {
 	const isMac = forceOS
 		? forceOS === 'macOS'
 		: typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
@@ -55,10 +50,6 @@ export function shortcutToText(shortcut: Keyboard.Shortcut, forceOS?: 'macOS' | 
 	if ('modifiers' in shortcut) {
 		return formatShortcutParts(shortcut, isMac);
 	} else {
-		if (isMac) {
-			return formatShortcutParts(shortcut.macOS, true);
-		} else {
-			return formatShortcutParts(shortcut.windows, false);
-		}
+		return formatShortcutParts(shortcut, true);
 	}
 }

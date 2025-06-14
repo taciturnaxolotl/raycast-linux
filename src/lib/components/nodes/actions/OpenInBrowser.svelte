@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { openUrl } from '@tauri-apps/plugin-opener';
 	import type { UINode } from '$lib/types';
-	import { DropdownMenuItem } from '$lib/components/ui/dropdown-menu';
+	import { DropdownMenuItem, DropdownMenuShortcut } from '$lib/components/ui/dropdown-menu';
 	import { useTypedNode } from '$lib/node.svelte';
 	import { getContext } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { shortcutToText } from '$lib/renderKey';
 
 	type Props = {
 		nodeId: number;
@@ -19,9 +20,7 @@
 	);
 
 	const context: { primaryActionNodeId?: number } | undefined = getContext('ActionPanelContext');
-	const shouldHideInDropdown = $derived(
-		context?.primaryActionNodeId === nodeId && displayAs === 'item'
-	);
+	const isPrimaryAction = $derived(context?.primaryActionNodeId === nodeId);
 
 	function handleClick() {
 		if (componentProps) {
@@ -31,12 +30,21 @@
 	}
 </script>
 
-{#if node && componentProps && !shouldHideInDropdown}
+{#if node && componentProps}
 	{#if displayAs === 'button'}
-		<Button onclick={handleClick}>{componentProps.title}</Button>
+		<Button onclick={handleClick} variant="ghost" size="sm">
+			{componentProps.title ?? 'Open in Browser'}
+		</Button>
 	{:else}
 		<DropdownMenuItem class="rounded-md p-2 text-left" onclick={handleClick}>
-			{componentProps.title}
+			{componentProps.title ?? 'Open in Browser'}
+			{#if isPrimaryAction}
+				<DropdownMenuShortcut>
+					{shortcutToText({ key: 'enter', modifiers: [] })}
+				</DropdownMenuShortcut>
+			{:else if componentProps.shortcut}
+				<DropdownMenuShortcut>{shortcutToText(componentProps.shortcut)}</DropdownMenuShortcut>
+			{/if}
 		</DropdownMenuItem>
 	{/if}
 {/if}

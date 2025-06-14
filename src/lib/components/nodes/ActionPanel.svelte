@@ -6,6 +6,7 @@
 	import { setContext } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { MoreHorizontal } from '@lucide/svelte';
+	import { Kbd } from '../ui/kbd';
 
 	type Props = {
 		nodeId: number;
@@ -23,16 +24,31 @@
 		}))
 	);
 
-	setContext('ActionPanelContext', { primaryActionNodeId });
+	const context = $state({
+		get primaryActionNodeId() {
+			return primaryActionNodeId;
+		}
+	});
+	setContext('ActionPanelContext', context);
+
+	let open = $state(false);
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
+			e.preventDefault();
+			open = !open;
+		}
+	}
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 {#if node && componentProps}
-	<DropdownMenu.Root>
+	<DropdownMenu.Root bind:open>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="outline" size="icon">
-					<MoreHorizontal class="h-4 w-4" />
-					<span class="sr-only">Actions</span>
+				<Button {...props} variant="ghost" size="sm">
+					Actions <Kbd>⌘ K</Kbd>
 				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
