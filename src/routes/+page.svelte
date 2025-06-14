@@ -114,7 +114,7 @@
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 <main class="flex h-screen flex-col">
 	<div
