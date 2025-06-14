@@ -22,6 +22,8 @@
 
 	const rootNode = $derived(uiTree.get(rootNodeId!));
 	const selectedItemNode = $derived(uiTree.get(selectedNodeId!));
+	const isShowingDetail = $derived(rootNode?.type === 'List' && rootNode.props.isShowingDetail);
+	const detailNodeId = $derived(selectedItemNode?.namedChildren?.detail);
 
 	const actionInfo = $derived.by(() => {
 		const actionsNodeId =
@@ -91,7 +93,6 @@
 			return;
 		}
 
-		// In List/Grid/Detail, Enter is primary, Ctrl+Enter is secondary
 		const isStandardView =
 			rootNode?.type === 'List' || rootNode?.type === 'Grid' || rootNode?.type === 'Detail';
 
@@ -116,17 +117,29 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <main class="flex h-screen flex-col">
-	<div class="grow overflow-y-auto">
-		{#if rootNode}
-			{#if rootNode.type === 'List'}
-				<List nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} onSelect={handleSelect} />
-			{:else if rootNode.type === 'Grid'}
-				<Grid nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} onSelect={handleSelect} />
-			{:else if rootNode.type === 'Detail'}
-				<Detail nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} />
-			{:else}
-				<NodeRenderer nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} />
+	<div
+		class="grid grow overflow-y-auto"
+		style:grid-template-columns={isShowingDetail ? 'minmax(0, 1.5fr) minmax(0, 2.5fr)' : '1fr'}
+	>
+		<div class="h-full">
+			{#if rootNode}
+				{#if rootNode.type === 'List'}
+					<List nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} onSelect={handleSelect} />
+				{:else if rootNode.type === 'Grid'}
+					<Grid nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} onSelect={handleSelect} />
+				{:else if rootNode.type === 'Detail'}
+					<Detail nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} />
+				{:else}
+					<NodeRenderer nodeId={rootNode.id} {uiTree} onDispatch={handleDispatch} />
+				{/if}
 			{/if}
+		</div>
+		{#if isShowingDetail}
+			<div class="h-full border-l">
+				{#if detailNodeId}
+					<NodeRenderer nodeId={detailNodeId} {uiTree} onDispatch={handleDispatch} />
+				{/if}
+			</div>
 		{/if}
 	</div>
 
@@ -137,7 +150,7 @@
 			<div class="group flex items-center">
 				{#if actionInfo.primary}
 					<NodeRenderer
-						nodeId={actionInfo.primary.id}
+						nodeId={actionInfo.primary?.id}
 						{uiTree}
 						onDispatch={handleDispatch}
 						displayAs="button"
@@ -148,7 +161,7 @@
 					/>
 				{/if}
 				<NodeRenderer
-					nodeId={actionInfo.panel.id}
+					nodeId={actionInfo.panel?.id}
 					{uiTree}
 					onDispatch={handleDispatch}
 					primaryActionNodeId={actionInfo.primary?.id}

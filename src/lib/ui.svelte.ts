@@ -40,6 +40,12 @@ function createUiStore() {
 
 		uiTree = tempTree;
 		rootNodeId = tempState.rootNodeId;
+
+		const countByType = (map: Map<number, UINode>) =>
+			[...map.values()].reduce(
+				(acc, { type }) => ((acc[type] = (acc[type] || 0) + 1), acc),
+				{} as Record<string, number>
+			);
 	};
 
 	function processSingleCommand(

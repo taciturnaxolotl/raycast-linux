@@ -25,7 +25,18 @@ import {
 	GridDropdownItemPropsSchema,
 	DetailMetadataPropsSchema
 } from './grid';
-import { ListPropsSchema, ListSectionPropsSchema, ListItemPropsSchema } from './list';
+import {
+	ListPropsSchema,
+	ListSectionPropsSchema,
+	ListItemPropsSchema,
+	ListItemDetailPropsSchema,
+	ListItemDetailMetadataPropsSchema,
+	ListItemDetailMetadataLabelPropsSchema,
+	ListItemDetailMetadataLinkPropsSchema,
+	ListItemDetailMetadataTagListPropsSchema,
+	ListItemDetailMetadataTagListItemPropsSchema,
+	ListItemDetailMetadataSeparatorPropsSchema
+} from './list';
 
 export * from './actions';
 export * from './detail';
@@ -45,6 +56,13 @@ export const componentSchemas = {
 	List: ListPropsSchema,
 	'List.Section': ListSectionPropsSchema,
 	'List.Item': ListItemPropsSchema,
+	'List.Item.Detail': ListItemDetailPropsSchema,
+	'List.Item.Detail.Metadata': ListItemDetailMetadataPropsSchema,
+	'List.Item.Detail.Metadata.Label': ListItemDetailMetadataLabelPropsSchema,
+	'List.Item.Detail.Metadata.Link': ListItemDetailMetadataLinkPropsSchema,
+	'List.Item.Detail.Metadata.TagList': ListItemDetailMetadataTagListPropsSchema,
+	'List.Item.Detail.Metadata.TagList.Item': ListItemDetailMetadataTagListItemPropsSchema,
+	'List.Item.Detail.Metadata.Separator': ListItemDetailMetadataSeparatorPropsSchema,
 
 	Grid: GridPropsSchema,
 	'Grid.Section': GridSectionPropsSchema,

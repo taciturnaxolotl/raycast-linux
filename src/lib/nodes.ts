@@ -16,6 +16,13 @@ import MetadataSeparator from '$lib/components/nodes/detail/MetadataSeparator.sv
 import GridDropdown from '$lib/components/nodes/grid/Dropdown.svelte';
 import GridDropdownSection from '$lib/components/nodes/grid/DropdownSection.svelte';
 import GridDropdownItem from '$lib/components/nodes/grid/DropdownItem.svelte';
+import ListItemDetail from '$lib/components/nodes/list/ItemDetail.svelte';
+import ListItemDetailMetadata from '$lib/components/nodes/list/ItemDetailMetadata.svelte';
+import ListItemDetailMetadataLabel from '$lib/components/nodes/list/ItemDetailMetadataLabel.svelte';
+import ListItemDetailMetadataLink from '$lib/components/nodes/list/ItemDetailMetadataLink.svelte';
+import ListItemDetailMetadataTagList from '$lib/components/nodes/list/ItemDetailMetadataTagList.svelte';
+import ListItemDetailMetadataTagListItem from '$lib/components/nodes/list/ItemDetailMetadataTagListItem.svelte';
+import ListItemDetailMetadataSeparator from '$lib/components/nodes/list/ItemDetailMetadataSeparator.svelte';
 
 export const componentMap = new Map<
 	string,
@@ -40,5 +47,12 @@ export const componentMap = new Map<
 	['Detail.Metadata.Separator', MetadataSeparator],
 	['Grid.Dropdown', GridDropdown],
 	['Grid.Dropdown.Section', GridDropdownSection],
-	['Grid.Dropdown.Item', GridDropdownItem]
+	['Grid.Dropdown.Item', GridDropdownItem],
+	['List.Item.Detail', ListItemDetail],
+	['List.Item.Detail.Metadata', ListItemDetailMetadata],
+	['List.Item.Detail.Metadata.Label', ListItemDetailMetadataLabel],
+	['List.Item.Detail.Metadata.Link', ListItemDetailMetadataLink],
+	['List.Item.Detail.Metadata.TagList', ListItemDetailMetadataTagList],
+	['List.Item.Detail.Metadata.TagList.Item', ListItemDetailMetadataTagListItem],
+	['List.Item.Detail.Metadata.Separator', ListItemDetailMetadataSeparator]
 ]);

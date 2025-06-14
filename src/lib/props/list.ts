@@ -1,9 +1,11 @@
 import { z } from 'zod/v4';
 import { ImageLikeSchema } from './image';
 import { TextWithColorSchema } from './text';
+import { ColorLikeSchema } from './color';
 
 export const ListPropsSchema = z.object({
-	filtering: z.boolean().default(true)
+	filtering: z.boolean().default(true),
+	isShowingDetail: z.boolean().optional()
 });
 export type ListProps = z.infer<typeof ListPropsSchema>;
 
@@ -32,6 +34,9 @@ export const ListItemDetailPropsSchema = z.object({
 });
 export type ListItemDetailProps = z.infer<typeof ListItemDetailPropsSchema>;
 
+export const ListItemDetailMetadataPropsSchema = z.object({});
+export type ListItemDetailMetadataProps = z.infer<typeof ListItemDetailMetadataPropsSchema>;
+
 export const ListItemDetailMetadataLabelPropsSchema = z.object({
 	title: z.string(),
 	icon: ImageLikeSchema.optional(),
@@ -57,7 +62,7 @@ export type ListItemDetailMetadataTagListProps = z.infer<
 
 export const ListItemDetailMetadataTagListItemPropsSchema = z
 	.object({
-		color: z.string().optional(),
+		color: ColorLikeSchema.optional(),
 		icon: ImageLikeSchema.optional(),
 		text: z.string().optional()
 	})
