@@ -62,7 +62,7 @@ export const ListItemDetailMetadataTagListItemPropsSchema = z
 		text: z.string().optional()
 	})
 	.refine((data) => data.text != null || data.icon != null, {
-		message: 'Either text or icon must be provided for TagList.Item'
+		error: 'Either text or icon must be provided for TagList.Item'
 	});
 export type ListItemDetailMetadataTagListItemProps = z.infer<
 	typeof ListItemDetailMetadataTagListItemPropsSchema
