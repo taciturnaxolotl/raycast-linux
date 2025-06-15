@@ -26,6 +26,12 @@ import {
 	DetailMetadataPropsSchema
 } from './grid';
 import {
+	FormPropsSchema,
+	FormTextFieldPropsSchema,
+	FormTextAreaPropsSchema,
+	FormDescriptionPropsSchema
+} from './form';
+import {
 	ListPropsSchema,
 	ListSectionPropsSchema,
 	ListItemPropsSchema,
@@ -76,6 +82,11 @@ export const componentSchemas = {
 	'Grid.Dropdown': GridDropdownPropsSchema,
 	'Grid.Dropdown.Section': GridDropdownSectionPropsSchema,
 	'Grid.Dropdown.Item': GridDropdownItemPropsSchema,
+
+	Form: FormPropsSchema,
+	'Form.TextField': FormTextFieldPropsSchema,
+	'Form.TextArea': FormTextAreaPropsSchema,
+	'Form.Description': FormDescriptionPropsSchema,
 
 	Detail: DetailPropsSchema,
 	'Detail.Metadata': DetailMetadataPropsSchema,
