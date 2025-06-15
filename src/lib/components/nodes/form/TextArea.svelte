@@ -11,20 +11,34 @@
 
 	let { nodeId, uiTree, onDispatch }: Props = $props();
 
-	const { node, props: componentProps } = $derived.by(
+	const { props: componentProps } = $derived.by(
 		useTypedNode(() => ({ nodeId, uiTree, type: 'Form.TextArea' }))
 	);
 
-	let value = $state(componentProps?.defaultValue ?? '');
+	const isControlled = $derived(componentProps?.value !== undefined);
+
+	let internalValue = $state('');
+	let isInitialized = false;
 
 	$effect(() => {
-		if (componentProps?.value !== undefined && componentProps.value !== value) {
-			value = componentProps.value;
+		if (componentProps && !isInitialized && !isControlled) {
+			internalValue = componentProps.defaultValue ?? '';
+			isInitialized = true;
 		}
 	});
+
+	const displayValue = $derived(isControlled ? componentProps?.value : internalValue);
+
+	function onInput(e: Event) {
+		const newValue = (e.target as HTMLTextAreaElement).value;
+		if (!isControlled) {
+			internalValue = newValue;
+		}
+		onDispatch(nodeId, 'onChange', [newValue]);
+	}
 </script>
 
-{#if node && componentProps}
+{#if componentProps}
 	<div class="flex gap-4">
 		<label
 			for={componentProps.id}
@@ -36,8 +50,8 @@
 			<Textarea
 				id={componentProps.id}
 				placeholder={componentProps.placeholder}
-				bind:value
-				oninput={(e) => onDispatch(nodeId, 'onChange', [e.currentTarget.value])}
+				value={displayValue ?? ''}
+				oninput={onInput}
 				onblur={(e) => onDispatch(nodeId, 'onBlur', [e])}
 				aria-invalid={!!componentProps.error}
 			/>
