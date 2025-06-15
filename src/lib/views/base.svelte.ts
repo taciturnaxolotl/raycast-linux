@@ -42,14 +42,18 @@ export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | '
 		const itemSchema = itemType === 'List.Item' ? ListItemPropsSchema : GridItemPropsSchema;
 		const sectionType = itemType === 'List.Item' ? 'List.Section' : 'Grid.Section';
 
+		const directItems: FlatViewItem[] = [];
+
 		for (const childId of root.children) {
-			const sectionNode = uiTree.get(childId);
-			if (sectionNode && sectionNode.type === sectionType) {
-				const sectionResult = sectionSchema.safeParse(sectionNode.props);
+			const childNode = uiTree.get(childId);
+			if (!childNode) continue;
+
+			if (childNode.type === sectionType) {
+				const sectionResult = sectionSchema.safeParse(childNode.props);
 				if (!sectionResult.success) continue;
 
 				const sectionItems: FlatViewItem[] = [];
-				for (const itemId of sectionNode.children) {
+				for (const itemId of childNode.children) {
 					const itemNode = uiTree.get(itemId);
 					if (itemNode && itemNode.type === itemType) {
 						const itemResult = itemSchema.safeParse(itemNode.props);
@@ -77,11 +81,42 @@ export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | '
 				}
 
 				if (itemsToShow.length > 0) {
-					newFlatList.push({ id: sectionNode.id, type: 'header', props: sectionResult.data });
+					newFlatList.push({ id: childNode.id, type: 'header', props: sectionResult.data });
 					newFlatList.push(...itemsToShow);
+				}
+			} else if (childNode.type === itemType) {
+				const itemResult = itemSchema.safeParse(childNode.props);
+				if (itemResult.success) {
+					directItems.push({ id: childNode.id, type: 'item', props: itemResult.data });
 				}
 			}
 		}
+
+		if (directItems.length > 0) {
+			let itemsToShow = directItems;
+			if (filtering && searchText && searchText.trim() !== '') {
+				const lowerSearchText = searchText.toLowerCase();
+				itemsToShow = directItems.filter((item) => {
+					if (item.type !== 'item') return true;
+
+					const props = item.props;
+					const title = 'title' in props ? (props.title as string) : undefined;
+					const keywords = 'keywords' in props ? (props.keywords as string[]) : undefined;
+
+					const titleMatch = title?.toLowerCase().includes(lowerSearchText);
+					const keywordsMatch = keywords?.some((k) => k.toLowerCase().includes(lowerSearchText));
+
+					return !!(titleMatch || keywordsMatch);
+				});
+			}
+
+			if (itemsToShow.length > 0) {
+				const defaultSectionProps = { title: undefined };
+				newFlatList.unshift({ id: -1, type: 'header', props: defaultSectionProps });
+				newFlatList.splice(1, 0, ...itemsToShow);
+			}
+		}
+
 		flatList = newFlatList;
 	});
 

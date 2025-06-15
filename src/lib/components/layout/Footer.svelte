@@ -16,14 +16,14 @@
 	{#if actionPanel}
 		<div class="group flex items-center">
 			{#if primaryAction}
-				<NodeRenderer nodeId={primaryAction.id} {uiTree} {onDispatch} displayAs="button" />
+				<NodeRenderer nodeId={primaryAction?.id} {uiTree} {onDispatch} displayAs="button" />
 				<Separator
 					orientation="vertical"
 					class="!h-4 !w-0.5 !rounded-full transition-opacity group-hover:opacity-0"
 				/>
 			{/if}
 			<NodeRenderer
-				nodeId={actionPanel.id}
+				nodeId={actionPanel?.id}
 				{uiTree}
 				{onDispatch}
 				primaryActionNodeId={primaryAction?.id}
