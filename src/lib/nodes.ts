@@ -36,8 +36,8 @@ export const componentMap = new Map<
 	}>
 >([
 	['Action', Action],
-	['Action.Panel', ActionPanel],
-	['Action.Panel.Section', ActionPanelSection],
+	['ActionPanel', ActionPanel],
+	['ActionPanel.Section', ActionPanelSection],
 	['Action.CopyToClipboard', ActionCopyToClipboard],
 	['Action.OpenInBrowser', ActionOpenInBrowser],
 	['Action.Push', ActionPush],

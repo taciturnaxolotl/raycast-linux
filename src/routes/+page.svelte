@@ -30,7 +30,7 @@
 		if (!actionsNodeId)
 			return { primary: undefined, secondary: undefined, panel: undefined, allActions: [] };
 		const panelNode = uiTree.get(actionsNodeId);
-		if (!panelNode || panelNode.type !== 'Action.Panel')
+		if (!panelNode || panelNode.type !== 'ActionPanel')
 			return { primary: undefined, secondary: undefined, panel: undefined, allActions: [] };
 
 		const foundActions: UINode[] = [];

@@ -51,8 +51,8 @@ export * from './color';
 export const componentSchemas = {
 	Action: ActionPropsSchema,
 	'Action.Push': ActionPushPropsSchema,
-	'Action.Panel': ActionPanelPropsSchema,
-	'Action.Panel.Section': ActionPanelSectionPropsSchema,
+	ActionPanel: ActionPanelPropsSchema,
+	'ActionPanel.Section': ActionPanelSectionPropsSchema,
 	'Action.CopyToClipboard': ActionCopyToClipboardPropsSchema,
 	'Action.OpenInBrowser': ActionOpenInBrowserPropsSchema,
 

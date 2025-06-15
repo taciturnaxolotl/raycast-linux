@@ -21,7 +21,7 @@
 		useTypedNode(() => ({
 			nodeId,
 			uiTree,
-			type: 'Action.Panel'
+			type: 'ActionPanel'
 		}))
 	);
 
