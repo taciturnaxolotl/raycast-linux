@@ -26,6 +26,7 @@ import ListItemDetailMetadataLink from '$lib/components/nodes/list/ItemDetailMet
 import ListItemDetailMetadataTagList from '$lib/components/nodes/list/ItemDetailMetadataTagList.svelte';
 import ListItemDetailMetadataTagListItem from '$lib/components/nodes/list/ItemDetailMetadataTagListItem.svelte';
 import ListItemDetailMetadataSeparator from '$lib/components/nodes/list/ItemDetailMetadataSeparator.svelte';
+import Form from '$lib/components/nodes/form/Form.svelte';
 
 export const componentMap = new Map<
 	string,
@@ -60,5 +61,6 @@ export const componentMap = new Map<
 	['List.Item.Detail.Metadata.Link', ListItemDetailMetadataLink],
 	['List.Item.Detail.Metadata.TagList', ListItemDetailMetadataTagList],
 	['List.Item.Detail.Metadata.TagList.Item', ListItemDetailMetadataTagListItem],
-	['List.Item.Detail.Metadata.Separator', ListItemDetailMetadataSeparator]
+	['List.Item.Detail.Metadata.Separator', ListItemDetailMetadataSeparator],
+	['Form', Form]
 ]);
