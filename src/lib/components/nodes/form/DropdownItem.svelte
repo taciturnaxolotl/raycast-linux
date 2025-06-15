@@ -28,7 +28,7 @@
 {#if componentProps && dropdownContext}
 	<Command.Item
 		value={componentProps.value}
-		keywords={componentProps.keywords}
+		keywords={[...(componentProps.keywords ?? []), componentProps.title]}
 		onSelect={() => dropdownContext.onSelect(componentProps.value)}
 	>
 		<CheckIcon
