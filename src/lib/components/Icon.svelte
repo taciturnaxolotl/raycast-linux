@@ -28,5 +28,7 @@
 			class="size-4 object-cover {className ?? ''}"
 			style={maskStyles}
 		/>
+	{:else if iconInfo.type === 'emoji'}
+		<span class="size-4 {className ?? ''}">{iconInfo.emoji}</span>
 	{/if}
 {/if}

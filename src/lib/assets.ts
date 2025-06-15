@@ -3,17 +3,37 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 
 const assetsBasePath = '/home/byte/code/raycast-linux/sidecar/dist/plugin/assets/';
 
+// this matches any emoji character (u flag = unicode, \p{Emoji} = any unicode emoji)
+const EMOJI_REGEX = /\p{Emoji}/u;
+const graphemeSegmenter = new Intl.Segmenter();
+
+const iconIsEmoji = (icon: string) => {
+	// explanation: some emojis are made up of multiple characters, so we need to check if the icon is a single emoji
+	// first of all, we need to segment the icon into graphemes (characters)
+	// if it has a single visual character, and one of the corresponding code points is an emoji, then we consider it to be an emoji
+	// i genuinely hate unicode pls send help
+	const graphemes = graphemeSegmenter.segment(icon);
+
+	return Array.from(graphemes).length === 1 && EMOJI_REGEX.test(icon);
+};
+
 export type ResolvedIcon =
 	| { type: 'raycast'; name: string }
-	| { type: 'image'; src: string; mask?: string };
+	| { type: 'image'; src: string; mask?: string }
+	| { type: 'emoji'; emoji: string };
 
 export function resolveIcon(icon: ImageLike | undefined | null): ResolvedIcon | null {
 	if (!icon) return null;
 
 	if (typeof icon === 'string') {
+		if (iconIsEmoji(icon)) {
+			return { type: 'emoji', emoji: icon };
+		}
+
 		if (RaycastIconSchema.safeParse(icon).success) {
 			return { type: 'raycast', name: icon };
 		}
+
 		return { type: 'image', src: convertFileSrc(assetsBasePath + icon) };
 	}
 
@@ -24,5 +44,6 @@ export function resolveIcon(icon: ImageLike | undefined | null): ResolvedIcon | 
 			mask: icon.mask
 		};
 	}
+
 	return null;
 }
