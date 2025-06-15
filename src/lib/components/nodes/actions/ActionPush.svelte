@@ -28,6 +28,7 @@
 	<BaseAction
 		title={componentProps.title}
 		shortcut={componentProps.shortcut}
+		icon={componentProps.icon}
 		{isPrimaryAction}
 		{displayAs}
 		onclick={handleClick}

@@ -32,6 +32,7 @@
 	<BaseAction
 		title={componentProps.title ?? 'Copy to Clipboard'}
 		shortcut={componentProps.shortcut}
+		icon={componentProps.icon}
 		{isPrimaryAction}
 		{displayAs}
 		onclick={handleClick}

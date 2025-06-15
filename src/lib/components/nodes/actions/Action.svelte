@@ -27,6 +27,7 @@
 {#if componentProps}
 	<BaseAction
 		title={componentProps.title}
+		icon={componentProps.icon}
 		shortcut={componentProps.shortcut}
 		{isPrimaryAction}
 		{displayAs}
