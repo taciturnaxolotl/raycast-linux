@@ -32,6 +32,9 @@ export class Cache {
 		this.cachePath = path.join(cacheRoot, this.options.namespace);
 		this.indexPath = path.join(this.cachePath, 'index.json');
 
+		// no idea what this does but it fixes the bug of "cannot read property subscribe of undefined"
+		this.subscribe = this.subscribe.bind(this);
+
 		this._initialize();
 	}
 
