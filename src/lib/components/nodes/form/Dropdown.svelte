@@ -37,7 +37,7 @@
 
 	const displayValue = $derived(isControlled ? componentProps?.value : internalValue);
 
-	const items = $derived(() => {
+	const items = $derived.by(() => {
 		if (!node?.children) return [];
 		return node.children
 			.map((childId) => {
@@ -56,8 +56,8 @@
 			.filter((item): item is NonNullable<typeof item> => item !== null);
 	});
 
-	const selectedItem = $derived(() => {
-		return items().find((item) => item.value === displayValue);
+	const selectedItem = $derived.by(() => {
+		return items.find((item) => item.value === displayValue);
 	});
 
 	function closeAndFocusTrigger() {
@@ -102,7 +102,7 @@
 							role="combobox"
 							aria-expanded={open}
 						>
-							{selectedItem()?.title || componentProps.placeholder || 'Select option...'}
+							{selectedItem?.title || componentProps.placeholder || 'Select option...'}
 							<ChevronsUpDownIcon class="opacity-50" />
 						</Button>
 					{/snippet}
