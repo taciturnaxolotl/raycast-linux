@@ -20,6 +20,7 @@
 	const rootNode = $derived(uiTree.get(rootNodeId!));
 	const selectedItemNode = $derived(uiTree.get(selectedNodeId!));
 	let searchText = $state('');
+	const navigationTitle = $derived(rootNode?.props.navigationTitle as string | undefined);
 
 	const actionInfo = $derived.by(() => {
 		const actionsNodeId =
@@ -143,6 +144,7 @@
 			secondaryAction={actionInfo.secondary}
 			actionPanel={actionInfo.panel}
 			actions={actionInfo.allActions}
+			{navigationTitle}
 		/>
 	{/snippet}
 </MainLayout>

@@ -25,7 +25,6 @@
 
 	const viewType = $derived(rootNode?.type);
 	const placeholder = $derived((rootNode?.props.searchBarPlaceholder as string) ?? 'Search...');
-	const navigationTitle = $derived(rootNode?.props.navigationTitle as string | undefined);
 	const searchBarAccessoryId = $derived(rootNode?.namedChildren?.searchBarAccessory);
 </script>
 
@@ -51,10 +50,6 @@
 					</div>
 				{/if}
 			{/key}
-		{:else if navigationTitle}
-			<div class="flex h-full w-full items-center px-2 text-base font-medium">
-				{navigationTitle}
-			</div>
 		{/if}
 	</div>
 </header>
