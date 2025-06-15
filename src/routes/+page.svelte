@@ -7,8 +7,8 @@
 	import Header from '$lib/components/layout/Header.svelte';
 	import Content from '$lib/components/layout/Content.svelte';
 	import Footer from '$lib/components/layout/Footer.svelte';
+	import PluginList from '$lib/components/PluginList.svelte';
 	import type { PluginInfo } from '@raycast-linux/protocol';
-	import { Input } from '$lib/components/ui/input/index.js';
 
 	type ViewState = 'plugin-list' | 'plugin-running';
 
@@ -121,18 +121,6 @@
 		}
 	});
 
-	let pluginSearchText = $state('');
-	const filteredPluginList = $derived.by(() => {
-		if (!pluginSearchText) return pluginList;
-		const lowerCaseSearch = pluginSearchText.toLowerCase();
-		return pluginList.filter(
-			(p: PluginInfo) =>
-				p.title.toLowerCase().includes(lowerCaseSearch) ||
-				p.description?.toLowerCase().includes(lowerCaseSearch) ||
-				p.pluginName.toLowerCase().includes(lowerCaseSearch)
-		);
-	});
-
 	function handleRunPlugin(plugin: PluginInfo) {
 		uiStore.resetForNewPlugin();
 		sidecarService.dispatchEvent('run-plugin', {
@@ -147,40 +135,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if viewState === 'plugin-list'}
-	<main class="bg-background text-foreground flex h-screen flex-col">
-		<header class="flex h-12 shrink-0 items-center border-b px-2">
-			<Input
-				class="rounded-none border-none !bg-transparent pr-0"
-				placeholder="Search for extensions and commands..."
-				bind:value={pluginSearchText}
-				autofocus
-			/>
-		</header>
-		<div class="grow overflow-y-auto">
-			<ul>
-				{#each filteredPluginList as plugin}
-					<li>
-						<button
-							class="hover:bg-accent flex w-full items-center gap-3 px-4 py-2 text-left"
-							onclick={() => handleRunPlugin(plugin)}
-						>
-							<div class="flex size-5 shrink-0 items-center justify-center">
-								<!-- Placeholder icon -->
-								<svg class="size-4 shrink-0 fill-none" viewBox="0 0 16 16">
-									<use href="/icons.svg#app-window-16"></use>
-								</svg>
-							</div>
-							<div class="flex flex-col">
-								<span class="font-medium">{plugin.title}</span>
-								<span class="text-muted-foreground text-sm">{plugin.description}</span>
-							</div>
-							<span class="ml-auto text-xs text-gray-500">{plugin.pluginName}</span>
-						</button>
-					</li>
-				{/each}
-			</ul>
-		</div>
-	</main>
+	<PluginList plugins={pluginList} onRunPlugin={handleRunPlugin} />
 {:else if viewState === 'plugin-running' && rootNode}
 	<MainLayout>
 		{#snippet header()}
