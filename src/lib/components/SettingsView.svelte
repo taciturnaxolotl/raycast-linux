@@ -133,8 +133,7 @@
 								<Label class="flex items-center">
 									<Checkbox
 										checked={getPreferenceValue(pref) as boolean}
-										onchange={(e) =>
-											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.checked)}
+										onCheckedChange={(checked) => handlePreferenceChange(pref.name, checked)}
 									/>
 									<span class="text-sm">{pref.title}</span>
 								</Label>
