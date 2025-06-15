@@ -29,7 +29,9 @@ import {
 	FormPropsSchema,
 	FormTextFieldPropsSchema,
 	FormTextAreaPropsSchema,
-	FormDescriptionPropsSchema
+	FormDescriptionPropsSchema,
+	FormDropdownPropsSchema,
+	FormDropdownItemPropsSchema
 } from './form';
 import {
 	ListPropsSchema,
@@ -51,6 +53,7 @@ export * from './actions';
 export * from './detail';
 export * from './grid';
 export * from './list';
+export * from './form';
 export * from './image';
 export * from './color';
 
@@ -87,6 +90,8 @@ export const componentSchemas = {
 	'Form.TextField': FormTextFieldPropsSchema,
 	'Form.TextArea': FormTextAreaPropsSchema,
 	'Form.Description': FormDescriptionPropsSchema,
+	'Form.Dropdown': FormDropdownPropsSchema,
+	'Form.Dropdown.Item': FormDropdownItemPropsSchema,
 
 	Detail: DetailPropsSchema,
 	'Detail.Metadata': DetailMetadataPropsSchema,
