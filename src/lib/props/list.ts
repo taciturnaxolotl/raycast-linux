@@ -77,3 +77,29 @@ export const ListItemDetailMetadataSeparatorPropsSchema = z.object({});
 export type ListItemDetailMetadataSeparatorProps = z.infer<
 	typeof ListItemDetailMetadataSeparatorPropsSchema
 >;
+
+export const ListDropdownItemPropsSchema = z.object({
+	title: z.string(),
+	value: z.string(),
+	icon: ImageLikeSchema.optional(),
+	keywords: z.array(z.string()).optional()
+});
+export type ListDropdownItemProps = z.infer<typeof ListDropdownItemPropsSchema>;
+
+export const ListDropdownSectionPropsSchema = z.object({
+	title: z.string().optional()
+});
+export type ListDropdownSectionProps = z.infer<typeof ListDropdownSectionPropsSchema>;
+
+export const ListDropdownPropsSchema = z.object({
+	tooltip: z.string(),
+	defaultValue: z.string().optional(),
+	filtering: z.union([z.boolean(), z.object({ keepSectionOrder: z.boolean() })]).optional(),
+	id: z.string().optional(),
+	isLoading: z.boolean().optional(),
+	placeholder: z.string().optional(),
+	storeValue: z.boolean().optional(),
+	throttle: z.boolean().optional(),
+	value: z.string().optional()
+});
+export type ListDropdownProps = z.infer<typeof ListDropdownPropsSchema>;

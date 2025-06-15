@@ -35,7 +35,10 @@ import {
 	ListItemDetailMetadataLinkPropsSchema,
 	ListItemDetailMetadataTagListPropsSchema,
 	ListItemDetailMetadataTagListItemPropsSchema,
-	ListItemDetailMetadataSeparatorPropsSchema
+	ListItemDetailMetadataSeparatorPropsSchema,
+	ListDropdownPropsSchema,
+	ListDropdownSectionPropsSchema,
+	ListDropdownItemPropsSchema
 } from './list';
 
 export * from './actions';
@@ -56,6 +59,9 @@ export const componentSchemas = {
 	List: ListPropsSchema,
 	'List.Section': ListSectionPropsSchema,
 	'List.Item': ListItemPropsSchema,
+	'List.Dropdown': ListDropdownPropsSchema,
+	'List.Dropdown.Section': ListDropdownSectionPropsSchema,
+	'List.Dropdown.Item': ListDropdownItemPropsSchema,
 	'List.Item.Detail': ListItemDetailPropsSchema,
 	'List.Item.Detail.Metadata': ListItemDetailMetadataPropsSchema,
 	'List.Item.Detail.Metadata.Label': ListItemDetailMetadataLabelPropsSchema,
