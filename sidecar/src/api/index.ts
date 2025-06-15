@@ -9,6 +9,7 @@ import { List } from './components/list';
 import { Grid } from './components/grid';
 import { Action, ActionPanel } from './components/actions';
 import { Detail } from './components/detail';
+import { environment, getSelectedFinderItems, getSelectedText } from './environment';
 
 export const getRaycastApi = () => {
 	const LocalStorage = createLocalStorage();
@@ -18,12 +19,11 @@ export const getRaycastApi = () => {
 		Color,
 		Cache,
 		LaunchType,
+		getSelectedFinderItems,
+		getSelectedText,
 		showToast: () => {},
 		Toast,
-		environment: {
-			assetsPath: '/home/byte/code/raycast-linux/sidecar/dist/plugin/assets/',
-			launchType: LaunchType.UserInitiated
-		},
+		environment,
 		getPreferenceValues: () => ({
 			lang1: 'en',
 			lang2: 'zh-CN',
