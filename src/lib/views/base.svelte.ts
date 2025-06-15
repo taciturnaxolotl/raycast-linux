@@ -20,10 +20,31 @@ export type BaseViewArgs = {
 	onSelect: (nodeId: number | undefined) => void;
 	searchText?: string;
 	filtering?: boolean;
+	onSearchTextChange?: boolean;
 };
 
+function filterItems(items: FlatViewItem[], searchText: string): FlatViewItem[] {
+	const lowerSearchText = searchText.toLowerCase();
+	return items.filter((item) => {
+		if (item.type !== 'item') return false;
+
+		const props = item.props;
+		const title = 'title' in props ? (props.title as string) : undefined;
+		const keywords = 'keywords' in props ? (props.keywords as string[]) : undefined;
+
+		const titleMatch = title?.toLowerCase().includes(lowerSearchText);
+		const keywordsMatch = keywords?.some((k) => k.toLowerCase().includes(lowerSearchText));
+
+		return !!(titleMatch || keywordsMatch);
+	});
+}
+
 export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | 'Grid.Item') {
-	const { nodeId, uiTree, onSelect, searchText, filtering } = $derived.by(args);
+	const { nodeId, uiTree, onSelect, searchText, filtering, onSearchTextChange } = $derived.by(args);
+
+	const isFilteringEnabled = $derived(
+		filtering === true || (filtering !== false && !onSearchTextChange)
+	);
 
 	let flatList = $state<FlatViewItem[]>([]);
 	let selectedItemIndex = $state(-1);
@@ -36,7 +57,6 @@ export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | '
 		}
 
 		const newFlatList: FlatViewItem[] = [];
-
 		const sectionSchema =
 			itemType === 'List.Item' ? ListSectionPropsSchema : GridSectionPropsSchema;
 		const itemSchema = itemType === 'List.Item' ? ListItemPropsSchema : GridItemPropsSchema;
@@ -63,22 +83,10 @@ export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | '
 					}
 				}
 
-				let itemsToShow = sectionItems;
-				if (filtering && searchText && searchText.trim() !== '') {
-					const lowerSearchText = searchText.toLowerCase();
-					itemsToShow = sectionItems.filter((item) => {
-						if (item.type !== 'item') return true;
-
-						const props = item.props;
-						const title = 'title' in props ? (props.title as string) : undefined;
-						const keywords = 'keywords' in props ? (props.keywords as string[]) : undefined;
-
-						const titleMatch = title?.toLowerCase().includes(lowerSearchText);
-						const keywordsMatch = keywords?.some((k) => k.toLowerCase().includes(lowerSearchText));
-
-						return !!(titleMatch || keywordsMatch);
-					});
-				}
+				const itemsToShow =
+					isFilteringEnabled && searchText && searchText.trim() !== ''
+						? filterItems(sectionItems, searchText)
+						: sectionItems;
 
 				if (itemsToShow.length > 0) {
 					newFlatList.push({ id: childNode.id, type: 'header', props: sectionResult.data });
@@ -93,27 +101,14 @@ export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | '
 		}
 
 		if (directItems.length > 0) {
-			let itemsToShow = directItems;
-			if (filtering && searchText && searchText.trim() !== '') {
-				const lowerSearchText = searchText.toLowerCase();
-				itemsToShow = directItems.filter((item) => {
-					if (item.type !== 'item') return true;
-
-					const props = item.props;
-					const title = 'title' in props ? (props.title as string) : undefined;
-					const keywords = 'keywords' in props ? (props.keywords as string[]) : undefined;
-
-					const titleMatch = title?.toLowerCase().includes(lowerSearchText);
-					const keywordsMatch = keywords?.some((k) => k.toLowerCase().includes(lowerSearchText));
-
-					return !!(titleMatch || keywordsMatch);
-				});
-			}
+			const itemsToShow =
+				isFilteringEnabled && searchText && searchText.trim() !== ''
+					? filterItems(directItems, searchText)
+					: directItems;
 
 			if (itemsToShow.length > 0) {
 				const defaultSectionProps = { title: undefined };
-				newFlatList.unshift({ id: -1, type: 'header', props: defaultSectionProps });
-				newFlatList.splice(1, 0, ...itemsToShow);
+				newFlatList.unshift({ id: -1, type: 'header', props: defaultSectionProps }, ...itemsToShow);
 			}
 		}
 

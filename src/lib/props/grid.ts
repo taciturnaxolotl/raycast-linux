@@ -2,10 +2,11 @@ import { z } from 'zod/v4';
 import { ImageLikeSchema } from './image';
 
 export const GridPropsSchema = z.object({
-	filtering: z.boolean().default(true),
+	filtering: z.boolean().optional(),
 	throttle: z.boolean().default(false),
 	columns: z.number().default(6), // TODO: is this the default?
-	searchBarPlaceholder: z.string().optional()
+	searchBarPlaceholder: z.string().optional(),
+	onSearchTextChange: z.boolean().optional()
 });
 export type GridProps = z.infer<typeof GridPropsSchema>;
 

@@ -21,6 +21,11 @@ export function serializeProps(props: Record<string, unknown>): Record<string, u
 
 		const value = props[key];
 
+		if (typeof value === 'function') {
+			serialized[key] = true;
+			continue;
+		}
+
 		// part 2: deep-serialize react elements if they appear in props
 		if (React.isValidElement(value)) {
 			serialized[key] = {

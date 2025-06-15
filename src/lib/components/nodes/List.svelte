@@ -23,7 +23,8 @@
 		uiTree,
 		onSelect,
 		searchText,
-		filtering: listProps?.filtering ?? true
+		filtering: listProps?.filtering,
+		onSearchTextChange: !!listProps?.onSearchTextChange
 	}));
 
 	const listData = $derived.by(() => {

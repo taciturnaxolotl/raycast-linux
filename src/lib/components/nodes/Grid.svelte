@@ -23,7 +23,8 @@
 		onSelect,
 		columns: gridProps?.columns ?? 6,
 		searchText,
-		filtering: gridProps?.filtering ?? true
+		filtering: gridProps?.filtering,
+		onSearchTextChange: !!gridProps?.onSearchTextChange
 	}));
 </script>
 

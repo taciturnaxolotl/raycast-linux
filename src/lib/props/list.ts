@@ -4,8 +4,9 @@ import { TextWithColorSchema } from './text';
 import { ColorLikeSchema } from './color';
 
 export const ListPropsSchema = z.object({
-	filtering: z.boolean().default(true),
-	isShowingDetail: z.boolean().optional()
+	filtering: z.boolean().optional(),
+	isShowingDetail: z.boolean().optional(),
+	onSearchTextChange: z.boolean().optional()
 });
 export type ListProps = z.infer<typeof ListPropsSchema>;
 
