@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { UINode } from '$lib/types';
 	import { useTypedNode } from '$lib/node.svelte';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Command from '$lib/components/ui/command';
 	import NodeRenderer from '$lib/components/NodeRenderer.svelte';
 
 	type Props = {
@@ -18,13 +18,10 @@
 </script>
 
 {#if node && sectionProps}
-	<DropdownMenu.Separator />
-	<DropdownMenu.Group>
-		{#if sectionProps.title}
-			<DropdownMenu.GroupHeading>{sectionProps.title}</DropdownMenu.GroupHeading>
-		{/if}
+	<Command.Separator />
+	<Command.Group heading={sectionProps.title}>
 		{#each node.children as childId (childId)}
 			<NodeRenderer nodeId={childId} {uiTree} {onDispatch} />
 		{/each}
-	</DropdownMenu.Group>
+	</Command.Group>
 {/if}
