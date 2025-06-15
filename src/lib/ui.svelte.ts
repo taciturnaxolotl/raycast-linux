@@ -10,6 +10,7 @@ function createUiStore() {
 	let rootNodeId = $state<number | null>(null);
 	let selectedNodeId = $state<number | undefined>(undefined);
 	let pluginList = $state<PluginInfo[]>([]);
+	let currentPreferences = $state<Record<string, unknown>>({});
 
 	const applyCommands = (commands: Command[]) => {
 		const tempTree = new Map(uiTree);
@@ -46,6 +47,10 @@ function createUiStore() {
 
 	const setPluginList = (plugins: PluginInfo[]) => {
 		pluginList = plugins;
+	};
+
+	const setCurrentPreferences = (preferences: Record<string, unknown>) => {
+		currentPreferences = preferences;
 	};
 
 	const resetForNewPlugin = () => {
@@ -156,8 +161,12 @@ function createUiStore() {
 		get pluginList() {
 			return pluginList;
 		},
+		get currentPreferences() {
+			return currentPreferences;
+		},
 		applyCommands,
 		setPluginList,
+		setCurrentPreferences,
 		resetForNewPlugin
 	};
 }

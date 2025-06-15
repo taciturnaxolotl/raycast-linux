@@ -11,6 +11,26 @@ import { Form } from './components/form';
 import { Action, ActionPanel } from './components/actions';
 import { Detail } from './components/detail';
 import { environment, getSelectedFinderItems, getSelectedText } from './environment';
+import { preferencesStore } from '../preferences';
+
+let currentPluginName: string | null = null;
+let currentPluginPreferences: Array<{
+	name: string;
+	title: string;
+	description?: string;
+	type: 'textfield' | 'dropdown' | 'checkbox' | 'directory';
+	required?: boolean;
+	default?: string | boolean;
+	data?: Array<{ title: string; value: string }>;
+}> = [];
+
+export const setCurrentPlugin = (
+	pluginName: string,
+	preferences?: typeof currentPluginPreferences
+) => {
+	currentPluginName = pluginName;
+	currentPluginPreferences = preferences || [];
+};
 
 export const getRaycastApi = () => {
 	const LocalStorage = createLocalStorage();
@@ -25,12 +45,17 @@ export const getRaycastApi = () => {
 		showToast: () => {},
 		Toast,
 		environment,
-		getPreferenceValues: () => ({
-			lang1: 'en',
-			lang2: 'zh-CN',
-			autoInput: true,
-			defaultAction: 'copy'
-		}),
+		getPreferenceValues: () => {
+			if (currentPluginName) {
+				return preferencesStore.getPreferenceValues(currentPluginName, currentPluginPreferences);
+			}
+			return {
+				lang1: 'en',
+				lang2: 'zh-CN',
+				autoInput: true,
+				defaultAction: 'copy'
+			};
+		},
 		usePersistentState: <T>(
 			key: string,
 			initialValue: T

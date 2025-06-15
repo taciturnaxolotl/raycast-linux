@@ -1,7 +1,7 @@
 import React from 'react';
 import { updateContainer } from './reconciler';
 import { writeLog, writeOutput } from './io';
-import { getRaycastApi } from './api';
+import { getRaycastApi, setCurrentPlugin } from './api';
 import { inspect } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -63,6 +63,15 @@ export const discoverPlugins = (): PluginInfo[] => {
 						icon?: string;
 						subtitle?: string;
 					}>;
+					preferences?: Array<{
+						name: string;
+						title: string;
+						description?: string;
+						type: 'textfield' | 'dropdown' | 'checkbox' | 'directory';
+						required?: boolean;
+						default?: string | boolean;
+						data?: Array<{ title: string; value: string }>;
+					}>;
 				} = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 
 				const commands = packageJson.commands || [];
@@ -78,7 +87,8 @@ export const discoverPlugins = (): PluginInfo[] => {
 							pluginName: packageJson.name || pluginDirName,
 							commandName: command.name,
 							pluginPath: commandFilePath,
-							icon: command.icon || packageJson.icon
+							icon: command.icon || packageJson.icon,
+							preferences: packageJson.preferences
 						});
 					} else {
 						writeLog(`Command file ${commandFilePath} not found for command ${command.name}`);
@@ -111,9 +121,33 @@ export const loadPlugin = (pluginPath: string): string => {
 
 export const runPlugin = (pluginPath?: string): void => {
 	let scriptText: string;
+	let pluginName = 'unknown';
+	let preferences: Array<{
+		name: string;
+		title: string;
+		description?: string;
+		type: 'textfield' | 'dropdown' | 'checkbox' | 'directory';
+		required?: boolean;
+		default?: string | boolean;
+		data?: Array<{ title: string; value: string }>;
+	}> = [];
 
 	if (pluginPath) {
 		scriptText = loadPlugin(pluginPath);
+
+		// Extract plugin info from path to set preferences context
+		const pluginDir = path.dirname(pluginPath);
+		const packageJsonPath = path.join(pluginDir, 'package.json');
+
+		if (fs.existsSync(packageJsonPath)) {
+			try {
+				const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+				pluginName = packageJson.name || path.basename(pluginDir);
+				preferences = packageJson.preferences || [];
+			} catch (error) {
+				writeLog(`Error reading plugin package.json: ${error}`);
+			}
+		}
 	} else {
 		const fallbackPluginsDir = path.join(
 			process.env.HOME || '/tmp',
@@ -123,15 +157,20 @@ export const runPlugin = (pluginPath?: string): void => {
 
 		if (fs.existsSync(fallbackPath)) {
 			scriptText = loadPlugin(fallbackPath);
+			pluginName = 'google-translate';
 		} else {
 			const oldFallbackPath = path.join(__dirname, '../dist/plugin/translate-form.txt');
 			if (fs.existsSync(oldFallbackPath)) {
 				scriptText = loadPlugin(oldFallbackPath);
+				pluginName = 'translate-fallback';
 			} else {
 				throw new Error('No plugin specified and no fallback plugin found');
 			}
 		}
 	}
+
+	// Set the current plugin context for preferences
+	setCurrentPlugin(pluginName, preferences);
 
 	const pluginModule = {
 		exports: {} as { default: React.ComponentType | null }

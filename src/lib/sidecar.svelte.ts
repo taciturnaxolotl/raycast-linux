@@ -67,6 +67,14 @@ class SidecarService {
 		this.dispatchEvent('request-plugin-list');
 	};
 
+	getPreferences = (pluginName: string) => {
+		this.dispatchEvent('get-preferences', { pluginName });
+	};
+
+	setPreferences = (pluginName: string, values: Record<string, unknown>) => {
+		this.dispatchEvent('set-preferences', { pluginName, values });
+	};
+
 	#handleStdout = (chunk: Uint8Array) => {
 		try {
 			this.#receiveBuffer = Buffer.concat([this.#receiveBuffer, Buffer.from(chunk)]);
@@ -117,6 +125,11 @@ class SidecarService {
 
 		if (typedMessage.type === 'plugin-list') {
 			uiStore.setPluginList(typedMessage.payload);
+			return;
+		}
+
+		if (typedMessage.type === 'preference-values') {
+			uiStore.setCurrentPreferences(typedMessage.payload.values);
 			return;
 		}
 

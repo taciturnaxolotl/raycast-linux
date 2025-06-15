@@ -3,6 +3,7 @@ import { writeLog, writeOutput } from './io';
 import { runPlugin, sendPluginList } from './plugin';
 import { instances, navigationStack } from './state';
 import { batchedUpdates, updateContainer } from './reconciler';
+import { preferencesStore } from './preferences';
 import type { RaycastInstance } from './types';
 
 process.on('unhandledRejection', (reason: unknown) => {
@@ -28,6 +29,26 @@ rl.on('line', (line) => {
 						commandName?: string;
 					};
 					runPlugin(pluginPath);
+					break;
+				}
+				case 'get-preferences': {
+					const { pluginName } = command.payload as { pluginName: string };
+					const preferences = preferencesStore.getAllPreferences();
+					writeOutput({
+						type: 'preference-values',
+						payload: {
+							pluginName,
+							values: preferences[pluginName] || {}
+						}
+					});
+					break;
+				}
+				case 'set-preferences': {
+					const { pluginName, values } = command.payload as {
+						pluginName: string;
+						values: Record<string, unknown>;
+					};
+					preferencesStore.setPreferenceValues(pluginName, values);
 					break;
 				}
 				case 'pop-view': {

@@ -8,13 +8,14 @@
 	import Content from '$lib/components/layout/Content.svelte';
 	import Footer from '$lib/components/layout/Footer.svelte';
 	import PluginList from '$lib/components/PluginList.svelte';
+	import SettingsView from '$lib/components/SettingsView.svelte';
 	import type { PluginInfo } from '@raycast-linux/protocol';
 
-	type ViewState = 'plugin-list' | 'plugin-running';
+	type ViewState = 'plugin-list' | 'plugin-running' | 'settings';
 
 	let viewState = $state<ViewState>('plugin-list');
 
-	const { uiTree, rootNodeId, selectedNodeId, pluginList } = $derived(uiStore);
+	const { uiTree, rootNodeId, selectedNodeId, pluginList, currentPreferences } = $derived(uiStore);
 
 	$effect(() => {
 		untrack(() => {
@@ -85,6 +86,12 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
+		if (viewState === 'plugin-list' && event.key === ',' && (event.metaKey || event.ctrlKey)) {
+			event.preventDefault();
+			viewState = 'settings';
+			return;
+		}
+
 		if (viewState !== 'plugin-running') return;
 
 		if (event.key === 'Escape') {
@@ -130,12 +137,32 @@
 		viewState = 'plugin-running';
 		searchText = '';
 	}
+
+	function handleBackToPluginList() {
+		viewState = 'plugin-list';
+	}
+
+	function handleSavePreferences(pluginName: string, values: Record<string, unknown>) {
+		sidecarService.setPreferences(pluginName, values);
+	}
+
+	function handleGetPreferences(pluginName: string) {
+		sidecarService.getPreferences(pluginName);
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
 {#if viewState === 'plugin-list'}
 	<PluginList plugins={pluginList} onRunPlugin={handleRunPlugin} />
+{:else if viewState === 'settings'}
+	<SettingsView
+		plugins={pluginList}
+		onBack={handleBackToPluginList}
+		onSavePreferences={handleSavePreferences}
+		onGetPreferences={handleGetPreferences}
+		{currentPreferences}
+	/>
 {:else if viewState === 'plugin-running' && rootNode}
 	<MainLayout>
 		{#snippet header()}
