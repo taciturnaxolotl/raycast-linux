@@ -13,9 +13,10 @@
 		uiTree: Map<number, UINode>;
 		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
 		primaryActionNodeId?: number;
+		secondaryActionNodeId?: number;
 	};
 
-	let { nodeId, uiTree, onDispatch, primaryActionNodeId }: Props = $props();
+	let { nodeId, uiTree, onDispatch, primaryActionNodeId, secondaryActionNodeId }: Props = $props();
 	const { node, props: componentProps } = $derived.by(
 		useTypedNode(() => ({
 			nodeId,
@@ -27,6 +28,9 @@
 	const context = $state({
 		get primaryActionNodeId() {
 			return primaryActionNodeId;
+		},
+		get secondaryActionNodeId() {
+			return secondaryActionNodeId;
 		}
 	});
 	setContext('ActionPanelContext', context);

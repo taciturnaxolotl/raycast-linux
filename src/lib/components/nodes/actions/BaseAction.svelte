@@ -5,12 +5,14 @@
 	import { shortcutToText } from '$lib/renderKey';
 	import type { ImageLike } from '$lib/props';
 	import Icon from '$lib/components/Icon.svelte';
+	import { Kbd } from '$lib/components/ui/kbd';
 
 	type Props = {
 		title: string;
 		shortcut?: KeyboardShortcut | null;
 		icon?: ImageLike;
 		isPrimaryAction?: boolean;
+		isSecondaryAction?: boolean;
 		displayAs?: 'item' | 'button';
 		onclick: (event: MouseEvent) => void;
 	};
@@ -20,13 +22,17 @@
 		shortcut = undefined,
 		icon,
 		isPrimaryAction = false,
+		isSecondaryAction = false,
 		displayAs = 'item',
 		onclick
 	}: Props = $props();
 </script>
 
 {#if displayAs === 'button'}
-	<Button {onclick} variant="ghost" size="sm">{title}</Button>
+	<Button {onclick} variant="ghost" size="sm">
+		{title}
+		<Kbd>⏎</Kbd>
+	</Button>
 {:else}
 	<DropdownMenuItem class="rounded-md p-2 text-left" {onclick}>
 		{#if icon}
@@ -36,6 +42,10 @@
 		{#if isPrimaryAction}
 			<DropdownMenuShortcut>
 				{shortcutToText({ key: 'enter', modifiers: [] })}
+			</DropdownMenuShortcut>
+		{:else if isSecondaryAction}
+			<DropdownMenuShortcut>
+				{shortcutToText({ key: 'enter', modifiers: ['ctrl'] })}
 			</DropdownMenuShortcut>
 		{:else if shortcut}
 			<DropdownMenuShortcut>{shortcutToText(shortcut)}</DropdownMenuShortcut>

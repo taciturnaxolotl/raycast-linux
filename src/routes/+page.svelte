@@ -26,10 +26,11 @@
 			rootNode?.type === 'Detail'
 				? rootNode.namedChildren?.['actions']
 				: selectedItemNode?.namedChildren?.['actions'];
-		if (!actionsNodeId) return { primary: undefined, panel: undefined };
+		if (!actionsNodeId)
+			return { primary: undefined, secondary: undefined, panel: undefined, allActions: [] };
 		const panelNode = uiTree.get(actionsNodeId);
 		if (!panelNode || panelNode.type !== 'Action.Panel')
-			return { primary: undefined, panel: undefined };
+			return { primary: undefined, secondary: undefined, panel: undefined, allActions: [] };
 
 		const foundActions: UINode[] = [];
 		function findActions(nodeId: number) {
@@ -42,7 +43,12 @@
 			}
 		}
 		findActions(actionsNodeId);
-		return { primary: foundActions[0], panel: panelNode };
+		return {
+			primary: foundActions[0],
+			secondary: foundActions[1],
+			panel: panelNode,
+			allActions: foundActions
+		};
 	});
 
 	function handleDispatch(instanceId: number, handlerName: string, args: any[]) {
@@ -73,11 +79,19 @@
 			handlePopView();
 			return;
 		}
-		if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
-			if (actionInfo.primary) {
-				event.preventDefault();
-				const handlerName = getActionHandlerName(actionInfo.primary.type);
-				handleDispatch(actionInfo.primary.id, handlerName, []);
+		if (event.key === 'Enter') {
+			if (event.ctrlKey && !event.metaKey && !event.shiftKey) {
+				if (actionInfo.secondary) {
+					event.preventDefault();
+					const handlerName = getActionHandlerName(actionInfo.secondary.type);
+					handleDispatch(actionInfo.secondary.id, handlerName, []);
+				}
+			} else if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+				if (actionInfo.primary) {
+					event.preventDefault();
+					const handlerName = getActionHandlerName(actionInfo.primary.type);
+					handleDispatch(actionInfo.primary.id, handlerName, []);
+				}
 			}
 		}
 	}
@@ -119,7 +133,9 @@
 			{uiTree}
 			onDispatch={handleDispatch}
 			primaryAction={actionInfo.primary}
+			secondaryAction={actionInfo.secondary}
 			actionPanel={actionInfo.panel}
+			actions={actionInfo.allActions}
 		/>
 	{/snippet}
 </MainLayout>

@@ -16,8 +16,10 @@
 		useTypedNode(() => ({ nodeId, uiTree, type: 'Action' }))
 	);
 
-	const context: { primaryActionNodeId?: number } | undefined = getContext('ActionPanelContext');
+	const context: { primaryActionNodeId?: number; secondaryActionNodeId?: number } | undefined =
+		getContext('ActionPanelContext');
 	const isPrimaryAction = $derived(context?.primaryActionNodeId === nodeId);
+	const isSecondaryAction = $derived(context?.secondaryActionNodeId === nodeId);
 
 	function handleClick() {
 		onDispatch(nodeId, 'onAction', []);
@@ -30,6 +32,7 @@
 		icon={componentProps.icon}
 		shortcut={componentProps.shortcut}
 		{isPrimaryAction}
+		{isSecondaryAction}
 		{displayAs}
 		onclick={handleClick}
 	/>

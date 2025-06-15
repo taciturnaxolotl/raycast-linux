@@ -7,9 +7,14 @@
 		uiTree: Map<number, UINode>;
 		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
 		primaryAction?: UINode;
+		secondaryAction?: UINode;
 		actionPanel?: UINode;
+		actions?: UINode[];
 	};
-	let { uiTree, onDispatch, primaryAction, actionPanel }: Props = $props();
+	let { uiTree, onDispatch, primaryAction, secondaryAction, actionPanel, actions }: Props =
+		$props();
+
+	const showActionPanelDropdown = $derived((actions?.length ?? 0) > 1);
 </script>
 
 <footer class="bg-card flex h-12 shrink-0 items-center justify-end border-t px-4">
@@ -17,17 +22,22 @@
 		<div class="group flex items-center">
 			{#if primaryAction}
 				<NodeRenderer nodeId={primaryAction?.id} {uiTree} {onDispatch} displayAs="button" />
-				<Separator
-					orientation="vertical"
-					class="!h-4 !w-0.5 !rounded-full transition-opacity group-hover:opacity-0"
+				{#if showActionPanelDropdown}
+					<Separator
+						orientation="vertical"
+						class="!h-4 !w-0.5 !rounded-full transition-opacity group-hover:opacity-0"
+					/>
+				{/if}
+			{/if}
+			{#if showActionPanelDropdown}
+				<NodeRenderer
+					nodeId={actionPanel?.id}
+					{uiTree}
+					{onDispatch}
+					primaryActionNodeId={primaryAction?.id}
+					secondaryActionNodeId={secondaryAction?.id}
 				/>
 			{/if}
-			<NodeRenderer
-				nodeId={actionPanel?.id}
-				{uiTree}
-				{onDispatch}
-				primaryActionNodeId={primaryAction?.id}
-			/>
 		</div>
 	{/if}
 </footer>
