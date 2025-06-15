@@ -2,6 +2,9 @@
 	import type { PluginInfo, Preference } from '@raycast-linux/protocol';
 	import { Input } from '$lib/components/ui/input';
 	import Icon from '$lib/components/Icon.svelte';
+	import { Label } from './ui/label';
+	import { Checkbox } from './ui/checkbox';
+	import * as Select from './ui/select';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -127,27 +130,34 @@
 									placeholder={pref.default as string}
 								/>
 							{:else if pref.type === 'checkbox'}
-								<label class="flex items-center space-x-2">
-									<input
-										type="checkbox"
+								<Label class="flex items-center">
+									<Checkbox
 										checked={getPreferenceValue(pref) as boolean}
 										onchange={(e) =>
 											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.checked)}
-										class="rounded"
 									/>
-									<span class="text-sm">Enable</span>
-								</label>
+									<span class="text-sm">{pref.title}</span>
+								</Label>
 							{:else if pref.type === 'dropdown' && pref.data}
-								<select
+								<Select.Root
 									value={getPreferenceValue(pref) as string}
-									onchange={(e) =>
-										handlePreferenceChange(pref.name, (e.target as HTMLSelectElement)?.value)}
-									class="bg-background border-border w-full rounded border px-3 py-2 text-sm"
+									onValueChange={(value) => handlePreferenceChange(pref.name, value)}
+									type="single"
 								>
-									{#each pref.data as option}
-										<option value={option.value}>{option.title}</option>
-									{/each}
-								</select>
+									<Select.Trigger
+										class="bg-background border-border w-full rounded border px-3 py-2 text-sm"
+									>
+										{@const preference = pref.data.find(
+											(option) => option.value === getPreferenceValue(pref)
+										)}
+										{preference?.title ?? pref.default}
+									</Select.Trigger>
+									<Select.Content>
+										{#each pref.data as option}
+											<Select.Item value={option.value}>{option.title}</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
 							{:else if pref.type === 'directory'}
 								<Input
 									value={getPreferenceValue(pref) as string}
