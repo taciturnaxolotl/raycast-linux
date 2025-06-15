@@ -5,8 +5,9 @@ import { currentRootElement, navigationStack } from '../../state';
 import { updateContainer } from '../../reconciler';
 
 const Action = createWrapperComponent('Action');
-const ActionPanel = createWrapperComponent('Action.Panel');
-const ActionPanelSection = createWrapperComponent('Action.Panel.Section');
+const ActionPanel = createWrapperComponent('ActionPanel');
+const ActionPanelSection = createWrapperComponent('ActionPanel.Section');
+const ActionPanelSubmenu = createWrapperComponent('ActionPanel.Submenu');
 const ActionPaste = createWrapperComponent('Action.Paste');
 const ActionCopy = createWrapperComponent('Action.CopyToClipboard');
 const ActionOpenInBrowser = createWrapperComponent('Action.OpenInBrowser');
@@ -36,7 +37,8 @@ Object.assign(Action, {
 	Push: ActionPush
 });
 Object.assign(ActionPanel, {
-	Section: ActionPanelSection
+	Section: ActionPanelSection,
+	Submenu: ActionPanelSubmenu
 });
 
 export { Action, ActionPanel };
