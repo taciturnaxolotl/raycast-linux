@@ -1,8 +1,9 @@
 import React from 'react';
-import plugin from '../dist/plugin/pokemon.txt';
+import plugin from '../dist/plugin/translate.txt';
 import { updateContainer } from './reconciler';
 import { writeLog } from './io';
 import { getRaycastApi } from './api';
+import { inspect } from 'util';
 
 const createPluginRequire =
 	() =>
@@ -34,13 +35,13 @@ export const runPlugin = (): void => {
 
 	const mockConsole = {
 		log: (...args: unknown[]) => {
-			writeLog('[plugin] log: ' + args.map((arg) => JSON.stringify(arg)).join(' '));
+			writeLog('[plugin] log: ' + args.map((arg) => inspect(arg, { depth: null })).join(' '));
 		},
 		warn: (...args: unknown[]) => {
-			writeLog('[plugin] warn: ' + args.map((arg) => JSON.stringify(arg)).join(' '));
+			writeLog('[plugin] warn: ' + args.map((arg) => inspect(arg, { depth: null })).join(' '));
 		},
 		error: (...args: unknown[]) => {
-			writeLog('[plugin] error: ' + args.map((arg) => JSON.stringify(arg)).join(' '));
+			writeLog('[plugin] error: ' + args.map((arg) => inspect(arg, { depth: null })).join(' '));
 		}
 	};
 
