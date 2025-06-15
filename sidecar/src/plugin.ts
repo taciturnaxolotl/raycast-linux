@@ -1,5 +1,5 @@
 import React from 'react';
-import plugin from '../dist/plugin/translate.txt';
+import plugin from '../dist/plugin/translate-form.txt';
 import { updateContainer } from './reconciler';
 import { writeLog } from './io';
 import { getRaycastApi } from './api';
