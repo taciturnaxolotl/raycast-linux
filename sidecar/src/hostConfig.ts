@@ -19,7 +19,34 @@ import { writeOutput } from './io';
 import { serializeProps, optimizeCommitBuffer, getComponentDisplayName } from './utils';
 import React, { type ReactNode } from 'react';
 
+const handleAccessory = (parent: ParentInstance, child: AnyInstance) => {
+	if (child.type === '_AccessorySlot') {
+		if ('props' in child) {
+			const accessoryName = child.props.name as string;
+			const accessoryInstance = child.children[0];
+
+			if (accessoryInstance && 'id' in parent) {
+				if (!parent.namedChildren) {
+					parent.namedChildren = {};
+				}
+				parent.namedChildren[accessoryName] = accessoryInstance.id;
+
+				addToCommitBuffer({
+					type: 'UPDATE_PROPS',
+					payload: { id: parent.id, props: parent.props, namedChildren: parent.namedChildren }
+				});
+			}
+		}
+		return true;
+	}
+	return false;
+};
+
 const appendChildToParent = (parent: ParentInstance, child: AnyInstance) => {
+	if (handleAccessory(parent, child)) {
+		return;
+	}
+
 	const existingIndex = parent.children.findIndex(({ id }) => id === child.id);
 	if (existingIndex > -1) {
 		parent.children.splice(existingIndex, 1);
@@ -36,6 +63,10 @@ const insertChildBefore = (
 	child: AnyInstance,
 	beforeChild: AnyInstance
 ) => {
+	if (handleAccessory(parent, child)) {
+		return;
+	}
+
 	const existingIndex = parent.children.findIndex(({ id }) => id === child.id);
 	if (existingIndex > -1) {
 		parent.children.splice(existingIndex, 1);
@@ -64,6 +95,30 @@ const removeChildFromParent = (parent: ParentInstance, child: AnyInstance) => {
 		payload: { parentId: parent.id, childId: child.id }
 	});
 };
+
+function processProps(props: Record<string, unknown>) {
+	const propsToSerialize: Record<string, unknown> = {};
+	const namedChildren: { [key: string]: number } = {};
+
+	for (const [key, value] of Object.entries(props)) {
+		if (key === 'children') continue;
+
+		if (React.isValidElement(value)) {
+			// This logic is now only relevant for createInstance
+			const result = createInstanceFromElement(value);
+			if (Array.isArray(result)) {
+				if (result.length > 0) {
+					throw new Error(`The prop '${key}' cannot be a React.Fragment or an array of elements.`);
+				}
+			} else {
+				namedChildren[key] = result.id;
+			}
+		} else {
+			propsToSerialize[key] = value;
+		}
+	}
+	return { propsToSerialize, namedChildren };
+}
 
 function createInstanceFromElement(
 	element: React.ReactElement
@@ -130,45 +185,21 @@ function createInstanceFromElement(
 	return instance;
 }
 
-function processProps(props: Record<string, unknown>) {
-	const propsToSerialize: Record<string, unknown> = {};
-	const namedChildren: { [key: string]: number } = {};
-
-	for (const [key, value] of Object.entries(props)) {
-		if (key === 'children') continue;
-
-		if (React.isValidElement(value)) {
-			const result = createInstanceFromElement(value);
-
-			if (Array.isArray(result)) {
-				if (result.length > 0) {
-					throw new Error(`The prop '${key}' cannot be a React.Fragment or an array of elements.`);
-				}
-			} else {
-				namedChildren[key] = result.id;
-			}
-		} else {
-			propsToSerialize[key] = value;
-		}
-	}
-	return { propsToSerialize, namedChildren };
-}
-
 export const hostConfig: HostConfig<
-	ComponentType, // 1. Type
-	ComponentProps, // 2. Props
-	Container, // 3. Container
-	RaycastInstance, // 4. Instance
-	TextInstance, // 5. TextInstance
-	never, // 6. SuspenseInstance
-	never, // 7. HydratableInstance
-	never, // 8. FormInstance
-	RaycastInstance | TextInstance, // 9. PublicInstance
-	object, // 10. HostContext
-	never, // 11. ChildSet
-	NodeJS.Timeout, // 12. TimeoutHandle
-	number, // 13. NoTimeout
-	null // 14. TransitionStatus
+	ComponentType,
+	ComponentProps,
+	Container,
+	RaycastInstance,
+	TextInstance,
+	never,
+	never,
+	never,
+	RaycastInstance | TextInstance,
+	object,
+	never,
+	NodeJS.Timeout,
+	number,
+	null
 > = {
 	getPublicInstance(instance) {
 		return instance;
@@ -197,16 +228,14 @@ export const hostConfig: HostConfig<
 			typeof type === 'string' ? type : type.displayName || type.name || 'Anonymous';
 		const id = getNextInstanceId();
 
-		const { propsToSerialize, namedChildren } = processProps(props);
-
 		const instance: RaycastInstance = {
 			id,
 			type: componentType,
 			children: [],
-			props: serializeProps(propsToSerialize),
+			props: {},
 			_unserializedProps: props,
 			_internalFiber: internalInstanceHandle,
-			namedChildren
+			namedChildren: {}
 		};
 
 		(internalInstanceHandle as Fiber).stateNode = instance;
@@ -244,15 +273,23 @@ export const hostConfig: HostConfig<
 	removeChildFromContainer: removeChildFromParent,
 
 	commitUpdate(instance, type, oldProps, newProps) {
-		const { propsToSerialize, namedChildren } = processProps(newProps);
+		const propsToSerialize: Record<string, unknown> = {};
+		for (const key in newProps) {
+			if (key !== 'children' && !React.isValidElement(newProps[key])) {
+				propsToSerialize[key] = newProps[key];
+			}
+		}
 
 		instance.props = serializeProps(propsToSerialize);
 		instance._unserializedProps = newProps;
-		instance.namedChildren = namedChildren;
 
 		addToCommitBuffer({
 			type: 'UPDATE_PROPS',
-			payload: { id: instance.id, props: instance.props, namedChildren: instance.namedChildren }
+			payload: {
+				id: instance.id,
+				props: instance.props,
+				namedChildren: instance.namedChildren
+			}
 		});
 	},
 
@@ -264,7 +301,18 @@ export const hostConfig: HostConfig<
 		});
 	},
 
-	finalizeInitialChildren: () => false,
+	finalizeInitialChildren: (instance, type, props) => {
+		const { propsToSerialize, namedChildren } = processProps(props);
+		instance.props = serializeProps(propsToSerialize);
+		instance.namedChildren = { ...instance.namedChildren, ...namedChildren };
+
+		addToCommitBuffer({
+			type: 'UPDATE_PROPS',
+			payload: { id: instance.id, props: instance.props, namedChildren: instance.namedChildren }
+		});
+
+		return false;
+	},
 	shouldSetTextContent: () => false,
 
 	clearContainer: (container) => {

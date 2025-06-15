@@ -24,10 +24,9 @@ export class Cache {
 		const cacheRoot = '/home/byte/code/raycast-linux/sidecar/dist/plugin/cache/'; // TODO: replace
 		fs.mkdirSync(cacheRoot, { recursive: true });
 		this.options = {
-			capacity: 10 * 1024 * 1024,
-			namespace: 'default',
-			directory: cacheRoot,
-			...options
+			capacity: options.capacity ?? 10 * 1024 * 1024,
+			namespace: options.namespace ?? 'default',
+			directory: options.directory ?? cacheRoot
 		};
 
 		this.cachePath = path.join(cacheRoot, this.options.namespace);

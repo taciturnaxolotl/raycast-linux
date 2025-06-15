@@ -22,27 +22,47 @@ export const getRaycastApi = () => {
 		return Component;
 	};
 
+	const _AccessorySlot = createWrapperComponent('_AccessorySlot');
+
 	const useNavigation = () => {
-		const push = React.useCallback((element: React.ReactElement) => {
+		const push = (element: React.ReactElement) => {
 			if (currentRootElement) {
 				navigationStack.push(currentRootElement);
 				updateContainer(element);
 			}
-		}, []);
+		};
 
-		const pop = React.useCallback(() => {
+		const pop = () => {
 			const previous = navigationStack.pop();
 			if (previous) {
 				updateContainer(previous);
 			}
-		}, []);
+		};
 
 		return { push, pop };
 	};
 
-	const List = createWrapperComponent('List');
+	const ListPrimitive = createWrapperComponent('List');
+	const List = (props) => {
+		const { searchBarAccessory, children, ...rest } = props;
+		const accessoryElement =
+			searchBarAccessory &&
+			jsx(_AccessorySlot, { name: 'searchBarAccessory', children: searchBarAccessory });
+		return jsx(ListPrimitive, { ...rest, children: [children, accessoryElement].filter(Boolean) });
+	};
+
+	const ListItemPrimitive = createWrapperComponent('List.Item');
+	const ListItem = (props) => {
+		const { detail, actions, children, ...rest } = props;
+		const detailElement = detail && jsx(_AccessorySlot, { name: 'detail', children: detail });
+		const actionsElement = actions && jsx(_AccessorySlot, { name: 'actions', children: actions });
+		return jsx(ListItemPrimitive, {
+			...rest,
+			children: [children, detailElement, actionsElement].filter(Boolean)
+		});
+	};
+
 	const ListSection = createWrapperComponent('List.Section');
-	const ListItem = createWrapperComponent('List.Item');
 	const ListEmptyView = createWrapperComponent('List.EmptyView');
 	const ListDropdown = createWrapperComponent('List.Dropdown');
 	const ListDropdownItem = createWrapperComponent('List.Dropdown.Item');
@@ -85,9 +105,27 @@ export const getRaycastApi = () => {
 		Item: ListItemDetailMetadataTagListItem
 	});
 
-	const Grid = createWrapperComponent('Grid');
+	const GridPrimitive = createWrapperComponent('Grid');
+	const Grid = (props) => {
+		const { searchBarAccessory, children, ...rest } = props;
+		const accessoryElement =
+			searchBarAccessory &&
+			jsx(_AccessorySlot, { name: 'searchBarAccessory', children: searchBarAccessory });
+		return jsx(GridPrimitive, { ...rest, children: [children, accessoryElement].filter(Boolean) });
+	};
+
+	const GridItemPrimitive = createWrapperComponent('Grid.Item');
+	const GridItem = (props) => {
+		const { detail, actions, children, ...rest } = props;
+		const detailElement = detail && jsx(_AccessorySlot, { name: 'detail', children: detail });
+		const actionsElement = actions && jsx(_AccessorySlot, { name: 'actions', children: actions });
+		return jsx(GridItemPrimitive, {
+			...rest,
+			children: [children, detailElement, actionsElement].filter(Boolean)
+		});
+	};
+
 	const GridSection = createWrapperComponent('Grid.Section');
-	const GridItem = createWrapperComponent('Grid.Item');
 	const GridDropdown = createWrapperComponent('Grid.Dropdown');
 	const GridDropdownItem = createWrapperComponent('Grid.Dropdown.Item');
 	const GridDropdownSection = createWrapperComponent('Grid.Dropdown.Section');
@@ -134,7 +172,18 @@ export const getRaycastApi = () => {
 		Section: ActionPanelSection
 	});
 
-	const Detail = createWrapperComponent('Detail');
+	const DetailPrimitive = createWrapperComponent('Detail');
+	const Detail = (props) => {
+		const { metadata, actions, children, ...rest } = props;
+		const metadataElement =
+			metadata && jsx(_AccessorySlot, { name: 'metadata', children: metadata });
+		const actionsElement = actions && jsx(_AccessorySlot, { name: 'actions', children: actions });
+		return jsx(DetailPrimitive, {
+			...rest,
+			children: [children, metadataElement, actionsElement].filter(Boolean)
+		});
+	};
+
 	const DetailMetadata = createWrapperComponent('Detail.Metadata');
 	const DetailMetadataLabel = createWrapperComponent('Detail.Metadata.Label');
 	const DetailMetadataLink = createWrapperComponent('Detail.Metadata.Link');
