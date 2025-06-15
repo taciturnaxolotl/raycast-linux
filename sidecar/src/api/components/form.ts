@@ -16,4 +16,17 @@ const Form = (props) => {
 	});
 };
 
+const FormDropdown = createWrapperComponent('Form.Dropdown');
+const FormDropdownItem = createWrapperComponent('Form.Dropdown.Item');
+const FormDropdownSection = createWrapperComponent('Form.Dropdown.Section');
+
+Object.assign(FormDropdown, {
+	Item: FormDropdownItem,
+	Section: FormDropdownSection
+});
+
+Object.assign(Form, {
+	Dropdown: FormDropdown
+});
+
 export { Form };
