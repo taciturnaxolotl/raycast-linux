@@ -80,6 +80,13 @@
 			return;
 		}
 		if (event.key === 'Enter') {
+			if (
+				event.target instanceof HTMLElement &&
+				event.target.closest('[data-slot="dropdown-menu-content"]')
+			) {
+				return;
+			}
+
 			if (event.ctrlKey && !event.metaKey && !event.shiftKey) {
 				if (actionInfo.secondary) {
 					event.preventDefault();
