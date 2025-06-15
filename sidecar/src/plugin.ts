@@ -18,12 +18,8 @@ const createPluginRequire =
 			return getRaycastApi();
 		}
 
-		try {
-			return eval('require')(moduleName);
-		} catch (error) {
-			writeLog(`Failed to require module: ${moduleName}, error: ${error}`);
-			throw error;
-		}
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		return require(moduleName);
 	};
 
 export const discoverPlugins = (): PluginInfo[] => {
