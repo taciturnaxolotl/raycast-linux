@@ -44,11 +44,13 @@
 				bind:value={searchText}
 				autofocus
 			/>
-			{#if searchBarAccessoryId}
-				<div>
-					<NodeRenderer nodeId={searchBarAccessoryId} {uiTree} {onDispatch} />
-				</div>
-			{/if}
+			{#key searchBarAccessoryId}
+				{#if searchBarAccessoryId}
+					<div>
+						<NodeRenderer nodeId={searchBarAccessoryId} {uiTree} {onDispatch} />
+					</div>
+				{/if}
+			{/key}
 		{:else if navigationTitle}
 			<div class="flex h-full w-full items-center px-2 text-base font-medium">
 				{navigationTitle}
