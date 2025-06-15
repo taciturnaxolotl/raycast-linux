@@ -29,6 +29,6 @@
 			style={maskStyles}
 		/>
 	{:else if iconInfo.type === 'emoji'}
-		<span class="size-4 {className ?? ''}">{iconInfo.emoji}</span>
+		<span class={className ?? ''}>{iconInfo.emoji}</span>
 	{/if}
 {/if}

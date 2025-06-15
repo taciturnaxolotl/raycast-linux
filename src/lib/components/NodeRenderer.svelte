@@ -8,6 +8,7 @@
 		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
 		displayAs?: 'item' | 'button';
 		primaryActionNodeId?: number;
+		selectedValue?: string;
 	};
 
 	let { nodeId, uiTree, onDispatch, ...restProps }: Props = $props();

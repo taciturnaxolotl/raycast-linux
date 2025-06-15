@@ -1,11 +1,14 @@
 <script lang="ts">
 	import type { UINode } from '$lib/types';
 	import { useTypedNode } from '$lib/node.svelte';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Command from '$lib/components/ui/command';
+	import * as Popover from '$lib/components/ui/popover';
+	import { Button } from '$lib/components/ui/button';
 	import NodeRenderer from '$lib/components/NodeRenderer.svelte';
 	import { ChevronsUpDown } from '@lucide/svelte';
 	import { getTypedProps, type GridDropdownItemProps } from '$lib/props';
 	import Icon from '$lib/components/Icon.svelte';
+	import { tick } from 'svelte';
 
 	type Props = {
 		nodeId: number;
@@ -35,7 +38,7 @@
 						props: childNode.props,
 						type: 'Grid.Dropdown.Item'
 					});
-					if (itemProps?.value) {
+					if (itemProps) {
 						items.push(itemProps);
 					}
 				} else if (childNode.type === 'Grid.Dropdown.Section') {
@@ -53,6 +56,8 @@
 
 	let value = $state(dropdownProps?.value ?? dropdownProps?.defaultValue);
 	let mounted = $state(false);
+	let open = $state(false);
+	let triggerRef = $state<HTMLButtonElement>(null!);
 
 	$effect(() => {
 		if (dropdownProps?.value !== undefined && dropdownProps.value !== value) {
@@ -77,28 +82,66 @@
 	});
 
 	const selectedItem = $derived(itemsMap.get(value ?? ''));
+
+	function closeAndFocusTrigger() {
+		open = false;
+		tick().then(() => {
+			triggerRef.focus();
+		});
+	}
+
+	function handleItemSelect(childNodeId: number, handlerName: string, args: any[]) {
+		if (handlerName === 'onSelect') {
+			value = args[0];
+			closeAndFocusTrigger();
+		}
+		onDispatch(childNodeId, handlerName, args);
+	}
 </script>
 
 {#if node && dropdownProps}
-	<DropdownMenu.Root>
-		<DropdownMenu.Trigger
-			class="hover:bg-accent flex w-60 items-center gap-1 rounded-md border bg-transparent px-2 py-1 text-sm focus:outline-none"
-			title={dropdownProps.tooltip}
-		>
-			{#if selectedItem?.icon}
-				<div class="mr-2 flex size-4 shrink-0 items-center justify-center">
-					<Icon icon={selectedItem.icon} class="size-4" />
-				</div>
-			{/if}
-			<span>{selectedItem?.title ?? dropdownProps?.placeholder ?? 'Select...'}</span>
-			<ChevronsUpDown class="ml-auto h-4 w-4 opacity-50" />
-		</DropdownMenu.Trigger>
-		<DropdownMenu.Content class="w-60">
-			<DropdownMenu.RadioGroup bind:value>
-				{#each node.children as childId (childId)}
-					<NodeRenderer nodeId={childId} {uiTree} {onDispatch} />
-				{/each}
-			</DropdownMenu.RadioGroup>
-		</DropdownMenu.Content>
-	</DropdownMenu.Root>
+	<Popover.Root bind:open>
+		<Popover.Trigger bind:ref={triggerRef}>
+			{#snippet child({ props })}
+				<Button
+					{...props}
+					variant="outline"
+					class="w-60 justify-between"
+					role="combobox"
+					aria-expanded={open}
+					title={dropdownProps.tooltip}
+				>
+					<div class="flex items-center gap-2">
+						{#if selectedItem?.icon}
+							<div class="flex size-4 shrink-0 items-center justify-center">
+								<Icon icon={selectedItem.icon} />
+							</div>
+						{/if}
+						<span class="truncate">
+							{selectedItem?.title ?? dropdownProps?.placeholder ?? 'Select...'}
+						</span>
+					</div>
+					<ChevronsUpDown class="h-4 w-4 shrink-0 opacity-50" />
+				</Button>
+			{/snippet}
+		</Popover.Trigger>
+		<Popover.Content class="w-60 p-0">
+			<Command.Root>
+				<Command.Input placeholder="Search..." />
+				<Command.List>
+					<Command.Empty>No items found.</Command.Empty>
+					<Command.Group>
+						{#each node.children as childId (childId)}
+							<NodeRenderer
+								nodeId={childId}
+								{uiTree}
+								onDispatch={handleItemSelect}
+								selectedValue={value}
+							/>
+						{/each}
+					</Command.Group>
+				</Command.List>
+			</Command.Root>
+		</Popover.Content>
+	</Popover.Root>
 {/if}
