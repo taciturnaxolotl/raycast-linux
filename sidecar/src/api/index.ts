@@ -7,6 +7,7 @@ import { createLocalStorage } from './utils';
 import { useNavigation } from './navigation';
 import { List } from './components/list';
 import { Grid } from './components/grid';
+import { Form } from './components/form';
 import { Action, ActionPanel } from './components/actions';
 import { Detail } from './components/detail';
 import { environment, getSelectedFinderItems, getSelectedText } from './environment';
@@ -43,6 +44,7 @@ export const getRaycastApi = () => {
 		Action,
 		ActionPanel,
 		Detail,
+		Form,
 		Icon
 	};
 };
