@@ -71,3 +71,34 @@ const LogMessageSchema = z.object({
 
 export const SidecarMessageSchema = z.union([BatchUpdateSchema, CommandSchema, LogMessageSchema]);
 export type SidecarMessage = z.infer<typeof SidecarMessageSchema>;
+
+export const PluginInfoSchema = z.object({
+	title: z.string(),
+	description: z.string().optional(),
+	pluginName: z.string(),
+	commandName: z.string(),
+	pluginPath: z.string(),
+	icon: z.string().optional()
+});
+export type PluginInfo = z.infer<typeof PluginInfoSchema>;
+
+export const PluginListSchema = z.object({
+	type: z.literal('plugin-list'),
+	payload: z.array(PluginInfoSchema)
+});
+export type PluginList = z.infer<typeof PluginListSchema>;
+
+export const GoBackToPluginListSchema = z.object({
+	type: z.literal('go-back-to-plugin-list'),
+	payload: z.object({})
+});
+export type GoBackToPluginList = z.infer<typeof GoBackToPluginListSchema>;
+
+export const SidecarMessageWithPluginsSchema = z.union([
+	BatchUpdateSchema,
+	CommandSchema,
+	LogMessageSchema,
+	PluginListSchema,
+	GoBackToPluginListSchema
+]);
+export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

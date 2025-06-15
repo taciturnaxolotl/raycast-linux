@@ -1,5 +1,6 @@
 import type { UINode } from '$lib/types';
 import type { Command } from '@raycast-linux/protocol';
+import type { PluginInfo } from '@raycast-linux/protocol';
 
 function createUiStore() {
 	// we're not using SvelteMap here because we're making a lot of mutations to the tree
@@ -8,6 +9,7 @@ function createUiStore() {
 	let uiTree = $state(new Map<number, UINode>());
 	let rootNodeId = $state<number | null>(null);
 	let selectedNodeId = $state<number | undefined>(undefined);
+	let pluginList = $state<PluginInfo[]>([]);
 
 	const applyCommands = (commands: Command[]) => {
 		const tempTree = new Map(uiTree);
@@ -40,12 +42,16 @@ function createUiStore() {
 
 		uiTree = tempTree;
 		rootNodeId = tempState.rootNodeId;
+	};
 
-		const countByType = (map: Map<number, UINode>) =>
-			[...map.values()].reduce(
-				(acc, { type }) => ((acc[type] = (acc[type] || 0) + 1), acc),
-				{} as Record<string, number>
-			);
+	const setPluginList = (plugins: PluginInfo[]) => {
+		pluginList = plugins;
+	};
+
+	const resetForNewPlugin = () => {
+		uiTree = new Map();
+		rootNodeId = null;
+		selectedNodeId = undefined;
 	};
 
 	function processSingleCommand(
@@ -147,7 +153,12 @@ function createUiStore() {
 		set selectedNodeId(id: number | undefined) {
 			selectedNodeId = id;
 		},
-		applyCommands
+		get pluginList() {
+			return pluginList;
+		},
+		applyCommands,
+		setPluginList,
+		resetForNewPlugin
 	};
 }
 

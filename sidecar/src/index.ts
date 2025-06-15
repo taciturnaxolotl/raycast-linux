@@ -1,6 +1,6 @@
 import { createInterface } from 'readline';
 import { writeLog, writeOutput } from './io';
-import { runPlugin } from './plugin';
+import { runPlugin, sendPluginList } from './plugin';
 import { instances, navigationStack } from './state';
 import { batchedUpdates, updateContainer } from './reconciler';
 import type { RaycastInstance } from './types';
@@ -19,13 +19,23 @@ rl.on('line', (line) => {
 			const command: { action: string; payload: unknown } = JSON.parse(line);
 
 			switch (command.action) {
-				case 'run-plugin':
-					runPlugin();
+				case 'request-plugin-list':
+					sendPluginList();
 					break;
+				case 'run-plugin': {
+					const { pluginPath } = command.payload as {
+						pluginPath?: string;
+						commandName?: string;
+					};
+					runPlugin(pluginPath);
+					break;
+				}
 				case 'pop-view': {
 					const previousElement = navigationStack.pop();
 					if (previousElement) {
 						updateContainer(previousElement);
+					} else {
+						writeOutput({ type: 'go-back-to-plugin-list', payload: {} });
 					}
 					break;
 				}
@@ -75,3 +85,4 @@ rl.on('line', (line) => {
 });
 
 writeLog('Node.js Sidecar started successfully with React Reconciler.');
+sendPluginList();

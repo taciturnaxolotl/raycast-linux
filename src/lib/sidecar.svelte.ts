@@ -1,12 +1,13 @@
 import { Command, type Child } from '@tauri-apps/plugin-shell';
 import { Unpackr } from 'msgpackr';
 import { uiStore } from '$lib/ui.svelte';
-import { SidecarMessageSchema } from '@raycast-linux/protocol';
+import { SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
 
 class SidecarService {
 	#sidecarChild: Child | null = $state(null);
 	#receiveBuffer = Buffer.alloc(0);
 	#unpackr = new Unpackr();
+	#onGoBackToPluginList: (() => void) | null = null;
 
 	logs: string[] = $state([]);
 
@@ -14,6 +15,10 @@ class SidecarService {
 
 	get isRunning() {
 		return this.#sidecarChild !== null;
+	}
+
+	setOnGoBackToPluginList(callback: () => void) {
+		this.#onGoBackToPluginList = callback;
 	}
 
 	start = async () => {
@@ -34,7 +39,7 @@ class SidecarService {
 			this.#sidecarChild = await command.spawn();
 			this.#log(`Sidecar spawned with PID: ${this.#sidecarChild.pid}`);
 
-			this.dispatchEvent('run-plugin');
+			this.requestPluginList();
 		} catch (e) {
 			this.#log(`ERROR starting sidecar: ${e}`);
 			console.error('Failed to start sidecar:', e);
@@ -56,6 +61,10 @@ class SidecarService {
 		}
 		const message = JSON.stringify({ action, payload });
 		this.#sidecarChild.write(message + '\n');
+	};
+
+	requestPluginList = () => {
+		this.dispatchEvent('request-plugin-list');
 	};
 
 	#handleStdout = (chunk: Uint8Array) => {
@@ -91,7 +100,7 @@ class SidecarService {
 	};
 
 	#routeMessage = (message: unknown) => {
-		const result = SidecarMessageSchema.safeParse(message);
+		const result = SidecarMessageWithPluginsSchema.safeParse(message);
 
 		if (!result.success) {
 			this.#log(`ERROR: Received invalid message from sidecar: ${result.error.message}`);
@@ -103,6 +112,18 @@ class SidecarService {
 
 		if (typedMessage.type === 'log') {
 			this.#log(`SIDECAR: ${typedMessage.payload}`);
+			return;
+		}
+
+		if (typedMessage.type === 'plugin-list') {
+			uiStore.setPluginList(typedMessage.payload);
+			return;
+		}
+
+		if (typedMessage.type === 'go-back-to-plugin-list') {
+			if (this.#onGoBackToPluginList) {
+				this.#onGoBackToPluginList();
+			}
 			return;
 		}
 
