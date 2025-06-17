@@ -1,15 +1,40 @@
+use freedesktop_file_parser::{parse, EntryType};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     env, fs,
+    io,
     path::{Path, PathBuf},
     process::Command,
     thread,
     time::{Duration, SystemTime},
 };
 
-use freedesktop_file_parser::{parse, EntryType};
-use rayon::prelude::*;
+#[derive(Debug)]
+enum CacheError {
+    Io,
+    Bincode,
+    DirectoryNotFound,
+}
+
+impl From<io::Error> for CacheError {
+    fn from(_: io::Error) -> Self {
+        CacheError::Io
+    }
+}
+
+impl From<bincode::error::DecodeError> for CacheError {
+    fn from(_: bincode::error::DecodeError) -> Self {
+        CacheError::Bincode
+    }
+}
+
+impl From<bincode::error::EncodeError> for CacheError {
+    fn from(_: bincode::error::EncodeError) -> Self {
+        CacheError::Bincode
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct App {
@@ -32,98 +57,20 @@ fn get_app_dirs() -> Vec<PathBuf> {
     ];
 
     if let Ok(home_dir) = env::var("HOME") {
-        let mut user_app_dir = PathBuf::from(home_dir);
-        user_app_dir.push(".local/share/applications");
-        app_dirs.push(user_app_dir);
+        app_dirs.push(PathBuf::from(home_dir).join(".local/share/applications"));
     }
     app_dirs
 }
 
-fn get_cache_path() -> Result<PathBuf, String> {
+fn get_cache_path() -> Result<PathBuf, CacheError> {
     let cache_dir = env::var("XDG_CACHE_HOME")
-        .ok()
         .map(PathBuf::from)
-        .or_else(|| {
-            env::var("HOME")
-                .ok()
-                .map(|home| PathBuf::from(home).join(".cache"))
-        })
-        .ok_or("Could not determine cache directory")?;
-    
+        .or_else(|_| env::var("HOME").map(|home| PathBuf::from(home).join(".cache")))
+        .map_err(|_| CacheError::DirectoryNotFound)?;
+
     let app_cache_dir = cache_dir.join("raycast-linux");
-    fs::create_dir_all(&app_cache_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&app_cache_dir)?;
     Ok(app_cache_dir.join("apps.bincode"))
-}
-
-fn scan_and_cache_apps() -> Result<Vec<App>, String> {
-    let app_dirs = get_app_dirs();
-    let mut desktop_files = Vec::new();
-
-    for dir in &app_dirs {
-        if dir.exists() {
-            desktop_files.extend(find_desktop_files(dir));
-        }
-    }
-
-    let apps: Vec<App> = desktop_files
-        .par_iter()
-        .filter_map(|file_path| {
-            let content = fs::read_to_string(file_path).ok()?;
-            let desktop_file = parse(&content).ok()?;
-            let entry = desktop_file.entry;
-
-            if entry.hidden.unwrap_or(false) || entry.no_display.unwrap_or(false) {
-                return None;
-            }
-
-            if let EntryType::Application(app_fields) = entry.entry_type {
-                let app = App {
-                    name: entry.name.default,
-                    comment: entry.comment.map(|lc| lc.default),
-                    exec: app_fields.exec,
-                    icon_path: entry
-                        .icon
-                        .and_then(|ic| ic.get_icon_path())
-                        .and_then(|p| p.to_str().map(String::from)),
-                };
-                if app.exec.is_some() && !app.name.is_empty() {
-                    return Some(app);
-                }
-            }
-            None
-        })
-        .collect();
-
-    let mut unique_apps = Vec::new();
-    let mut seen_app_names = HashSet::new();
-    for app in apps {
-        if seen_app_names.insert(app.name.clone()) {
-            unique_apps.push(app);
-        }
-    }
-
-    unique_apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-    
-    let dir_mod_times = app_dirs
-        .into_iter()
-        .filter_map(|dir| {
-            let metadata = fs::metadata(&dir).ok()?;
-            let mod_time = metadata.modified().ok()?;
-            Some((dir, mod_time))
-        })
-        .collect();
-
-    let cache_data = AppCache {
-        apps: unique_apps.clone(),
-        dir_mod_times,
-    };
-
-    if let Ok(cache_path) = get_cache_path() {
-       let encoded = bincode::serde::encode_to_vec(&cache_data, bincode::config::standard()).map_err(|e| e.to_string())?;
-       fs::write(cache_path, encoded).map_err(|e| e.to_string())?;
-    }
-
-    Ok(unique_apps)
 }
 
 fn find_desktop_files(path: &Path) -> Vec<PathBuf> {
@@ -141,32 +88,131 @@ fn find_desktop_files(path: &Path) -> Vec<PathBuf> {
     desktop_files
 }
 
+fn scan_and_parse_apps() -> Result<(Vec<App>, HashMap<PathBuf, SystemTime>), CacheError> {
+    let app_dirs = get_app_dirs();
+    let desktop_files: Vec<PathBuf> = app_dirs
+        .iter()
+        .filter(|dir| dir.exists())
+        .flat_map(|dir| find_desktop_files(dir))
+        .collect();
+
+    let apps: Vec<App> = desktop_files
+        .par_iter()
+        .filter_map(|file_path| {
+            let content = fs::read_to_string(file_path).ok()?;
+            let desktop_file = parse(&content).ok()?;
+
+            if desktop_file.entry.hidden.unwrap_or(false)
+                || desktop_file.entry.no_display.unwrap_or(false)
+            {
+                return None;
+            }
+
+            if let EntryType::Application(app_fields) = desktop_file.entry.entry_type {
+                if app_fields.exec.is_some() && !desktop_file.entry.name.default.is_empty() {
+                    return Some(App {
+                        name: desktop_file.entry.name.default,
+                        comment: desktop_file.entry.comment.map(|lc| lc.default),
+                        exec: app_fields.exec,
+                        icon_path: desktop_file
+                            .entry
+                            .icon
+                            .and_then(|ic| ic.get_icon_path())
+                            .and_then(|p| p.to_str().map(String::from)),
+                    });
+                }
+            }
+            None
+        })
+        .collect();
+
+    let mut unique_apps = Vec::new();
+    let mut seen_app_names = HashSet::new();
+    for app in apps {
+        if seen_app_names.insert(app.name.clone()) {
+            unique_apps.push(app);
+        }
+    }
+    unique_apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+
+    let dir_mod_times = app_dirs
+        .into_iter()
+        .filter_map(|dir| {
+            fs::metadata(&dir)
+                .and_then(|m| m.modified())
+                .ok()
+                .map(|mod_time| (dir, mod_time))
+        })
+        .collect();
+
+    Ok((unique_apps, dir_mod_times))
+}
+
+fn read_cache(path: &Path) -> Result<AppCache, CacheError> {
+    let file_content = fs::read(path)?;
+    let (decoded, _) = bincode::serde::decode_from_slice(&file_content, bincode::config::standard())?;
+    Ok(decoded)
+}
+
+fn write_cache(path: &Path, cache: &AppCache) -> Result<(), CacheError> {
+    let encoded = bincode::serde::encode_to_vec(cache, bincode::config::standard())?;
+    fs::write(path, encoded)?;
+    Ok(())
+}
+
+fn refresh_app_cache() {
+    if let (Ok(cache_path), Ok((apps, dir_mod_times))) =
+        (get_cache_path(), scan_and_parse_apps())
+    {
+        let cache_data = AppCache {
+            apps,
+            dir_mod_times,
+        };
+        if let Err(e) = write_cache(&cache_path, &cache_data) {
+            eprintln!("Error refreshing app cache in background: {:?}", e);
+        }
+    }
+}
+
 #[tauri::command]
 fn get_installed_apps() -> Vec<App> {
     let cache_path = match get_cache_path() {
         Ok(path) => path,
-        Err(_) => return scan_and_cache_apps().unwrap_or_default(),
+        Err(e) => {
+            eprintln!("Could not get cache path: {:?}. Falling back to scan.", e);
+            return scan_and_parse_apps().map_or_else(|_| Vec::new(), |(apps, _)| apps);
+        }
     };
 
-    if let Ok(file_content) = fs::read(&cache_path) {
-        if let Ok((cached_data, _)) = bincode::serde::decode_from_slice::<AppCache, _>(&file_content, bincode::config::standard()) {
-            let is_stale = get_app_dirs().into_iter().any(|dir| {
-                let current_mod_time = fs::metadata(&dir).ok().and_then(|m| m.modified().ok());
-                let cached_mod_time = cached_data.dir_mod_times.get(&dir);
-                
-                match (current_mod_time, cached_mod_time) {
-                    (Some(current), Some(cached)) => current != *cached,
-                    _ => true, 
-                }
-            });
-
-            if !is_stale {
-                return cached_data.apps;
+    if let Ok(cached_data) = read_cache(&cache_path) {
+        let is_stale = get_app_dirs().into_iter().any(|dir| {
+            let current_mod_time = fs::metadata(&dir).ok().and_then(|m| m.modified().ok());
+            let cached_mod_time = cached_data.dir_mod_times.get(&dir);
+            
+            match (current_mod_time, cached_mod_time) {
+                (Some(current), Some(cached)) => current > *cached,
+                _ => true,
             }
+        });
+
+        if !is_stale {
+            return cached_data.apps;
         }
     }
     
-    scan_and_cache_apps().unwrap_or_default()
+    match scan_and_parse_apps() {
+        Ok((apps, dir_mod_times)) => {
+            let cache_data = AppCache { apps: apps.clone(), dir_mod_times };
+            if let Err(e) = write_cache(&cache_path, &cache_data) {
+                eprintln!("Failed to write to app cache: {:?}", e);
+            }
+            apps
+        }
+        Err(e) => {
+            eprintln!("Failed to scan and parse apps: {:?}", e);
+            Vec::new()
+        }
+    }
 }
 
 #[tauri::command]
@@ -199,9 +245,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![get_installed_apps, launch_app])
         .setup(|_app| {
             thread::spawn(|| {
+                thread::sleep(Duration::from_secs(60));
                 loop {
+                    refresh_app_cache();
                     thread::sleep(Duration::from_secs(300));
-                    let _ = scan_and_cache_apps();
                 }
             });
             Ok(())
