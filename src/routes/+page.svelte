@@ -10,10 +10,12 @@
 	import PluginList from '$lib/components/PluginList.svelte';
 	import SettingsView from '$lib/components/SettingsView.svelte';
 	import type { PluginInfo } from '@raycast-linux/protocol';
+	import { invoke } from '@tauri-apps/api/core';
 
 	type ViewState = 'plugin-list' | 'plugin-running' | 'settings';
 
 	let viewState = $state<ViewState>('plugin-list');
+	let installedApps = $state<any[]>([]);
 
 	const { uiTree, rootNodeId, selectedNodeId, pluginList, currentPreferences } = $derived(uiStore);
 
@@ -149,12 +151,17 @@
 	function handleGetPreferences(pluginName: string) {
 		sidecarService.getPreferences(pluginName);
 	}
+
+	invoke('get_installed_apps').then((apps) => {
+		console.log(apps);
+		installedApps = apps as any[];
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
 {#if viewState === 'plugin-list'}
-	<PluginList plugins={pluginList} onRunPlugin={handleRunPlugin} />
+	<PluginList plugins={pluginList} onRunPlugin={handleRunPlugin} {installedApps} />
 {:else if viewState === 'settings'}
 	<SettingsView
 		plugins={pluginList}

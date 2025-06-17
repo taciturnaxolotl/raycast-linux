@@ -5,13 +5,16 @@
 	import { create, all } from 'mathjs';
 	import { ArrowRight } from '@lucide/svelte';
 	import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+	import { convertFileSrc } from '@tauri-apps/api/core';
+	import { invoke } from '@tauri-apps/api/core';
 
 	type Props = {
 		plugins: PluginInfo[];
 		onRunPlugin: (plugin: PluginInfo) => void;
+		installedApps?: any[];
 	};
 
-	let { plugins, onRunPlugin }: Props = $props();
+	let { plugins, onRunPlugin, installedApps = [] }: Props = $props();
 
 	let searchText = $state('');
 	let selectedIndex = $state(0);
@@ -29,6 +32,17 @@
 				p.title.toLowerCase().includes(lowerCaseSearch) ||
 				p.description?.toLowerCase().includes(lowerCaseSearch) ||
 				p.pluginName.toLowerCase().includes(lowerCaseSearch)
+		);
+	});
+
+	const filteredApps = $derived.by(() => {
+		if (!searchText) return installedApps;
+		const lowerCaseSearch = searchText.toLowerCase();
+		return installedApps.filter(
+			(app: any) =>
+				app.name.toLowerCase().includes(lowerCaseSearch) ||
+				app.comment?.toLowerCase().includes(lowerCaseSearch) ||
+				app.exec.toLowerCase().includes(lowerCaseSearch)
 		);
 	});
 
@@ -82,14 +96,14 @@
 	});
 
 	$effect(() => {
-		const totalItems = (hasMathResult ? 1 : 0) + filteredPlugins.length;
+		const totalItems = (hasMathResult ? 1 : 0) + filteredPlugins.length + filteredApps.length;
 		if (selectedIndex >= totalItems) {
 			selectedIndex = Math.max(0, totalItems - 1);
 		}
 	});
 
 	function handleKeydown(event: KeyboardEvent) {
-		const totalItems = (hasMathResult ? 1 : 0) + filteredPlugins.length;
+		const totalItems = (hasMathResult ? 1 : 0) + filteredPlugins.length + filteredApps.length;
 		if (totalItems === 0) return;
 
 		if (event.key === 'ArrowDown') {
@@ -103,9 +117,17 @@
 			if (hasMathResult && selectedIndex === 0) {
 				if (mathResult) writeText(mathResult);
 			} else {
-				const pluginIndex = selectedIndex - (hasMathResult ? 1 : 0);
-				if (filteredPlugins[pluginIndex]) {
-					onRunPlugin(filteredPlugins[pluginIndex]);
+				const itemIndex = selectedIndex - (hasMathResult ? 1 : 0);
+				if (itemIndex < filteredPlugins.length) {
+					onRunPlugin(filteredPlugins[itemIndex]);
+				} else {
+					const appIndex = itemIndex - filteredPlugins.length;
+					if (filteredApps[appIndex]) {
+						const app = filteredApps[appIndex];
+						if (app.exec) {
+							invoke('launch_app', { exec: app.exec }).catch(console.error);
+						}
+					}
 				}
 			}
 		}
@@ -113,8 +135,18 @@
 
 	function handleItemClick(index: number) {
 		selectedIndex = index;
-		const pluginIndex = index - (hasMathResult ? 1 : 0);
-		onRunPlugin(filteredPlugins[pluginIndex]);
+		const itemIndex = index - (hasMathResult ? 1 : 0);
+		if (itemIndex < filteredPlugins.length) {
+			onRunPlugin(filteredPlugins[itemIndex]);
+		} else {
+			const appIndex = itemIndex - filteredPlugins.length;
+			if (filteredApps[appIndex]) {
+				const app = filteredApps[appIndex];
+				if (app.exec) {
+					invoke('launch_app', { exec: app.exec }).catch(console.error);
+				}
+			}
+		}
 	}
 
 	function numberToWords(numStr: string | null): string {
@@ -200,6 +232,28 @@
 						<span class="text-muted-foreground text-sm">{plugin.description}</span>
 					</div>
 					<span class="ml-auto text-xs text-gray-500">{plugin.pluginName}</span>
+				</button>
+			{/each}
+			{#each filteredApps as app, index}
+				{@const itemIndex = index + filteredPlugins.length + (hasMathResult ? 1 : 0)}
+				<button
+					type="button"
+					class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-2 text-left"
+					class:bg-accent={selectedIndex === itemIndex}
+					onclick={() => handleItemClick(itemIndex)}
+				>
+					<div class="flex size-5 shrink-0 items-center justify-center">
+						{#if app.icon_path}
+							<img src={convertFileSrc(app.icon_path)} alt="" class="size-4" />
+						{:else}
+							<Icon icon="app-window-16" class="size-4" />
+						{/if}
+					</div>
+					<div class="flex flex-col">
+						<span class="font-medium">{app.name}</span>
+						<span class="text-muted-foreground text-sm">{app.comment || 'No description'}</span>
+					</div>
+					<span class="ml-auto text-xs text-gray-500">System App</span>
 				</button>
 			{/each}
 		</div>
