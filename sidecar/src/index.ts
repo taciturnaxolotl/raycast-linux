@@ -5,7 +5,11 @@ import { instances, navigationStack } from './state';
 import { batchedUpdates, updateContainer } from './reconciler';
 import { preferencesStore } from './preferences';
 import type { RaycastInstance } from './types';
-import { handleSelectedTextResponse } from './api/environment';
+import {
+	handleGetSelectedFinderItemsResponse,
+	handleSelectedTextResponse,
+	type FileSystemItem
+} from './api/environment';
 
 process.on('unhandledRejection', (reason: unknown) => {
 	writeLog(`--- UNHANDLED PROMISE REJECTION ---`);
@@ -100,6 +104,15 @@ rl.on('line', (line) => {
 						error?: string;
 					};
 					handleSelectedTextResponse(requestId, text ?? null, error);
+					break;
+				}
+				case 'selected-finder-items-response': {
+					const { requestId, items, error } = command.payload as {
+						requestId: string;
+						items?: FileSystemItem[] | null;
+						error?: string;
+					};
+					handleGetSelectedFinderItemsResponse(requestId, items ?? null, error);
 					break;
 				}
 				default:

@@ -140,6 +140,14 @@ const GetSelectedTextMessageSchema = z.object({
 	payload: GetSelectedTextPayloadSchema
 });
 
+const GetSelectedFinderItemsPayloadSchema = z.object({
+	requestId: z.string()
+});
+const GetSelectedFinderItemsMessageSchema = z.object({
+	type: z.literal('get-selected-finder-items'),
+	payload: GetSelectedFinderItemsPayloadSchema
+});
+
 export const SidecarMessageWithPluginsSchema = z.union([
 	BatchUpdateSchema,
 	CommandSchema,
@@ -148,6 +156,7 @@ export const SidecarMessageWithPluginsSchema = z.union([
 	PreferenceValuesSchema,
 	GoBackToPluginListSchema,
 	OpenMessageSchema,
-	GetSelectedTextMessageSchema
+	GetSelectedTextMessageSchema,
+	GetSelectedFinderItemsMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

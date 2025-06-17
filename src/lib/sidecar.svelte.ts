@@ -169,6 +169,25 @@ class SidecarService {
 			return;
 		}
 
+		if (typedMessage.type === 'get-selected-finder-items') {
+			const { requestId } = typedMessage.payload;
+			invoke('get_selected_finder_items')
+				.then((items) => {
+					this.dispatchEvent('selected-finder-items-response', {
+						requestId,
+						items
+					});
+				})
+				.catch((error) => {
+					this.#log(`ERROR getting selected finder items: ${error}`);
+					this.dispatchEvent('selected-finder-items-response', {
+						requestId,
+						error: String(error)
+					});
+				});
+			return;
+		}
+
 		const commands = typedMessage.type === 'BATCH_UPDATE' ? typedMessage.payload : [typedMessage];
 		if (commands.length > 0) {
 			uiStore.applyCommands(commands);

@@ -33,8 +33,45 @@ export const environment = {
 	}
 };
 
+const pendingFinderItemsRequests = new Map<
+	string,
+	{ resolve: (items: FileSystemItem[]) => void; reject: (error: Error) => void }
+>();
+
 export async function getSelectedFinderItems(): Promise<FileSystemItem[]> {
-	return Promise.reject(new Error('Finder is not the frontmost application.'));
+	return new Promise((resolve, reject) => {
+		const requestId = Math.random().toString(36).substring(7);
+
+		pendingFinderItemsRequests.set(requestId, { resolve, reject });
+
+		writeOutput({
+			type: 'get-selected-finder-items',
+			payload: { requestId }
+		});
+
+		setTimeout(() => {
+			if (pendingFinderItemsRequests.has(requestId)) {
+				pendingFinderItemsRequests.delete(requestId);
+				reject(new Error('Timeout: Could not get selected finder items'));
+			}
+		}, 1000);
+	});
+}
+
+export function handleGetSelectedFinderItemsResponse(
+	requestId: string,
+	items: FileSystemItem[] | null,
+	error?: string
+) {
+	const pending = pendingFinderItemsRequests.get(requestId);
+	if (pending) {
+		pendingFinderItemsRequests.delete(requestId);
+		if (error) {
+			pending.reject(new Error(error));
+		} else {
+			pending.resolve(items || []);
+		}
+	}
 }
 
 const pendingTextRequests = new Map<

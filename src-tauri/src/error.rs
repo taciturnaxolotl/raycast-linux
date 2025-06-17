@@ -4,7 +4,8 @@ use std::io;
 pub enum AppError {
     Io(io::Error),
     Serialization(String),
-    DirectoryNotFound
+    DirectoryNotFound,
+    CacheError(String),
 }
 
 impl From<io::Error> for AppError {
