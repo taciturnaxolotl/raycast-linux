@@ -6,7 +6,8 @@ import { ColorLikeSchema } from './color';
 export const ListPropsSchema = z.object({
 	filtering: z.boolean().optional(),
 	isShowingDetail: z.boolean().optional(),
-	onSearchTextChange: z.boolean().optional()
+	onSearchTextChange: z.boolean().optional(),
+	isLoading: z.boolean().default(false)
 });
 export type ListProps = z.infer<typeof ListPropsSchema>;
 

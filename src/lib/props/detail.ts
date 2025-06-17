@@ -6,7 +6,8 @@ import { TextWithColorSchema } from './text';
 export const DetailMetadataLabelPropsSchema = z.object({
 	title: z.string(),
 	text: z.union([z.string(), TextWithColorSchema]).optional(),
-	icon: ImageLikeSchema.optional()
+	icon: ImageLikeSchema.optional(),
+	isLoading: z.boolean().default(false)
 });
 export type DetailMetadataLabelProps = z.infer<typeof DetailMetadataLabelPropsSchema>;
 

@@ -38,6 +38,15 @@
 	--sidebar-accent-foreground: oklch(0.208 0.042 265.755);
 	--sidebar-border: oklch(0.929 0.013 255.508);
 	--sidebar-ring: oklch(0.704 0.04 256.788);
+
+	--loading-gradient: linear-gradient(
+		to right,
+		rgba(0, 0, 0, 0) 0%,
+		rgba(0, 0, 0, 0) 25%,
+		rgba(0, 0, 0, 0.8) 50%,
+		rgba(0, 0, 0, 0) 75%,
+		rgba(0, 0, 0, 0) 100%
+	);
 }
 
 .dark {
@@ -72,6 +81,15 @@
 	--sidebar-accent-foreground: oklch(0.984 0.003 247.858);
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.551 0.027 264.364);
+
+	--loading-gradient: linear-gradient(
+		to right,
+		rgba(255, 255, 255, 0) 0%,
+		rgba(255, 255, 255, 0) 25%,
+		rgba(255, 255, 255, 0.8) 50%,
+		rgba(255, 255, 255, 0) 75%,
+		rgba(255, 255, 255, 0) 100%
+	);
 }
 
 @theme inline {
@@ -118,5 +136,21 @@
 	}
 	body {
 		@apply bg-background text-foreground;
+	}
+}
+
+.raycast-loader {
+	background-image: var(--loading-gradient);
+	background-size: 200% 100%;
+	animation: raycast-shine 0.75s infinite alternate cubic-bezier(0, -0.19, 0.83, 1.18);
+}
+
+@keyframes raycast-shine {
+	0% {
+		background-position: 20% 0;
+	}
+
+	100% {
+		background-position: 80% 0;
 	}
 }

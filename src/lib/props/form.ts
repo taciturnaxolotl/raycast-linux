@@ -2,8 +2,8 @@ import { z } from 'zod/v4';
 
 export const FormPropsSchema = z.object({
 	enableDrafts: z.boolean().optional(),
-	isLoading: z.boolean().optional(),
-	navigationTitle: z.string().optional()
+	navigationTitle: z.string().optional(),
+	isLoading: z.boolean().default(false)
 });
 export type FormProps = z.infer<typeof FormPropsSchema>;
 

@@ -6,7 +6,8 @@ export const GridPropsSchema = z.object({
 	throttle: z.boolean().default(false),
 	columns: z.number().default(6), // TODO: is this the default?
 	searchBarPlaceholder: z.string().optional(),
-	onSearchTextChange: z.boolean().optional()
+	onSearchTextChange: z.boolean().optional(),
+	isLoading: z.boolean().default(false)
 });
 export type GridProps = z.infer<typeof GridPropsSchema>;
 
