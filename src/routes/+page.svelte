@@ -7,10 +7,10 @@
 	import Header from '$lib/components/layout/Header.svelte';
 	import Content from '$lib/components/layout/Content.svelte';
 	import Footer from '$lib/components/layout/Footer.svelte';
-	import PluginList from '$lib/components/PluginList.svelte';
 	import SettingsView from '$lib/components/SettingsView.svelte';
 	import type { PluginInfo } from '@raycast-linux/protocol';
 	import { invoke } from '@tauri-apps/api/core';
+	import CommandPalette from '$lib/components/CommandPalette.svelte';
 
 	type ViewState = 'plugin-list' | 'plugin-running' | 'settings';
 
@@ -161,7 +161,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if viewState === 'plugin-list'}
-	<PluginList plugins={pluginList} onRunPlugin={handleRunPlugin} {installedApps} />
+	<CommandPalette plugins={pluginList} onRunPlugin={handleRunPlugin} {installedApps} />
 {:else if viewState === 'settings'}
 	<SettingsView
 		plugins={pluginList}
