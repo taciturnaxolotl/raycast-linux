@@ -166,24 +166,20 @@
 	</header>
 	<div class="grow overflow-y-auto">
 		{#if hasMathResult && mathResult}
-			<div class="p-2 pt-2">
-				<div class="text-muted-foreground px-2 pb-1 text-xs">Calculator</div>
-				<div class="bg-muted flex items-center p-2">
-					<div class="flex grow flex-col items-center">
-						<span class="truncate text-2xl font-medium">{searchText}</span>
-						<span class="bg-input text-muted-foreground truncate rounded px-1.5 py-0.5 text-xs"
-							>{inputWords}</span
-						>
+			<div class="p-4 pt-2">
+				<div class="text-muted-foreground pb-1 text-xs">Calculator</div>
+				{#snippet expression({ value, words }: { value: string | null; words: string | null })}
+					<div class="flex grow flex-col items-center gap-2">
+						<div class="flex grow items-center truncate text-4xl font-medium">{value}</div>
+						<div class="bg-input text-muted-foreground truncate rounded px-2 py-0.5 text-xs">
+							{words}
+						</div>
 					</div>
-					<div class="grow-0">
-						<ArrowRight class="mx-4 size-5 shrink-0 text-gray-400" />
-					</div>
-					<div class="flex grow flex-col items-center">
-						<span class="truncate text-2xl font-semibold">{mathResult}</span>
-						<span class="bg-input text-muted-foreground truncate rounded px-1.5 py-0.5 text-xs"
-							>{resultWords}</span
-						>
-					</div>
+				{/snippet}
+				<div class="bg-muted grid h-40 grid-cols-[1fr_auto_1fr] items-stretch rounded p-4">
+					{@render expression({ value: searchText, words: inputWords })}
+					<ArrowRight class="text-muted-foreground mx-4 my-auto size-8" />
+					{@render expression({ value: mathResult, words: resultWords })}
 				</div>
 			</div>
 		{/if}
