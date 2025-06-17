@@ -10,3 +10,10 @@ export const Toast = {
 		Animated: 'ANIMATED'
 	}
 };
+
+export type Application = {
+	name: string;
+	path: string;
+	bundleId?: string;
+	localizedName?: string;
+};

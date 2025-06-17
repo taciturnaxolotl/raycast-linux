@@ -123,12 +123,22 @@ export const GoBackToPluginListSchema = z.object({
 });
 export type GoBackToPluginList = z.infer<typeof GoBackToPluginListSchema>;
 
+const OpenPayloadSchema = z.object({
+	target: z.string(),
+	application: z.string().optional()
+});
+const OpenMessageSchema = z.object({
+	type: z.literal('open'),
+	payload: OpenPayloadSchema
+});
+
 export const SidecarMessageWithPluginsSchema = z.union([
 	BatchUpdateSchema,
 	CommandSchema,
 	LogMessageSchema,
 	PluginListSchema,
 	PreferenceValuesSchema,
-	GoBackToPluginListSchema
+	GoBackToPluginListSchema,
+	OpenMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

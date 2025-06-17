@@ -1,4 +1,4 @@
-import { Command, type Child } from '@tauri-apps/plugin-shell';
+import { Command, type Child, open as shellOpen } from '@tauri-apps/plugin-shell';
 import { Unpackr } from 'msgpackr';
 import { uiStore } from '$lib/ui.svelte';
 import { SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
@@ -120,6 +120,15 @@ class SidecarService {
 
 		if (typedMessage.type === 'log') {
 			this.#log(`SIDECAR: ${typedMessage.payload}`);
+			return;
+		}
+
+		if (typedMessage.type === 'open') {
+			const { target, application } = typedMessage.payload;
+			shellOpen(target, application).catch((err) => {
+				this.#log(`ERROR: Failed to open '${target}': ${err}`);
+				console.error(`Failed to open '${target}':`, err);
+			});
 			return;
 		}
 

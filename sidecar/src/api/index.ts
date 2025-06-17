@@ -10,7 +10,7 @@ import { Grid } from './components/grid';
 import { Form } from './components/form';
 import { Action, ActionPanel } from './components/actions';
 import { Detail } from './components/detail';
-import { environment, getSelectedFinderItems, getSelectedText } from './environment';
+import { environment, getSelectedFinderItems, getSelectedText, open } from './environment';
 import { preferencesStore } from '../preferences';
 
 let currentPluginName: string | null = null;
@@ -70,6 +70,7 @@ export const getRaycastApi = () => {
 		ActionPanel,
 		Detail,
 		Form,
-		Icon
+		Icon,
+		open
 	};
 };

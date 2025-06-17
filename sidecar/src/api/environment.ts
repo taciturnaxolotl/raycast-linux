@@ -1,5 +1,7 @@
 import { LaunchType } from './types';
 import * as fs from 'fs';
+import { writeOutput } from '../io';
+import type { Application } from './types';
 
 const supportPath = '/home/byte/code/raycast-linux/sidecar/dist/plugin/support/';
 try {
@@ -37,4 +39,22 @@ export async function getSelectedFinderItems(): Promise<FileSystemItem[]> {
 
 export async function getSelectedText(): Promise<string> {
 	return Promise.reject(new Error('No text selected in the frontmost application.'));
+}
+
+export async function open(target: string, application?: Application | string): Promise<void> {
+	let openWith: string | undefined;
+
+	if (typeof application === 'string') {
+		openWith = application;
+	} else if (application) {
+		openWith = application.path;
+	}
+
+	writeOutput({
+		type: 'open',
+		payload: {
+			target,
+			application: openWith
+		}
+	});
 }
