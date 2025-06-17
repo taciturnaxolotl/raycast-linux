@@ -6,6 +6,7 @@ import { inspect } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PluginInfo } from '@raycast-linux/protocol';
+import { environment } from './api/environment';
 
 const createPluginRequire =
 	() =>
@@ -62,6 +63,7 @@ export const discoverPlugins = (): PluginInfo[] => {
 						description?: string;
 						icon?: string;
 						subtitle?: string;
+						mode?: 'view' | 'no-view';
 					}>;
 					preferences?: Array<{
 						name: string;
@@ -88,7 +90,8 @@ export const discoverPlugins = (): PluginInfo[] => {
 							commandName: command.name,
 							pluginPath: commandFilePath,
 							icon: command.icon || packageJson.icon,
-							preferences: packageJson.preferences
+							preferences: packageJson.preferences,
+							mode: command.mode
 						});
 					} else {
 						writeLog(`Command file ${commandFilePath} not found for command ${command.name}`);
@@ -119,7 +122,7 @@ export const loadPlugin = (pluginPath: string): string => {
 	}
 };
 
-export const runPlugin = (pluginPath?: string): void => {
+export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'): void => {
 	let scriptText: string;
 	let pluginName = 'unknown';
 	let preferences: Array<{
@@ -173,7 +176,7 @@ export const runPlugin = (pluginPath?: string): void => {
 	setCurrentPlugin(pluginName, preferences);
 
 	const pluginModule = {
-		exports: {} as { default: React.ComponentType | null }
+		exports: {} as { default: React.ComponentType | ((props: any) => Promise<void>) | null }
 	};
 
 	const scriptFunction = new Function(
@@ -199,17 +202,39 @@ export const runPlugin = (pluginPath?: string): void => {
 
 	scriptFunction(createPluginRequire(), pluginModule, pluginModule.exports, React, mockConsole);
 
-	const PluginRootComponent = pluginModule.exports.default;
+	const PluginRoot = pluginModule.exports.default;
 
-	if (!PluginRootComponent) {
+	if (!PluginRoot) {
 		throw new Error('Plugin did not export a default component.');
 	}
 
-	writeLog('Plugin loaded. Initializing React render...');
-	const AppElement = React.createElement(PluginRootComponent);
-	updateContainer(AppElement, () => {
-		writeLog('Initial render complete');
-	});
+	const launchProps = {
+		arguments: {},
+		launchType: environment.launchType
+	};
+
+	if (mode === 'no-view') {
+		if (typeof PluginRoot === 'function') {
+			(PluginRoot as (props: any) => Promise<void>)(launchProps)
+				.then(() => {
+					writeLog('No-view command finished.');
+					writeOutput({ type: 'go-back-to-plugin-list', payload: {} });
+				})
+				.catch((e) => {
+					writeLog(`No-view command failed: ${e}`);
+					// TODO: show error to user
+					writeOutput({ type: 'go-back-to-plugin-list', payload: {} });
+				});
+		} else {
+			throw new Error('No-view command did not export a default function.');
+		}
+	} else {
+		writeLog('Plugin loaded. Initializing React render...');
+		const AppElement = React.createElement(PluginRoot as React.ComponentType, launchProps);
+		updateContainer(AppElement, () => {
+			writeLog('Initial render complete');
+		});
+	}
 };
 
 export const sendPluginList = (): void => {

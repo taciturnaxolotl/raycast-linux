@@ -24,11 +24,12 @@ rl.on('line', (line) => {
 					sendPluginList();
 					break;
 				case 'run-plugin': {
-					const { pluginPath } = command.payload as {
+					const { pluginPath, mode } = command.payload as {
 						pluginPath?: string;
 						commandName?: string;
+						mode?: 'view' | 'no-view';
 					};
-					runPlugin(pluginPath);
+					runPlugin(pluginPath, mode);
 					break;
 				}
 				case 'get-preferences': {

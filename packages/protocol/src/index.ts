@@ -97,7 +97,8 @@ export const PluginInfoSchema = z.object({
 	commandName: z.string(),
 	pluginPath: z.string(),
 	icon: z.string().optional(),
-	preferences: z.array(PreferenceSchema).optional()
+	preferences: z.array(PreferenceSchema).optional(),
+	mode: z.enum(['view', 'no-view']).optional()
 });
 export type PluginInfo = z.infer<typeof PluginInfoSchema>;
 

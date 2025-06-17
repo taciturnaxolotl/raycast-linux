@@ -131,14 +131,20 @@
 	});
 
 	function handleRunPlugin(plugin: PluginInfo) {
-		uiStore.resetForNewPlugin();
 		sidecarService.dispatchEvent('run-plugin', {
 			pluginPath: plugin.pluginPath,
-			commandName: plugin.commandName
+			commandName: plugin.commandName,
+			mode: plugin.mode
 		});
-		viewState = 'plugin-running';
-		searchText = '';
+
+		if (plugin.mode !== 'no-view') {
+			uiStore.resetForNewPlugin();
+			viewState = 'plugin-running';
+			searchText = '';
+		}
 	}
+
+	$inspect(pluginList);
 
 	function handleBackToPluginList() {
 		viewState = 'plugin-list';
