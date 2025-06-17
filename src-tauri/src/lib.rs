@@ -1,5 +1,6 @@
 use freedesktop_file_parser::{parse, EntryType};
 use rayon::prelude::*;
+use selection::get_text;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -236,13 +237,22 @@ fn launch_app(exec: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_selected_text() -> String {
+    get_text()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_installed_apps, launch_app])
+        .invoke_handler(tauri::generate_handler![
+            get_installed_apps,
+            launch_app,
+            get_selected_text
+        ])
         .setup(|_app| {
             thread::spawn(|| {
                 thread::sleep(Duration::from_secs(60));

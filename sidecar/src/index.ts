@@ -5,6 +5,7 @@ import { instances, navigationStack } from './state';
 import { batchedUpdates, updateContainer } from './reconciler';
 import { preferencesStore } from './preferences';
 import type { RaycastInstance } from './types';
+import { handleSelectedTextResponse } from './api/environment';
 
 process.on('unhandledRejection', (reason: unknown) => {
 	writeLog(`--- UNHANDLED PROMISE REJECTION ---`);
@@ -90,6 +91,15 @@ rl.on('line', (line) => {
 							`Handler ${handlerName} not found or not a function on instance ${instanceId}`
 						);
 					}
+					break;
+				}
+				case 'selected-text-response': {
+					const { requestId, text, error } = command.payload as {
+						requestId: string;
+						text?: string | null;
+						error?: string;
+					};
+					handleSelectedTextResponse(requestId, text ?? null, error);
 					break;
 				}
 				default:

@@ -132,6 +132,14 @@ const OpenMessageSchema = z.object({
 	payload: OpenPayloadSchema
 });
 
+const GetSelectedTextPayloadSchema = z.object({
+	requestId: z.string()
+});
+const GetSelectedTextMessageSchema = z.object({
+	type: z.literal('get-selected-text'),
+	payload: GetSelectedTextPayloadSchema
+});
+
 export const SidecarMessageWithPluginsSchema = z.union([
 	BatchUpdateSchema,
 	CommandSchema,
@@ -139,6 +147,7 @@ export const SidecarMessageWithPluginsSchema = z.union([
 	PluginListSchema,
 	PreferenceValuesSchema,
 	GoBackToPluginListSchema,
-	OpenMessageSchema
+	OpenMessageSchema,
+	GetSelectedTextMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

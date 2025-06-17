@@ -2,6 +2,7 @@ import { Command, type Child, open as shellOpen } from '@tauri-apps/plugin-shell
 import { Unpackr } from 'msgpackr';
 import { uiStore } from '$lib/ui.svelte';
 import { SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
+import { invoke } from '@tauri-apps/api/core';
 
 class SidecarService {
 	#sidecarChild: Child | null = $state(null);
@@ -146,6 +147,25 @@ class SidecarService {
 			if (this.#onGoBackToPluginList) {
 				this.#onGoBackToPluginList();
 			}
+			return;
+		}
+
+		if (typedMessage.type === 'get-selected-text') {
+			const { requestId } = typedMessage.payload;
+			invoke('get_selected_text')
+				.then((text) => {
+					this.dispatchEvent('selected-text-response', {
+						requestId,
+						text
+					});
+				})
+				.catch((error) => {
+					this.#log(`ERROR getting selected text: ${error}`);
+					this.dispatchEvent('selected-text-response', {
+						requestId,
+						error: String(error)
+					});
+				});
 			return;
 		}
 
