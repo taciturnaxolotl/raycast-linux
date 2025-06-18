@@ -1,27 +1,14 @@
 <script lang="ts">
-	import { DatumSchema, StoreListingsReturnTypeSchema, type Datum } from '$lib/store';
+	import { StoreListingsReturnTypeSchema, type Datum } from '$lib/store';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
-	import {
-		ArrowLeft,
-		Download,
-		User,
-		Book,
-		Boxes,
-		ChevronsUpDown,
-		ArrowRight,
-		Command as CommandIcon,
-		Check,
-		ArrowUpRight,
-		X
-	} from '@lucide/svelte';
+	import { ArrowLeft, Download, ChevronsUpDown, Check, ArrowUpRight, X } from '@lucide/svelte';
 	import Icon from './Icon.svelte';
 	import { openUrl } from '@tauri-apps/plugin-opener';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Kbd } from './ui/kbd';
-	import z from 'zod';
 	import { Separator } from './ui/separator';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import { invoke } from '@tauri-apps/api/core';
@@ -34,6 +21,7 @@
 	let { onBack, onInstall }: Props = $props();
 
 	let extensions = $state<Datum[]>([]);
+	let searchResults = $state<Datum[]>([]);
 	let featuredExtensions = $state<Datum[]>([]);
 	let trendingExtensions = $state<Datum[]>([]);
 	let isLoading = $state(true);
@@ -43,10 +31,16 @@
 	let selectedIndex = $state(0);
 	let expandedImageUrl = $state<string | null>(null);
 	let isInstalling = $state(false);
+	let scrollContainer = $state<HTMLElement | null>(null);
 
 	let allCategories = $state<string[]>(['All Categories']);
 	let selectedCategory = $state('All Categories');
 	let categoryPopoverOpen = $state(false);
+
+	let currentPage = $state(1);
+	let perPage = 50;
+	let isFetchingMore = $state(false);
+	let hasMore = $state(true);
 
 	function formatTimeAgo(timestamp: number) {
 		const date = new Date(timestamp * 1000);
@@ -86,11 +80,12 @@
 	}
 
 	$effect(() => {
-		async function fetchAllData() {
+		async function fetchInitialData() {
 			try {
 				isLoading = true;
+				error = null;
 				const [storeRes, featuredRes, trendingRes] = await Promise.all([
-					fetch('https://backend.raycast.com/api/v1/store_listings'),
+					fetch(`https://backend.raycast.com/api/v1/store_listings?page=1&per_page=${perPage}`),
 					fetch('https://backend.raycast.com/api/v1/extensions/featured'),
 					fetch('https://backend.raycast.com/api/v1/extensions/trending')
 				]);
@@ -98,24 +93,22 @@
 				if (!storeRes.ok) throw new Error(`Store fetch failed: ${storeRes.status}`);
 				const storeParsed = StoreListingsReturnTypeSchema.parse(await storeRes.json());
 				extensions = storeParsed.data;
+				currentPage = 1;
+				hasMore = storeParsed.data.length === perPage;
 
 				if (featuredRes.ok) {
 					const featuredParsed = StoreListingsReturnTypeSchema.parse(await featuredRes.json());
 					featuredExtensions = featuredParsed.data;
+				} else {
+					console.warn(`Featured extensions fetch failed: ${featuredRes.status}`);
 				}
 
 				if (trendingRes.ok) {
 					const trendingParsed = StoreListingsReturnTypeSchema.parse(await trendingRes.json());
 					trendingExtensions = trendingParsed.data;
+				} else {
+					console.warn(`Trending extensions fetch failed: ${trendingRes.status}`);
 				}
-
-				const categories = new Set<string>();
-				for (const ext of extensions) {
-					for (const cat of ext.categories) {
-						categories.add(cat);
-					}
-				}
-				allCategories = ['All Categories', ...Array.from(categories).sort()];
 			} catch (e: any) {
 				error = e.message;
 				console.error(e);
@@ -123,26 +116,89 @@
 				isLoading = false;
 			}
 		}
-		fetchAllData();
-	});
-
-	const listToDisplay = $derived.by(() => {
-		if (searchText) {
-			return extensions.filter(
-				(ext) =>
-					ext.title.toLowerCase().includes(searchText.toLowerCase()) ||
-					ext.description.toLowerCase().includes(searchText.toLowerCase()) ||
-					ext.author.name.toLowerCase().includes(searchText.toLowerCase())
-			);
-		}
-		if (selectedCategory !== 'All Categories') {
-			return extensions.filter((ext) => ext.categories.includes(selectedCategory));
-		}
-		return [];
+		fetchInitialData();
 	});
 
 	$effect(() => {
-		if (searchText || selectedCategory !== 'All Categories') selectedIndex = 0;
+		const categories = new Set<string>();
+		const allFetched = [...featuredExtensions, ...trendingExtensions, ...extensions];
+		for (const ext of allFetched) {
+			if (ext.categories) {
+				for (const cat of ext.categories) {
+					categories.add(cat);
+				}
+			}
+		}
+		allCategories = ['All Categories', ...Array.from(categories).sort()];
+	});
+
+	let searchDebounceTimer: NodeJS.Timeout;
+	$effect(() => {
+		clearTimeout(searchDebounceTimer);
+		if (!searchText) {
+			searchResults = [];
+			if (error) error = null;
+			return;
+		}
+
+		searchDebounceTimer = setTimeout(async () => {
+			isLoading = true;
+			error = null;
+			try {
+				const res = await fetch(
+					`https://backend.raycast.com/api/v1/store_listings/search?q=${encodeURIComponent(searchText)}&per_page=${perPage}`
+				);
+				if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+				const parsed = StoreListingsReturnTypeSchema.parse(await res.json());
+				searchResults = parsed.data;
+				selectedIndex = 0;
+			} catch (e: any) {
+				error = e.message;
+				console.error(e);
+				searchResults = [];
+			} finally {
+				isLoading = false;
+			}
+		}, 300);
+
+		return () => clearTimeout(searchDebounceTimer);
+	});
+
+	async function loadMore() {
+		if (isFetchingMore || !hasMore || searchText || selectedCategory !== 'All Categories') return;
+		isFetchingMore = true;
+		const nextPage = currentPage + 1;
+		try {
+			const res = await fetch(
+				`https://backend.raycast.com/api/v1/store_listings?page=${nextPage}&per_page=${perPage}`
+			);
+			if (!res.ok) throw new Error('Failed to fetch more extensions');
+			const parsed = StoreListingsReturnTypeSchema.parse(await res.json());
+
+			if (parsed.data.length < perPage) {
+				hasMore = false;
+			}
+			const allExtensions = [...extensions, ...parsed.data];
+			extensions = [...new Map(allExtensions.map((item) => [item.id, item])).values()];
+			currentPage = nextPage;
+		} catch (e) {
+			console.error('Error loading more extensions:', e);
+			hasMore = false;
+		} finally {
+			isFetchingMore = false;
+		}
+	}
+
+	$effect(() => {
+		const container = scrollContainer;
+		if (!container) return;
+		const handleScroll = () => {
+			if (container.scrollHeight - container.scrollTop - container.clientHeight < 500) {
+				loadMore();
+			}
+		};
+		container.addEventListener('scroll', handleScroll);
+		return () => container.removeEventListener('scroll', handleScroll);
 	});
 
 	function handleGlobalKeyDown(e: KeyboardEvent) {
@@ -157,24 +213,29 @@
 			}
 		}
 
-		if (expandedImageUrl) return;
+		if (expandedImageUrl || selectedExtension) return;
 
-		if (!selectedExtension) {
-			const currentList =
-				listToDisplay.length > 0
-					? listToDisplay
-					: featuredExtensions.concat(trendingExtensions).concat(extensions);
-			if (e.key === 'ArrowDown') {
-				e.preventDefault();
-				selectedIndex = Math.min(currentList.length - 1, selectedIndex + 1);
-			} else if (e.key === 'ArrowUp') {
-				e.preventDefault();
-				selectedIndex = Math.max(0, selectedIndex - 1);
-			} else if (e.key === 'Enter') {
-				e.preventDefault();
-				if (currentList[selectedIndex]) {
-					selectedExtension = currentList[selectedIndex];
-				}
+		let currentList: Datum[] = [];
+		if (searchText) {
+			currentList = searchResults;
+		} else if (selectedCategory !== 'All Categories') {
+			currentList = extensions.filter((ext) => ext.categories.includes(selectedCategory));
+		} else {
+			currentList = [...featuredExtensions, ...trendingExtensions, ...extensions];
+		}
+
+		if (currentList.length === 0) return;
+
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			selectedIndex = (selectedIndex + 1) % currentList.length;
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			selectedIndex = (selectedIndex - 1 + currentList.length) % currentList.length;
+		} else if (e.key === 'Enter') {
+			e.preventDefault();
+			if (currentList[selectedIndex]) {
+				selectedExtension = currentList[selectedIndex];
 			}
 		}
 	}
@@ -250,6 +311,7 @@
 									onSelect={() => {
 										selectedCategory = category;
 										categoryPopoverOpen = false;
+										selectedIndex = 0;
 									}}
 								>
 									<Check class={selectedCategory !== category ? 'text-transparent' : ''} />
@@ -289,7 +351,7 @@
 								<Download class="size-4" />
 								<span>{selectedExtension.download_count.toLocaleString()} Installs</span>
 							</div>
-							{#if selectedExtension.categories.includes('AI Extensions')}
+							{#if selectedExtension.categories?.includes('AI Extensions')}
 								<div
 									class="flex items-center gap-1.5 rounded bg-purple-500/20 px-1.5 py-0.5 text-xs text-purple-300"
 								>
@@ -392,18 +454,20 @@
 								{/each}
 							</div>
 						</div>
-						<div>
-							<h3 class="text-muted-foreground mb-1 text-xs font-medium uppercase">Categories</h3>
-							<div class="flex flex-wrap gap-1.5">
-								{#each selectedExtension.categories as category}
-									<span
-										class="rounded-full bg-blue-900/50 px-2 py-0.5 text-xs font-semibold text-blue-300"
-									>
-										{category}
-									</span>
-								{/each}
+						{#if selectedExtension.categories?.length > 0}
+							<div>
+								<h3 class="text-muted-foreground mb-1 text-xs font-medium uppercase">Categories</h3>
+								<div class="flex flex-wrap gap-1.5">
+									{#each selectedExtension.categories as category}
+										<span
+											class="rounded-full bg-blue-900/50 px-2 py-0.5 text-xs font-semibold text-blue-300"
+										>
+											{category}
+										</span>
+									{/each}
+								</div>
 							</div>
-						</div>
+						{/if}
 						<div>
 							<h3 class="text-muted-foreground mb-1 text-xs font-medium uppercase">Source Code</h3>
 							<Button
@@ -437,8 +501,9 @@
 			</div>
 		</footer>
 	{:else}
-		<div class="grow overflow-y-auto" role="listbox" tabindex={0}>
-			{#snippet renderListItem(ext: Datum, i: number, isSelected: boolean)}
+		<div class="grow overflow-y-auto" role="listbox" tabindex={0} bind:this={scrollContainer}>
+			{#snippet renderListItem(ext: Datum, i: number, listName: string)}
+				{@const isSelected = selectedIndex === i}
 				<button
 					type="button"
 					class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-2 text-left"
@@ -470,23 +535,45 @@
 				</button>
 			{/snippet}
 
-			{#if isLoading}
+			{#if isLoading && (extensions.length === 0 || searchText)}
 				<div class="text-muted-foreground flex h-full items-center justify-center">
 					Loading extensions...
 				</div>
 			{:else if error}
 				<div class="flex h-full items-center justify-center text-red-500">Error: {error}</div>
-			{:else if listToDisplay.length > 0}
-				{#each listToDisplay as ext, i (ext.id)}
-					{@render renderListItem(ext, i, selectedIndex === i)}
+			{:else if searchText}
+				{#if searchResults.length > 0}
+					<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
+						Search Results
+					</h3>
+					{#each searchResults as ext, i (ext.id)}
+						{@render renderListItem(ext, i, 'search')}
+					{/each}
+				{:else}
+					<div class="text-muted-foreground flex h-full items-center justify-center">
+						No results for "{searchText}"
+					</div>
+				{/if}
+			{:else if selectedCategory !== 'All Categories'}
+				{@const filtered = extensions.filter((ext) => ext.categories?.includes(selectedCategory))}
+				<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
+					{selectedCategory}
+				</h3>
+				{#each filtered as ext, i (ext.id)}
+					{@render renderListItem(ext, i, 'category')}
 				{/each}
+				{#if filtered.length === 0}
+					<div class="text-muted-foreground flex items-center justify-center p-4">
+						No extensions found in this category.
+					</div>
+				{/if}
 			{:else}
 				{#if featuredExtensions.length > 0}
 					<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
 						Featured
 					</h3>
 					{#each featuredExtensions as ext, i (ext.id)}
-						{@render renderListItem(ext, i, selectedIndex === i)}
+						{@render renderListItem(ext, i, 'featured')}
 					{/each}
 				{/if}
 				{#if trendingExtensions.length > 0}
@@ -495,7 +582,7 @@
 					</h3>
 					{#each trendingExtensions as ext, i (ext.id)}
 						{@const listIndex = i + featuredExtensions.length}
-						{@render renderListItem(ext, listIndex, selectedIndex === listIndex)}
+						{@render renderListItem(ext, listIndex, 'trending')}
 					{/each}
 				{/if}
 				<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
@@ -503,8 +590,13 @@
 				</h3>
 				{#each extensions as ext, i (ext.id)}
 					{@const listIndex = i + featuredExtensions.length + trendingExtensions.length}
-					{@render renderListItem(ext, listIndex, selectedIndex === listIndex)}
+					{@render renderListItem(ext, listIndex, 'all')}
 				{/each}
+				{#if isFetchingMore}
+					<div class="text-muted-foreground flex h-10 items-center justify-center">
+						Loading more...
+					</div>
+				{/if}
 			{/if}
 		</div>
 	{/if}
