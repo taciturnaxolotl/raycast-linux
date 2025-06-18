@@ -14,9 +14,6 @@ export type Toast = {
 };
 
 function createUiStore() {
-	// we're not using SvelteMap here because we're making a lot of mutations to the tree
-	// svelte tries to be helpful and rerenders every time we mutate the tree
-	// instead, we make a temporary copy of the tree and apply the changes to that
 	let uiTree = $state(new Map<number, UINode>());
 	let rootNodeId = $state<number | null>(null);
 	let selectedNodeId = $state<number | undefined>(undefined);
@@ -24,6 +21,42 @@ function createUiStore() {
 	let currentPreferences = $state<Record<string, unknown>>({});
 	let currentRunningPlugin = $state<PluginInfo | null>(null);
 	const toasts = new SvelteMap<number, Toast>();
+
+	const rootNode = $derived(uiTree.get(rootNodeId!));
+	const selectedItemNode = $derived(uiTree.get(selectedNodeId!));
+
+	const actionInfo = $derived.by(() => {
+		const actionsNodeId =
+			rootNode?.type === 'Detail'
+				? rootNode.namedChildren?.['actions']
+				: selectedItemNode?.namedChildren?.['actions'];
+		if (!actionsNodeId)
+			return { primary: undefined, secondary: undefined, panel: undefined, allActions: [] };
+		const panelNode = uiTree.get(actionsNodeId);
+		if (!panelNode || panelNode.type !== 'ActionPanel')
+			return { primary: undefined, secondary: undefined, panel: undefined, allActions: [] };
+
+		const foundActions: UINode[] = [];
+		function findActions(nodeId: number) {
+			const node = uiTree.get(nodeId);
+			if (!node) return;
+			if (
+				(node.type.startsWith('Action.') || node.type === 'Action') &&
+				!node.type.includes('Panel')
+			) {
+				foundActions.push(node);
+			} else if (node.type.includes('Panel')) {
+				for (const childId of node.children) findActions(childId);
+			}
+		}
+		findActions(actionsNodeId);
+		return {
+			primary: foundActions[0],
+			secondary: foundActions[1],
+			panel: panelNode,
+			allActions: foundActions
+		};
+	});
 
 	const applyCommands = (commands: Command[]) => {
 		const tempTree = new Map(uiTree);
@@ -199,6 +232,18 @@ function createUiStore() {
 		},
 		get toasts() {
 			return toasts;
+		},
+		get primaryAction() {
+			return actionInfo.primary;
+		},
+		get secondaryAction() {
+			return actionInfo.secondary;
+		},
+		get actionPanel() {
+			return actionInfo.panel;
+		},
+		get allActions() {
+			return actionInfo.allActions;
 		},
 		applyCommands,
 		setPluginList,

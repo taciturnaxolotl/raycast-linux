@@ -27,7 +27,11 @@
 		pluginList,
 		currentPreferences,
 		toasts,
-		currentRunningPlugin
+		currentRunningPlugin,
+		primaryAction,
+		secondaryAction,
+		actionPanel,
+		allActions
 	} = $derived(uiStore);
 
 	$effect(() => {
@@ -51,39 +55,6 @@
 	);
 	setContext('assetsPath', assetsPath);
 
-	const actionInfo = $derived.by(() => {
-		const actionsNodeId =
-			rootNode?.type === 'Detail'
-				? rootNode.namedChildren?.['actions']
-				: selectedItemNode?.namedChildren?.['actions'];
-		if (!actionsNodeId)
-			return { primary: undefined, secondary: undefined, panel: undefined, allActions: [] };
-		const panelNode = uiTree.get(actionsNodeId);
-		if (!panelNode || panelNode.type !== 'ActionPanel')
-			return { primary: undefined, secondary: undefined, panel: undefined, allActions: [] };
-
-		const foundActions: UINode[] = [];
-		function findActions(nodeId: number) {
-			const node = uiTree.get(nodeId);
-			if (!node) return;
-			if (
-				(node.type.startsWith('Action.') || node.type === 'Action') &&
-				!node.type.includes('Panel')
-			) {
-				foundActions.push(node);
-			} else if (node.type.includes('Panel')) {
-				for (const childId of node.children) findActions(childId);
-			}
-		}
-		findActions(actionsNodeId);
-		return {
-			primary: foundActions[0],
-			secondary: foundActions[1],
-			panel: panelNode,
-			allActions: foundActions
-		};
-	});
-
 	function handleDispatch(instanceId: number, handlerName: string, args: any[]) {
 		sidecarService.dispatchEvent('dispatch-event', { instanceId, handlerName, args });
 	}
@@ -96,17 +67,6 @@
 		sidecarService.dispatchEvent('pop-view');
 	}
 
-	function getActionHandlerName(type: string): string {
-		switch (type) {
-			case 'Action.CopyToClipboard':
-				return 'onCopy';
-			case 'Action.OpenInBrowser':
-				return 'onOpenInBrowser';
-			default:
-				return 'onAction';
-		}
-	}
-
 	function handleKeydown(event: KeyboardEvent) {
 		if (viewState === 'plugin-list' && event.key === ',' && (event.metaKey || event.ctrlKey)) {
 			event.preventDefault();
@@ -114,33 +74,9 @@
 			return;
 		}
 
-		if (viewState !== 'plugin-running') return;
-
-		if (event.key === 'Escape') {
+		if (viewState === 'plugin-running' && event.key === 'Escape') {
 			handlePopView();
 			return;
-		}
-		if (event.key === 'Enter') {
-			if (
-				event.target instanceof HTMLElement &&
-				event.target.closest('[data-slot="dropdown-menu-content"]')
-			) {
-				return;
-			}
-
-			if (event.ctrlKey && !event.metaKey && !event.shiftKey) {
-				if (actionInfo.secondary) {
-					event.preventDefault();
-					const handlerName = getActionHandlerName(actionInfo.secondary.type);
-					handleDispatch(actionInfo.secondary.id, handlerName, []);
-				}
-			} else if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-				if (actionInfo.primary) {
-					event.preventDefault();
-					const handlerName = getActionHandlerName(actionInfo.primary.type);
-					handleDispatch(actionInfo.primary.id, handlerName, []);
-				}
-			}
 		}
 	}
 
@@ -208,7 +144,7 @@
 		{currentPreferences}
 	/>
 {:else if viewState === 'plugin-running' && rootNode}
-	<MainLayout>
+	<MainLayout {primaryAction} {secondaryAction} onDispatch={handleDispatch}>
 		{#snippet header()}
 			<Header
 				{rootNode}
@@ -235,10 +171,10 @@
 			<Footer
 				{uiTree}
 				onDispatch={handleDispatch}
-				primaryAction={actionInfo.primary}
-				secondaryAction={actionInfo.secondary}
-				actionPanel={actionInfo.panel}
-				actions={actionInfo.allActions}
+				{primaryAction}
+				{secondaryAction}
+				{actionPanel}
+				actions={allActions}
 				{navigationTitle}
 				{toasts}
 				onToastAction={handleToastAction}
