@@ -2,14 +2,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { writeLog } from './io';
 import type { Preference } from '@raycast-linux/protocol';
+import { config } from './config';
 
 export class PreferencesStore {
 	private preferencesPath: string;
 	private preferences: Record<string, Record<string, unknown>> = {};
 
 	constructor() {
-		const preferencesDir = path.join(process.env.HOME || '/tmp', '.local/share/raycast-linux');
-		this.preferencesPath = path.join(preferencesDir, 'preferences.json');
+		this.preferencesPath = config.preferencesFile;
 		this.loadPreferences();
 	}
 

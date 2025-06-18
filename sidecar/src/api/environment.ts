@@ -2,8 +2,9 @@ import { LaunchType } from './types';
 import * as fs from 'fs';
 import { writeOutput } from '../io';
 import type { Application } from './types';
+import { config } from '../config';
 
-const supportPath = '/home/byte/code/raycast-linux/sidecar/dist/plugin/support/';
+const supportPath = config.supportDir;
 try {
 	if (!fs.existsSync(supportPath)) {
 		fs.mkdirSync(supportPath, { recursive: true });
@@ -18,7 +19,7 @@ export interface FileSystemItem {
 
 export const environment = {
 	appearance: 'dark' as const,
-	assetsPath: '/home/byte/.local/share/raycast-linux/plugins/emoji/assets',
+	assetsPath: config.assetsDir,
 	commandMode: 'view' as const,
 	commandName: 'index',
 	extensionName: 'my-extension',
@@ -28,7 +29,7 @@ export const environment = {
 	raycastVersion: '1.0.0',
 	supportPath: supportPath,
 	textSize: 'medium' as const,
-	canAccess: (api: unknown): boolean => {
+	canAccess: (): boolean => {
 		return true;
 	}
 };

@@ -2,6 +2,7 @@ import type * as api from '@raycast/api';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { config } from '../config';
 
 type IndexEntry = {
 	filePath: string;
@@ -21,7 +22,7 @@ export class Cache {
 	private totalSize: number = 0;
 
 	constructor(options: api.Cache.Options = {}) {
-		const cacheRoot = '/home/byte/code/raycast-linux/sidecar/dist/plugin/cache/'; // TODO: replace
+		const cacheRoot = config.cacheDir;
 		fs.mkdirSync(cacheRoot, { recursive: true });
 		this.options = {
 			capacity: options.capacity ?? 10 * 1024 * 1024,

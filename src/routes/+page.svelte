@@ -150,8 +150,6 @@
 		}
 	}
 
-	$inspect(pluginList);
-
 	function handleBackToPluginList() {
 		viewState = 'plugin-list';
 	}

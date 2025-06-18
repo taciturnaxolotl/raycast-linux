@@ -3,6 +3,7 @@ import { Unpackr } from 'msgpackr';
 import { uiStore } from '$lib/ui.svelte';
 import { SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
 import { invoke } from '@tauri-apps/api/core';
+import { appCacheDir, appLocalDataDir } from '@tauri-apps/api/path';
 
 class SidecarService {
 	#sidecarChild: Child | null = $state(null);
@@ -30,7 +31,11 @@ class SidecarService {
 
 		this.#log('Starting sidecar service...');
 		try {
-			const command = Command.sidecar('binaries/app', undefined, {
+			const args: string[] = [];
+			args.push(`--data-dir=${await appLocalDataDir()}`);
+			args.push(`--cache-dir=${await appCacheDir()}`);
+			console.log(args);
+			const command = Command.sidecar('binaries/app', args.length > 0 ? args : undefined, {
 				encoding: 'raw'
 			});
 

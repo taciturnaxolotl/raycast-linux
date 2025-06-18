@@ -17,7 +17,7 @@ export const ListSectionPropsSchema = z.object({
 export type ListSectionProps = z.infer<typeof ListSectionPropsSchema>;
 
 const ListItemAccessorySchema = z.object({
-	text: z.string()
+	text: z.string().optional()
 });
 
 export const ListItemPropsSchema = z.object({

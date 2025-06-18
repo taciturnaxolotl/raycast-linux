@@ -20,7 +20,15 @@
       "allow": [
         {
           "name": "binaries/app",
-          "sidecar": true
+          "sidecar": true,
+          "args": [
+            {
+              "validator": "--data-dir=\\S+"
+            },
+            {
+              "validator": "--cache-dir=\\S+"
+            }
+          ]
         }
       ]
     },

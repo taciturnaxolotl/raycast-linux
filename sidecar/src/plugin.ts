@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { PluginInfo } from '@raycast-linux/protocol';
 import { environment } from './api/environment';
+import { config } from './config';
 
 const createPluginRequire =
 	() =>
@@ -24,10 +25,7 @@ const createPluginRequire =
 	};
 
 export const discoverPlugins = (): PluginInfo[] => {
-	const pluginsBaseDir = path.join(
-		process.env.HOME || '/tmp',
-		'.local/share/raycast-linux/plugins'
-	);
+	const pluginsBaseDir = config.pluginsDir;
 	const plugins: PluginInfo[] = [];
 
 	try {
@@ -152,27 +150,20 @@ export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'
 			}
 		}
 	} else {
-		const fallbackPluginsDir = path.join(
-			process.env.HOME || '/tmp',
-			'.local/share/raycast-linux/plugins'
-		);
+		const fallbackPluginsDir = config.pluginsDir;
 		const fallbackPath = path.join(fallbackPluginsDir, 'google-translate', 'translate-form.js');
 
 		if (fs.existsSync(fallbackPath)) {
 			scriptText = loadPlugin(fallbackPath);
 			pluginName = 'google-translate';
 		} else {
-			const oldFallbackPath = path.join(__dirname, '../dist/plugin/translate-form.txt');
-			if (fs.existsSync(oldFallbackPath)) {
-				scriptText = loadPlugin(oldFallbackPath);
-				pluginName = 'translate-fallback';
-			} else {
-				throw new Error('No plugin specified and no fallback plugin found');
-			}
+			throw new Error('No plugin specified and no fallback plugin found');
 		}
 	}
 
-	// Set the current plugin context for preferences
+	environment.assetsPath = path.join(config.pluginsDir, pluginName, 'assets');
+	environment.extensionName = pluginName;
+
 	setCurrentPlugin(pluginName, preferences);
 
 	const pluginModule = {
