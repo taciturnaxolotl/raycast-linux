@@ -25,15 +25,10 @@
 		}))
 	);
 
-	const context = $state({
-		get primaryActionNodeId() {
-			return primaryActionNodeId;
-		},
-		get secondaryActionNodeId() {
-			return secondaryActionNodeId;
-		}
+	setContext('ActionPanelContext', {
+		primaryActionNodeId: () => primaryActionNodeId,
+		secondaryActionNodeId: () => secondaryActionNodeId
 	});
-	setContext('ActionPanelContext', context);
 
 	let open = $state(false);
 

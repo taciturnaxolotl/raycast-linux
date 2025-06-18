@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { UINode } from '$lib/types';
 	import { useTypedNode } from '$lib/node.svelte';
-	import { getContext } from 'svelte';
+	import { useActionRole } from '$lib/actions.svelte';
 	import BaseAction from './BaseAction.svelte';
 
 	type Props = {
@@ -15,11 +15,7 @@
 	const { props: componentProps } = $derived.by(
 		useTypedNode(() => ({ nodeId, uiTree, type: 'Action' }))
 	);
-
-	const context: { primaryActionNodeId?: number; secondaryActionNodeId?: number } | undefined =
-		getContext('ActionPanelContext');
-	const isPrimaryAction = $derived(context?.primaryActionNodeId === nodeId);
-	const isSecondaryAction = $derived(context?.secondaryActionNodeId === nodeId);
+	const { isPrimaryAction, isSecondaryAction } = $derived.by(useActionRole(nodeId));
 
 	function handleClick() {
 		onDispatch(nodeId, 'onAction', []);

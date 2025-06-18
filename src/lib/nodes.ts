@@ -17,7 +17,8 @@ import ListItemDetail from '$lib/components/nodes/list/ItemDetail.svelte';
 import Form from '$lib/components/nodes/form/Form.svelte';
 import FormTextArea from '$lib/components/nodes/form/TextArea.svelte';
 import FormDescription from '$lib/components/nodes/form/Description.svelte';
-import Dropdown from '$lib/components/nodes/shared/Dropdown.svelte';
+import FormDropdown from '$lib/components/nodes/form/Dropdown.svelte';
+import AccessoryDropdown from '$lib/components/nodes/shared/AccessoryDropdown.svelte';
 import DropdownItem from '$lib/components/nodes/shared/DropdownItem.svelte';
 import DropdownSection from '$lib/components/nodes/shared/DropdownSection.svelte';
 
@@ -42,10 +43,10 @@ export const componentMap = new Map<
 	['Detail.Metadata.TagList', MetadataTagList],
 	['Detail.Metadata.TagList.Item', MetadataTagListItem],
 	['Detail.Metadata.Separator', MetadataSeparator],
-	['Grid.Dropdown', Dropdown],
+	['Grid.Dropdown', AccessoryDropdown],
 	['Grid.Dropdown.Section', DropdownSection],
 	['Grid.Dropdown.Item', DropdownItem],
-	['List.Dropdown', Dropdown],
+	['List.Dropdown', AccessoryDropdown],
 	['List.Dropdown.Item', DropdownItem],
 	['List.Dropdown.Section', DropdownSection],
 	['List.Item.Detail', ListItemDetail],
@@ -58,6 +59,7 @@ export const componentMap = new Map<
 	['Form', Form],
 	['Form.TextArea', FormTextArea],
 	['Form.Description', FormDescription],
-	['Form.Dropdown', Dropdown],
-	['Form.Dropdown.Item', DropdownItem]
+	['Form.Dropdown', FormDropdown],
+	['Form.Dropdown.Item', DropdownItem],
+	['Form.Dropdown.Section', DropdownSection]
 ]);
