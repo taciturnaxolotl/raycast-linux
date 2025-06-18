@@ -13,18 +13,13 @@ import MetadataLink from '$lib/components/nodes/detail/MetadataLink.svelte';
 import MetadataTagList from '$lib/components/nodes/detail/MetadataTagList.svelte';
 import MetadataTagListItem from '$lib/components/nodes/detail/MetadataTagListItem.svelte';
 import MetadataSeparator from '$lib/components/nodes/detail/MetadataSeparator.svelte';
-import GridDropdown from '$lib/components/nodes/grid/Dropdown.svelte';
-import GridDropdownSection from '$lib/components/nodes/grid/DropdownSection.svelte';
-import GridDropdownItem from '$lib/components/nodes/grid/DropdownItem.svelte';
-import ListDropdown from '$lib/components/nodes/list/Dropdown.svelte';
-import ListDropdownItem from '$lib/components/nodes/list/DropdownItem.svelte';
-import ListDropdownSection from '$lib/components/nodes/list/DropdownSection.svelte';
 import ListItemDetail from '$lib/components/nodes/list/ItemDetail.svelte';
 import Form from '$lib/components/nodes/form/Form.svelte';
 import FormTextArea from '$lib/components/nodes/form/TextArea.svelte';
 import FormDescription from '$lib/components/nodes/form/Description.svelte';
-import FormDropdown from '$lib/components/nodes/form/Dropdown.svelte';
-import FormDropdownItem from '$lib/components/nodes/form/DropdownItem.svelte';
+import Dropdown from '$lib/components/nodes/shared/Dropdown.svelte';
+import DropdownItem from '$lib/components/nodes/shared/DropdownItem.svelte';
+import DropdownSection from '$lib/components/nodes/shared/DropdownSection.svelte';
 
 export const componentMap = new Map<
 	string,
@@ -47,12 +42,12 @@ export const componentMap = new Map<
 	['Detail.Metadata.TagList', MetadataTagList],
 	['Detail.Metadata.TagList.Item', MetadataTagListItem],
 	['Detail.Metadata.Separator', MetadataSeparator],
-	['Grid.Dropdown', GridDropdown],
-	['Grid.Dropdown.Section', GridDropdownSection],
-	['Grid.Dropdown.Item', GridDropdownItem],
-	['List.Dropdown', ListDropdown],
-	['List.Dropdown.Item', ListDropdownItem],
-	['List.Dropdown.Section', ListDropdownSection],
+	['Grid.Dropdown', Dropdown],
+	['Grid.Dropdown.Section', DropdownSection],
+	['Grid.Dropdown.Item', DropdownItem],
+	['List.Dropdown', Dropdown],
+	['List.Dropdown.Item', DropdownItem],
+	['List.Dropdown.Section', DropdownSection],
 	['List.Item.Detail', ListItemDetail],
 	['List.Item.Detail.Metadata', Metadata],
 	['List.Item.Detail.Metadata.Label', MetadataLabel],
@@ -63,6 +58,6 @@ export const componentMap = new Map<
 	['Form', Form],
 	['Form.TextArea', FormTextArea],
 	['Form.Description', FormDescription],
-	['Form.Dropdown', FormDropdown],
-	['Form.Dropdown.Item', FormDropdownItem]
+	['Form.Dropdown', Dropdown],
+	['Form.Dropdown.Item', DropdownItem]
 ]);

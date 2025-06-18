@@ -8,12 +8,17 @@
 		nodeId: number;
 		uiTree: Map<number, UINode>;
 		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		selectedValue?: string;
 	};
 
-	let { nodeId, uiTree, onDispatch }: Props = $props();
+	let { nodeId, uiTree, onDispatch, selectedValue }: Props = $props();
 
 	const { node, props: sectionProps } = $derived.by(
-		useTypedNode(() => ({ nodeId, uiTree, type: 'Grid.Dropdown.Section' }))
+		useTypedNode(() => ({
+			nodeId,
+			uiTree,
+			type: ['List.Dropdown.Section', 'Grid.Dropdown.Section']
+		}))
 	);
 </script>
 
@@ -21,7 +26,7 @@
 	<Command.Separator />
 	<Command.Group heading={sectionProps.title}>
 		{#each node.children as childId (childId)}
-			<NodeRenderer nodeId={childId} {uiTree} {onDispatch} />
+			<NodeRenderer nodeId={childId} {uiTree} {onDispatch} {selectedValue} />
 		{/each}
 	</Command.Group>
 {/if}
