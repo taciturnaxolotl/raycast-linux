@@ -40,6 +40,13 @@ export function resolveIcon(
 	}
 
 	if (typeof icon === 'object' && 'source' in icon) {
+		if (icon.source.startsWith('http')) {
+			return {
+				type: 'image',
+				src: icon.source,
+				mask: icon.mask
+			};
+		}
 		return {
 			type: 'image',
 			src: convertFileSrc(path.join(assetsBasePath, icon.source)),
