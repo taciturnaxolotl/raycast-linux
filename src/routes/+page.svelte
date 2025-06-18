@@ -99,6 +99,10 @@
 	function handleToastAction(toastId: number, actionType: 'primary' | 'secondary') {
 		sidecarService.dispatchEvent('dispatch-toast-action', { toastId, actionType });
 	}
+
+	function onExtensionInstalled() {
+		sidecarService.requestPluginList();
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -114,7 +118,7 @@
 		{currentPreferences}
 	/>
 {:else if viewState === 'extensions-store'}
-	<Extensions onBack={() => (viewState = 'plugin-list')} />
+	<Extensions onBack={() => (viewState = 'plugin-list')} onInstall={onExtensionInstalled} />
 {:else if viewState === 'plugin-running'}
 	<PluginRunner
 		onDispatch={handleDispatch}

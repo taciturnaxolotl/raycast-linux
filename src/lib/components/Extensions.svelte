@@ -24,12 +24,14 @@
 	import z from 'zod';
 	import { Separator } from './ui/separator';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import { invoke } from '@tauri-apps/api/core';
 
 	type Props = {
 		onBack: () => void;
+		onInstall: () => void;
 	};
 
-	let { onBack }: Props = $props();
+	let { onBack, onInstall }: Props = $props();
 
 	let extensions = $state<Datum[]>([]);
 	let featuredExtensions = $state<Datum[]>([]);
@@ -40,6 +42,7 @@
 	let searchText = $state('');
 	let selectedIndex = $state(0);
 	let expandedImageUrl = $state<string | null>(null);
+	let isInstalling = $state(false);
 
 	let allCategories = $state<string[]>(['All Categories']);
 	let selectedCategory = $state('All Categories');
@@ -158,7 +161,9 @@
 
 		if (!selectedExtension) {
 			const currentList =
-				listToDisplay.length > 0 ? listToDisplay : featuredExtensions.concat(trendingExtensions);
+				listToDisplay.length > 0
+					? listToDisplay
+					: featuredExtensions.concat(trendingExtensions).concat(extensions);
 			if (e.key === 'ArrowDown') {
 				e.preventDefault();
 				selectedIndex = Math.min(currentList.length - 1, selectedIndex + 1);
@@ -171,6 +176,22 @@
 					selectedExtension = currentList[selectedIndex];
 				}
 			}
+		}
+	}
+
+	async function handleInstall() {
+		if (!selectedExtension || isInstalling) return;
+		isInstalling = true;
+		try {
+			await invoke('install_extension', {
+				downloadUrl: selectedExtension.download_url,
+				slug: selectedExtension.name
+			});
+			onInstall();
+		} catch (e) {
+			console.error('Installation failed', e);
+		} finally {
+			isInstalling = false;
 		}
 	}
 </script>
@@ -409,7 +430,9 @@
 				<span class="text-sm">{selectedExtension.title}</span>
 			</div>
 			<div class="flex items-center gap-2">
-				<Button size="sm">Install Extension</Button>
+				<Button size="sm" onclick={handleInstall} disabled={isInstalling}>
+					{isInstalling ? 'Installing...' : 'Install Extension'}
+				</Button>
 				<Button variant="outline" size="sm">Actions <Kbd>⌘ K</Kbd></Button>
 			</div>
 		</footer>
