@@ -44,6 +44,9 @@
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
+			if (event.defaultPrevented) {
+				return;
+			}
 			onPopView();
 			return;
 		}

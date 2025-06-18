@@ -78,13 +78,6 @@
 		}
 		dropdownOpen = false;
 	}
-
-	function handleDropdownKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') {
-			dropdownOpen = false;
-			e.stopPropagation();
-		}
-	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -116,7 +109,7 @@
 					</div>
 				{/snippet}
 			</DropdownMenu.Trigger>
-			<DropdownMenu.Content side="top" align="start" onkeydown={handleDropdownKeydown} class="w-60">
+			<DropdownMenu.Content side="top" align="start" class="w-60">
 				<DropdownMenu.Label>Toast Actions</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 				{#each toastActions as action (action.type)}
