@@ -1,66 +1,53 @@
 <script lang="ts">
 	import type { Datum } from '$lib/store';
 	import ExtensionListItem from './ExtensionListItem.svelte';
+	import { extensionsStore } from './store.svelte';
 
 	type Props = {
-		featuredExtensions: Datum[];
-		trendingExtensions: Datum[];
-		extensions: Datum[];
-		searchResults: Datum[];
-		isLoading: boolean;
-		isFetchingMore: boolean;
-		error: string | null;
-		searchText: string;
-		selectedCategory: string;
-		selectedIndex: number;
 		onSelect: (ext: Datum) => void;
 	};
 
-	let {
-		featuredExtensions,
-		trendingExtensions,
-		extensions,
-		searchResults,
-		isLoading,
-		isFetchingMore,
-		error,
-		searchText,
-		selectedCategory,
-		selectedIndex = $bindable(),
-		onSelect
-	}: Props = $props();
+	let { onSelect }: Props = $props();
+
+	function handleFocus(index: number) {
+		extensionsStore.selectedIndex = index;
+	}
 </script>
 
-{#if isLoading && (extensions.length === 0 || searchText)}
+{#if extensionsStore.isLoading && (extensionsStore.extensions.length === 0 || extensionsStore.searchText)}
 	<div class="text-muted-foreground flex h-full items-center justify-center">
 		Loading extensions...
 	</div>
-{:else if error}
-	<div class="flex h-full items-center justify-center text-red-500">Error: {error}</div>
-{:else if searchText}
-	{#if searchResults.length > 0}
+{:else if extensionsStore.error}
+	<div class="flex h-full items-center justify-center text-red-500">
+		Error: {extensionsStore.error}
+	</div>
+{:else if extensionsStore.searchText}
+	{#if extensionsStore.searchResults.length > 0}
 		<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
 			Search Results
 		</h3>
-		{#each searchResults as ext, i (ext.id)}
-			<div onclick={() => onSelect(ext)} onfocus={() => (selectedIndex = i)}>
-				<ExtensionListItem {ext} isSelected={selectedIndex === i} />
-			</div>
+		{#each extensionsStore.searchResults as ext, i (ext.id)}
+			<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(i)}>
+				<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === i} />
+			</button>
 		{/each}
 	{:else}
 		<div class="text-muted-foreground flex h-full items-center justify-center">
-			No results for "{searchText}"
+			No results for "{extensionsStore.searchText}"
 		</div>
 	{/if}
-{:else if selectedCategory !== 'All Categories'}
-	{@const filtered = extensions.filter((ext) => ext.categories?.includes(selectedCategory))}
+{:else if extensionsStore.selectedCategory !== 'All Categories'}
+	{@const filtered = extensionsStore.extensions.filter((ext) =>
+		ext.categories?.includes(extensionsStore.selectedCategory)
+	)}
 	<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
-		{selectedCategory}
+		{extensionsStore.selectedCategory}
 	</h3>
 	{#each filtered as ext, i (ext.id)}
-		<div onclick={() => onSelect(ext)} onfocus={() => (selectedIndex = i)}>
-			<ExtensionListItem {ext} isSelected={selectedIndex === i} />
-		</div>
+		<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(i)}>
+			<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === i} />
+		</button>
 	{/each}
 	{#if filtered.length === 0}
 		<div class="text-muted-foreground flex items-center justify-center p-4">
@@ -68,33 +55,34 @@
 		</div>
 	{/if}
 {:else}
-	{#if featuredExtensions.length > 0}
+	{#if extensionsStore.featuredExtensions.length > 0}
 		<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">Featured</h3>
-		{#each featuredExtensions as ext, i (ext.id)}
-			<div onclick={() => onSelect(ext)} onfocus={() => (selectedIndex = i)}>
-				<ExtensionListItem {ext} isSelected={selectedIndex === i} />
-			</div>
+		{#each extensionsStore.featuredExtensions as ext, i (ext.id)}
+			<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(i)}>
+				<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === i} />
+			</button>
 		{/each}
 	{/if}
-	{#if trendingExtensions.length > 0}
+	{#if extensionsStore.trendingExtensions.length > 0}
 		<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">Trending</h3>
-		{#each trendingExtensions as ext, i (ext.id)}
-			{@const listIndex = i + featuredExtensions.length}
-			<div onclick={() => onSelect(ext)} onfocus={() => (selectedIndex = listIndex)}>
-				<ExtensionListItem {ext} isSelected={selectedIndex === listIndex} />
-			</div>
+		{#each extensionsStore.trendingExtensions as ext, i (ext.id)}
+			{@const listIndex = i + extensionsStore.featuredExtensions.length}
+			<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(listIndex)}>
+				<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === listIndex} />
+			</button>
 		{/each}
 	{/if}
 	<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
 		All Extensions
 	</h3>
-	{#each extensions as ext, i (ext.id)}
-		{@const listIndex = i + featuredExtensions.length + trendingExtensions.length}
-		<div onclick={() => onSelect(ext)} onfocus={() => (selectedIndex = listIndex)}>
-			<ExtensionListItem {ext} isSelected={selectedIndex === listIndex} />
-		</div>
+	{#each extensionsStore.extensions as ext, i (ext.id)}
+		{@const listIndex =
+			i + extensionsStore.featuredExtensions.length + extensionsStore.trendingExtensions.length}
+		<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(listIndex)}>
+			<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === listIndex} />
+		</button>
 	{/each}
-	{#if isFetchingMore}
+	{#if extensionsStore.isFetchingMore}
 		<div class="text-muted-foreground flex h-10 items-center justify-center">Loading more...</div>
 	{/if}
 {/if}

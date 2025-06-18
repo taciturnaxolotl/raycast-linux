@@ -3,14 +3,8 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
 	import { ChevronsUpDown, Check } from '@lucide/svelte';
-	import { tick } from 'svelte';
+	import { extensionsStore } from './store.svelte';
 
-	type Props = {
-		allCategories: string[];
-		selectedCategory: string;
-	};
-
-	let { allCategories, selectedCategory = $bindable() }: Props = $props();
 	let categoryPopoverOpen = $state(false);
 </script>
 
@@ -24,7 +18,7 @@
 				class="w-48 justify-between"
 				{...props}
 			>
-				{selectedCategory}
+				{extensionsStore.selectedCategory}
 				<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 			</Button>
 		{/snippet}
@@ -34,15 +28,18 @@
 			<Command.Input placeholder="Search category..." />
 			<Command.Empty>No category found.</Command.Empty>
 			<Command.List>
-				{#each allCategories as category}
+				{#each extensionsStore.allCategories as category}
 					<Command.Item
 						value={category}
 						onSelect={() => {
-							selectedCategory = category;
+							extensionsStore.selectedCategory = category;
+							extensionsStore.selectedIndex = 0;
 							categoryPopoverOpen = false;
 						}}
 					>
-						<Check class={selectedCategory !== category ? 'text-transparent' : ''} />
+						<Check
+							class={extensionsStore.selectedCategory !== category ? 'text-transparent' : ''}
+						/>
 						{category}
 					</Command.Item>
 				{/each}
