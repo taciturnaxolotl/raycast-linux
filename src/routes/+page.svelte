@@ -1,38 +1,19 @@
 <script lang="ts">
 	import { sidecarService } from '$lib/sidecar.svelte';
 	import { uiStore } from '$lib/ui.svelte';
-	import type { UINode } from '$lib/types';
-	import { untrack, setContext } from 'svelte';
-	import MainLayout from '$lib/components/layout/MainLayout.svelte';
-	import Header from '$lib/components/layout/Header.svelte';
-	import Content from '$lib/components/layout/Content.svelte';
-	import Footer from '$lib/components/layout/Footer.svelte';
+	import { untrack } from 'svelte';
 	import SettingsView from '$lib/components/SettingsView.svelte';
 	import type { PluginInfo } from '@raycast-linux/protocol';
 	import { invoke } from '@tauri-apps/api/core';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
-	import { shortcutToText } from '$lib/renderKey';
-	import type { KeyboardShortcut } from '$lib/props';
-	import path from 'path';
+	import PluginRunner from '$lib/components/PluginRunner.svelte';
 
 	type ViewState = 'plugin-list' | 'plugin-running' | 'settings';
 
 	let viewState = $state<ViewState>('plugin-list');
 	let installedApps = $state<any[]>([]);
 
-	const {
-		uiTree,
-		rootNodeId,
-		selectedNodeId,
-		pluginList,
-		currentPreferences,
-		toasts,
-		currentRunningPlugin,
-		primaryAction,
-		secondaryAction,
-		actionPanel,
-		allActions
-	} = $derived(uiStore);
+	const { pluginList, currentPreferences } = $derived(uiStore);
 
 	$effect(() => {
 		untrack(() => {
@@ -45,27 +26,11 @@
 		});
 	});
 
-	const rootNode = $derived(uiTree.get(rootNodeId!));
-	const selectedItemNode = $derived(uiTree.get(selectedNodeId!));
-	let searchText = $state('');
-	const navigationTitle = $derived(rootNode?.props.navigationTitle as string | undefined);
-
-	const assetsPath = $derived(
-		currentRunningPlugin ? path.dirname(currentRunningPlugin.pluginPath) + '/assets' : ''
-	);
-	setContext('assetsPath', assetsPath);
-
-	function handleDispatch(instanceId: number, handlerName: string, args: any[]) {
-		sidecarService.dispatchEvent('dispatch-event', { instanceId, handlerName, args });
-	}
-
-	function handleSelect(nodeId: number | undefined) {
-		uiStore.selectedNodeId = nodeId;
-	}
-
-	function handlePopView() {
-		sidecarService.dispatchEvent('pop-view');
-	}
+	$effect(() => {
+		invoke('get_installed_apps').then((apps) => {
+			installedApps = apps as any[];
+		});
+	});
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (viewState === 'plugin-list' && event.key === ',' && (event.metaKey || event.ctrlKey)) {
@@ -73,18 +38,7 @@
 			viewState = 'settings';
 			return;
 		}
-
-		if (viewState === 'plugin-running' && event.key === 'Escape') {
-			handlePopView();
-			return;
-		}
 	}
-
-	$effect(() => {
-		if (viewState === 'plugin-running' && rootNode) {
-			handleDispatch(rootNode.id, 'onSearchTextChange', [searchText]);
-		}
-	});
 
 	function handleRunPlugin(plugin: PluginInfo) {
 		uiStore.setCurrentRunningPlugin(plugin);
@@ -97,7 +51,6 @@
 		if (plugin.mode !== 'no-view') {
 			uiStore.resetForNewPlugin();
 			viewState = 'plugin-running';
-			searchText = '';
 		}
 	}
 
@@ -113,10 +66,13 @@
 		sidecarService.getPreferences(pluginName);
 	}
 
-	invoke('get_installed_apps').then((apps) => {
-		console.log(apps);
-		installedApps = apps as any[];
-	});
+	function handleDispatch(instanceId: number, handlerName: string, args: any[]) {
+		sidecarService.dispatchEvent('dispatch-event', { instanceId, handlerName, args });
+	}
+
+	function handlePopView() {
+		sidecarService.dispatchEvent('pop-view');
+	}
 
 	function handleHideToast(toastId: number) {
 		sidecarService.dispatchEvent('trigger-toast-hide', { toastId });
@@ -124,10 +80,6 @@
 
 	function handleToastAction(toastId: number, actionType: 'primary' | 'secondary') {
 		sidecarService.dispatchEvent('dispatch-toast-action', { toastId, actionType });
-	}
-
-	function formatShortcut(shortcut: KeyboardShortcut) {
-		return shortcutToText(shortcut);
 	}
 </script>
 
@@ -143,43 +95,11 @@
 		onGetPreferences={handleGetPreferences}
 		{currentPreferences}
 	/>
-{:else if viewState === 'plugin-running' && rootNode}
-	<MainLayout {primaryAction} {secondaryAction} onDispatch={handleDispatch}>
-		{#snippet header()}
-			<Header
-				{rootNode}
-				bind:searchText
-				onPopView={handlePopView}
-				onDispatch={handleDispatch}
-				{uiTree}
-				showBackButton={true}
-			/>
-		{/snippet}
-
-		{#snippet content()}
-			<Content
-				{rootNode}
-				{selectedItemNode}
-				{uiTree}
-				onDispatch={handleDispatch}
-				onSelect={handleSelect}
-				{searchText}
-			/>
-		{/snippet}
-
-		{#snippet footer()}
-			<Footer
-				{uiTree}
-				onDispatch={handleDispatch}
-				{primaryAction}
-				{secondaryAction}
-				{actionPanel}
-				actions={allActions}
-				{navigationTitle}
-				{toasts}
-				onToastAction={handleToastAction}
-				onHideToast={handleHideToast}
-			/>
-		{/snippet}
-	</MainLayout>
+{:else if viewState === 'plugin-running'}
+	<PluginRunner
+		onDispatch={handleDispatch}
+		onPopView={handlePopView}
+		onToastAction={handleToastAction}
+		onHideToast={handleHideToast}
+	/>
 {/if}
