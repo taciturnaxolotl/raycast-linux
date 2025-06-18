@@ -1,67 +1,28 @@
 import { StoreListingsReturnTypeSchema, type Datum } from '$lib/store';
 
-function createExtensionsStore() {
-	let extensions = $state<Datum[]>([]);
-	let searchResults = $state<Datum[]>([]);
-	let featuredExtensions = $state<Datum[]>([]);
-	let trendingExtensions = $state<Datum[]>([]);
+export class ExtensionsStore {
+	extensions = $state<Datum[]>([]);
+	searchResults = $state<Datum[]>([]);
+	featuredExtensions = $state<Datum[]>([]);
+	trendingExtensions = $state<Datum[]>([]);
 
-	let isLoading = $state(true);
-	let error = $state<string | null>(null);
+	isLoading = $state(true);
+	error = $state<string | null>(null);
 
-	let searchText = $state('');
-	let selectedCategory = $state('All Categories');
-	let selectedIndex = $state(0);
-	let allCategories = $state<string[]>(['All Categories']);
+	#_searchText = $state('');
+	selectedCategory = $state('All Categories');
+	selectedIndex = $state(0);
 
-	let currentPage = $state(1);
-	const perPage = 50;
-	let isFetchingMore = $state(false);
-	let hasMore = $state(true);
+	currentPage = $state(1);
+	isFetchingMore = $state(false);
+	hasMore = $state(true);
 
-	$effect(() => {
-		async function fetchInitialData() {
-			try {
-				isLoading = true;
-				error = null;
-				const [storeRes, featuredRes, trendingRes] = await Promise.all([
-					fetch(`https://backend.raycast.com/api/v1/store_listings?page=1&per_page=${perPage}`),
-					fetch('https://backend.raycast.com/api/v1/extensions/featured'),
-					fetch('https://backend.raycast.com/api/v1/extensions/trending')
-				]);
+	readonly perPage = 50;
+	#searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-				if (!storeRes.ok) throw new Error(`Store fetch failed: ${storeRes.status}`);
-				const storeParsed = StoreListingsReturnTypeSchema.parse(await storeRes.json());
-				extensions = storeParsed.data;
-				currentPage = 1;
-				hasMore = storeParsed.data.length === perPage;
-
-				if (featuredRes.ok) {
-					const featuredParsed = StoreListingsReturnTypeSchema.parse(await featuredRes.json());
-					featuredExtensions = featuredParsed.data;
-				} else {
-					console.warn(`Featured extensions fetch failed: ${featuredRes.status}`);
-				}
-
-				if (trendingRes.ok) {
-					const trendingParsed = StoreListingsReturnTypeSchema.parse(await trendingRes.json());
-					trendingExtensions = trendingParsed.data;
-				} else {
-					console.warn(`Trending extensions fetch failed: ${trendingRes.status}`);
-				}
-			} catch (e: unknown) {
-				error = e instanceof Error ? e.message : 'Unknown error';
-				console.error(e);
-			} finally {
-				isLoading = false;
-			}
-		}
-		fetchInitialData();
-	});
-
-	$effect(() => {
+	allCategories = $derived(() => {
 		const categories = new Set<string>();
-		const allFetched = [...featuredExtensions, ...trendingExtensions, ...extensions];
+		const allFetched = [...this.featuredExtensions, ...this.trendingExtensions, ...this.extensions];
 		for (const ext of allFetched) {
 			if (ext.categories) {
 				for (const cat of ext.categories) {
@@ -69,111 +30,115 @@ function createExtensionsStore() {
 				}
 			}
 		}
-		allCategories = ['All Categories', ...Array.from(categories).sort()];
+		return ['All Categories', ...Array.from(categories).sort()];
 	});
 
-	let searchDebounceTimer: NodeJS.Timeout;
-	$effect(() => {
-		clearTimeout(searchDebounceTimer);
-		if (!searchText) {
-			searchResults = [];
-			if (error) error = null;
+	constructor() {
+		this.#fetchInitialData();
+	}
+
+	get searchText() {
+		return this.#_searchText;
+	}
+
+	set searchText(value: string) {
+		this.#_searchText = value;
+		clearTimeout(this.#searchDebounceTimer);
+
+		if (!value) {
+			this.searchResults = [];
+			if (this.error) this.error = null;
 			return;
 		}
 
-		searchDebounceTimer = setTimeout(async () => {
-			isLoading = true;
-			error = null;
+		this.#searchDebounceTimer = setTimeout(async () => {
+			this.isLoading = true;
+			this.error = null;
 			try {
 				const res = await fetch(
-					`https://backend.raycast.com/api/v1/store_listings/search?q=${encodeURIComponent(searchText)}&per_page=${perPage}`
+					`https://backend.raycast.com/api/v1/store_listings/search?q=${encodeURIComponent(value)}&per_page=${this.perPage}`
 				);
 				if (!res.ok) throw new Error(`Search failed: ${res.status}`);
 				const parsed = StoreListingsReturnTypeSchema.parse(await res.json());
-				searchResults = parsed.data;
-				selectedIndex = 0;
+				this.searchResults = parsed.data;
+				this.selectedIndex = 0;
 			} catch (e: unknown) {
-				error = e instanceof Error ? e.message : 'Unknown error';
+				this.error = e instanceof Error ? e.message : 'Unknown error';
 				console.error(e);
-				searchResults = [];
+				this.searchResults = [];
 			} finally {
-				isLoading = false;
+				this.isLoading = false;
 			}
 		}, 300);
+	}
 
-		return () => clearTimeout(searchDebounceTimer);
-	});
+	async #fetchInitialData() {
+		try {
+			this.isLoading = true;
+			this.error = null;
+			const [storeRes, featuredRes, trendingRes] = await Promise.all([
+				fetch(`https://backend.raycast.com/api/v1/store_listings?page=1&per_page=${this.perPage}`),
+				fetch('https://backend.raycast.com/api/v1/extensions/featured'),
+				fetch('https://backend.raycast.com/api/v1/extensions/trending')
+			]);
 
-	const loadMore = async () => {
-		if (isFetchingMore || !hasMore || searchText || selectedCategory !== 'All Categories') return;
-		isFetchingMore = true;
-		const nextPage = currentPage + 1;
+			if (!storeRes.ok) throw new Error(`Store fetch failed: ${storeRes.status}`);
+			const storeParsed = StoreListingsReturnTypeSchema.parse(await storeRes.json());
+			this.extensions = storeParsed.data;
+			this.currentPage = 1;
+			this.hasMore = storeParsed.data.length === this.perPage;
+
+			if (featuredRes.ok) {
+				const featuredParsed = StoreListingsReturnTypeSchema.parse(await featuredRes.json());
+				this.featuredExtensions = featuredParsed.data;
+			}
+
+			if (trendingRes.ok) {
+				const trendingParsed = StoreListingsReturnTypeSchema.parse(await trendingRes.json());
+				this.trendingExtensions = trendingParsed.data;
+			}
+		} catch (e: unknown) {
+			this.error = e instanceof Error ? e.message : 'Unknown error';
+			console.error(e);
+		} finally {
+			this.isLoading = false;
+		}
+	}
+
+	loadMore = async () => {
+		if (
+			this.isFetchingMore ||
+			!this.hasMore ||
+			this.searchText ||
+			this.selectedCategory !== 'All Categories'
+		) {
+			return;
+		}
+
+		this.isFetchingMore = true;
+		const nextPage = this.currentPage + 1;
+
 		try {
 			const res = await fetch(
-				`https://backend.raycast.com/api/v1/store_listings?page=${nextPage}&per_page=${perPage}`
+				`https://backend.raycast.com/api/v1/store_listings?page=${nextPage}&per_page=${this.perPage}`
 			);
 			if (!res.ok) throw new Error('Failed to fetch more extensions');
 			const parsed = StoreListingsReturnTypeSchema.parse(await res.json());
 
-			if (parsed.data.length < perPage) {
-				hasMore = false;
+			if (parsed.data.length < this.perPage) {
+				this.hasMore = false;
 			}
-			const allExtensions = [...extensions, ...parsed.data];
-			extensions = [...new Map(allExtensions.map((item) => [item.id, item])).values()];
-			currentPage = nextPage;
+
+			const allExtensions = [...this.extensions, ...parsed.data];
+			this.extensions = [...new Map(allExtensions.map((item) => [item.id, item])).values()];
+			this.currentPage = nextPage;
 		} catch (e) {
 			console.error('Error loading more extensions:', e);
-			hasMore = false;
+			this.hasMore = false;
 		} finally {
-			isFetchingMore = false;
+			this.isFetchingMore = false;
 		}
-	};
-
-	return {
-		get extensions() {
-			return extensions;
-		},
-		get searchResults() {
-			return searchResults;
-		},
-		get featuredExtensions() {
-			return featuredExtensions;
-		},
-		get trendingExtensions() {
-			return trendingExtensions;
-		},
-		get isLoading() {
-			return isLoading;
-		},
-		get error() {
-			return error;
-		},
-		get searchText() {
-			return searchText;
-		},
-		set searchText(value: string) {
-			searchText = value;
-		},
-		get selectedCategory() {
-			return selectedCategory;
-		},
-		set selectedCategory(value: string) {
-			selectedCategory = value;
-		},
-		get selectedIndex() {
-			return selectedIndex;
-		},
-		set selectedIndex(value: number) {
-			selectedIndex = value;
-		},
-		get allCategories() {
-			return allCategories;
-		},
-		get isFetchingMore() {
-			return isFetchingMore;
-		},
-		loadMore
 	};
 }
 
-export const extensionsStore = createExtensionsStore();
+export const extensionsStore = new ExtensionsStore();
