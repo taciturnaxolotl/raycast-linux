@@ -4,6 +4,7 @@ import type React from 'react';
 
 export const instances = new Map<number, AnyInstance>();
 export const root: Container = { id: 'root', children: [] };
+export const toasts = new Map<number, any>();
 
 let instanceCounter = 0;
 export const getNextInstanceId = (): number => ++instanceCounter;

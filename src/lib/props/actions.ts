@@ -10,6 +10,28 @@ export const KeyboardShortcutSchema = z.object({
 });
 export type KeyboardShortcut = z.infer<typeof KeyboardShortcutSchema>;
 
+export const keyEventMatches = (event: KeyboardEvent, shortcut: KeyboardShortcut) => {
+	const modifierMap = {
+		cmd: 'metaKey',
+		ctrl: 'ctrlKey',
+		opt: 'altKey',
+		shift: 'shiftKey'
+	} as const;
+
+	const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase();
+	if (!keyMatch) return false;
+
+	const modifierMatch = Object.entries(modifierMap).every(([modifier, key]) => {
+		const isModifierRequired = shortcut.modifiers.includes(
+			modifier as z.infer<typeof KeyModifierSchema>
+		);
+		const isModifierPressed = event[key];
+		return isModifierRequired === isModifierPressed;
+	});
+
+	return modifierMatch;
+};
+
 export const ActionPropsSchema = z.object({
 	title: z.string(),
 	icon: ImageLikeSchema.optional(),

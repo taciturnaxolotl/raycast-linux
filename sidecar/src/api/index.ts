@@ -12,6 +12,7 @@ import { Action, ActionPanel } from './components/actions';
 import { Detail } from './components/detail';
 import { environment, getSelectedFinderItems, getSelectedText, open } from './environment';
 import { preferencesStore } from '../preferences';
+import { showToast } from './toast';
 
 let currentPluginName: string | null = null;
 let currentPluginPreferences: Array<{
@@ -42,7 +43,7 @@ export const getRaycastApi = () => {
 		LaunchType,
 		getSelectedFinderItems,
 		getSelectedText,
-		showToast: () => {},
+		showToast,
 		Toast,
 		environment,
 		getPreferenceValues: () => {

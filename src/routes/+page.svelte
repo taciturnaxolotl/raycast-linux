@@ -11,13 +11,16 @@
 	import type { PluginInfo } from '@raycast-linux/protocol';
 	import { invoke } from '@tauri-apps/api/core';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
+	import { shortcutToText } from '$lib/renderKey';
+	import type { KeyboardShortcut } from '$lib/props';
 
 	type ViewState = 'plugin-list' | 'plugin-running' | 'settings';
 
 	let viewState = $state<ViewState>('plugin-list');
 	let installedApps = $state<any[]>([]);
 
-	const { uiTree, rootNodeId, selectedNodeId, pluginList, currentPreferences } = $derived(uiStore);
+	const { uiTree, rootNodeId, selectedNodeId, pluginList, currentPreferences, toasts } =
+		$derived(uiStore);
 
 	$effect(() => {
 		untrack(() => {
@@ -49,7 +52,10 @@
 		function findActions(nodeId: number) {
 			const node = uiTree.get(nodeId);
 			if (!node) return;
-			if (node.type.startsWith('Action.') && !node.type.includes('Panel')) {
+			if (
+				(node.type.startsWith('Action.') || node.type === 'Action') &&
+				!node.type.includes('Panel')
+			) {
 				foundActions.push(node);
 			} else if (node.type.includes('Panel')) {
 				for (const childId of node.children) findActions(childId);
@@ -162,6 +168,18 @@
 		console.log(apps);
 		installedApps = apps as any[];
 	});
+
+	function handleHideToast(toastId: number) {
+		sidecarService.dispatchEvent('trigger-toast-hide', { toastId });
+	}
+
+	function handleToastAction(toastId: number, actionType: 'primary' | 'secondary') {
+		sidecarService.dispatchEvent('dispatch-toast-action', { toastId, actionType });
+	}
+
+	function formatShortcut(shortcut: KeyboardShortcut) {
+		return shortcutToText(shortcut);
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -209,6 +227,9 @@
 				actionPanel={actionInfo.panel}
 				actions={actionInfo.allActions}
 				{navigationTitle}
+				{toasts}
+				onToastAction={handleToastAction}
+				onHideToast={handleHideToast}
 			/>
 		{/snippet}
 	</MainLayout>

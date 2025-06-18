@@ -38,10 +38,6 @@ export function resolveIcon(icon: ImageLike | undefined | null): ResolvedIcon | 
 	}
 
 	if (typeof icon === 'object' && 'source' in icon) {
-		if (RaycastIconSchema.safeParse(icon.source).success) {
-			return { type: 'raycast', name: icon.source };
-		}
-
 		return {
 			type: 'image',
 			src: convertFileSrc(assetsBasePath + icon.source),

@@ -1,6 +1,17 @@
 import type { UINode } from '$lib/types';
 import type { Command } from '@raycast-linux/protocol';
 import type { PluginInfo } from '@raycast-linux/protocol';
+import type { KeyboardShortcut } from '$lib/props/actions';
+import { SvelteMap } from 'svelte/reactivity';
+
+export type Toast = {
+	id: number;
+	title: string;
+	message?: string;
+	style?: 'SUCCESS' | 'FAILURE' | 'ANIMATED';
+	primaryAction?: { title: string; onAction: boolean; shortcut?: KeyboardShortcut };
+	secondaryAction?: { title: string; onAction: boolean; shortcut?: KeyboardShortcut };
+};
 
 function createUiStore() {
 	// we're not using SvelteMap here because we're making a lot of mutations to the tree
@@ -11,6 +22,7 @@ function createUiStore() {
 	let selectedNodeId = $state<number | undefined>(undefined);
 	let pluginList = $state<PluginInfo[]>([]);
 	let currentPreferences = $state<Record<string, unknown>>({});
+	const toasts = new SvelteMap<number, Toast>();
 
 	const applyCommands = (commands: Command[]) => {
 		const tempTree = new Map(uiTree);
@@ -134,6 +146,23 @@ function createUiStore() {
 				}
 				break;
 			}
+			case 'SHOW_TOAST': {
+				const toast = command.payload as unknown as Toast;
+				toasts.set(toast.id, toast);
+				break;
+			}
+			case 'UPDATE_TOAST': {
+				const { id, ...rest } = command.payload;
+				const existingToast = toasts.get(id);
+				if (existingToast) {
+					toasts.set(id, { ...existingToast, ...rest });
+				}
+				break;
+			}
+			case 'HIDE_TOAST': {
+				toasts.delete(command.payload.id);
+				break;
+			}
 			case 'CREATE_TEXT_INSTANCE':
 				break;
 			case 'UPDATE_TEXT':
@@ -163,6 +192,9 @@ function createUiStore() {
 		},
 		get currentPreferences() {
 			return currentPreferences;
+		},
+		get toasts() {
+			return toasts;
 		},
 		applyCommands,
 		setPluginList,

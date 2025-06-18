@@ -45,6 +45,39 @@ const ClearContainerPayloadSchema = z.object({
 	containerId: z.string()
 });
 
+const KeyboardShortcutSchema = z.object({
+	modifiers: z.array(z.enum(['cmd', 'ctrl', 'opt', 'shift'])),
+	key: z.string()
+});
+
+const ToastActionOptionsSchema = z.object({
+	title: z.string(),
+	onAction: z.boolean(),
+	shortcut: KeyboardShortcutSchema.optional()
+});
+
+const ToastStyleSchema = z.enum(['SUCCESS', 'FAILURE', 'ANIMATED']);
+
+const ShowToastPayloadSchema = z.object({
+	id: z.number(),
+	title: z.string(),
+	message: z.string().optional(),
+	style: ToastStyleSchema.optional(),
+	primaryAction: ToastActionOptionsSchema.optional(),
+	secondaryAction: ToastActionOptionsSchema.optional()
+});
+
+const UpdateToastPayloadSchema = z.object({
+	id: z.number(),
+	title: z.string().optional(),
+	message: z.string().optional(),
+	style: ToastStyleSchema.optional()
+});
+
+const HideToastPayloadSchema = z.object({
+	id: z.number()
+});
+
 export const CommandSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('CREATE_INSTANCE'), payload: CreateInstancePayloadSchema }),
 	z.object({ type: z.literal('CREATE_TEXT_INSTANCE'), payload: CreateTextInstancePayloadSchema }),
@@ -54,7 +87,10 @@ export const CommandSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('UPDATE_PROPS'), payload: UpdatePropsPayloadSchema }),
 	z.object({ type: z.literal('UPDATE_TEXT'), payload: UpdateTextPayloadSchema }),
 	z.object({ type: z.literal('REPLACE_CHILDREN'), payload: ReplaceChildrenPayloadSchema }),
-	z.object({ type: z.literal('CLEAR_CONTAINER'), payload: ClearContainerPayloadSchema })
+	z.object({ type: z.literal('CLEAR_CONTAINER'), payload: ClearContainerPayloadSchema }),
+	z.object({ type: z.literal('SHOW_TOAST'), payload: ShowToastPayloadSchema }),
+	z.object({ type: z.literal('UPDATE_TOAST'), payload: UpdateToastPayloadSchema }),
+	z.object({ type: z.literal('HIDE_TOAST'), payload: HideToastPayloadSchema })
 ]);
 export type Command = z.infer<typeof CommandSchema>;
 

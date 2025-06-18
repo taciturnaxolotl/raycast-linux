@@ -1,7 +1,7 @@
 import { createInterface } from 'readline';
 import { writeLog, writeOutput } from './io';
 import { runPlugin, sendPluginList } from './plugin';
-import { instances, navigationStack } from './state';
+import { instances, navigationStack, toasts } from './state';
 import { batchedUpdates, updateContainer } from './reconciler';
 import { preferencesStore } from './preferences';
 import type { RaycastInstance } from './types';
@@ -95,6 +95,26 @@ rl.on('line', (line) => {
 							`Handler ${handlerName} not found or not a function on instance ${instanceId}`
 						);
 					}
+					break;
+				}
+				case 'dispatch-toast-action': {
+					const { toastId, actionType } = command.payload as {
+						toastId: number;
+						actionType: 'primary' | 'secondary';
+					};
+					const toast = toasts.get(toastId);
+					if (toast) {
+						const action = actionType === 'primary' ? toast.primaryAction : toast.secondaryAction;
+						if (action?.onAction) {
+							action.onAction(toast);
+						}
+					}
+					break;
+				}
+				case 'trigger-toast-hide': {
+					const { toastId } = command.payload as { toastId: number };
+					const toast = toasts.get(toastId);
+					toast?.hide();
 					break;
 				}
 				case 'selected-text-response': {
