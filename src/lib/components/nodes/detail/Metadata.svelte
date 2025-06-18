@@ -10,7 +10,9 @@
 	};
 
 	let { nodeId, uiTree, onDispatch }: Props = $props();
-	const { node } = $derived.by(useTypedNode(() => ({ nodeId, uiTree, type: 'Detail.Metadata' })));
+	const { node } = $derived.by(
+		useTypedNode(() => ({ nodeId, uiTree, type: ['Detail.Metadata', 'List.Item.Detail.Metadata'] }))
+	);
 </script>
 
 {#if node}

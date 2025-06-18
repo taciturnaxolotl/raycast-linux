@@ -11,7 +11,11 @@
 
 	let { nodeId, uiTree, onDispatch }: Props = $props();
 	const { node, props: componentProps } = $derived.by(
-		useTypedNode(() => ({ nodeId, uiTree, type: 'Detail.Metadata.TagList' }))
+		useTypedNode(() => ({
+			nodeId,
+			uiTree,
+			type: ['Detail.Metadata.TagList', 'List.Item.Detail.Metadata.TagList']
+		}))
 	);
 </script>
 

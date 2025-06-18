@@ -6,10 +6,10 @@ export function useTypedNode<T extends ComponentType>(
 	args: () => {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		type: T;
+		type: T | T[];
 	}
 ) {
-	const { nodeId, uiTree, type } = $derived.by(args);
+	const { nodeId, uiTree, type: expectedTypes } = $derived.by(args);
 
 	let node = $state<UINode | undefined>(undefined);
 	let props = $state<z.infer<Schemas[T]> | null>(null);
@@ -17,8 +17,11 @@ export function useTypedNode<T extends ComponentType>(
 	$effect(() => {
 		const n = uiTree.get(nodeId);
 		if (n) {
-			if (n.type !== type) {
-				console.error(`Type mismatch for node ${nodeId}. Expected ${type}, but got ${n.type}`);
+			const types = Array.isArray(expectedTypes) ? expectedTypes : [expectedTypes];
+			if (!types.includes(n.type as T)) {
+				console.error(
+					`Type mismatch for node ${nodeId}. Expected one of [${types.join(', ')}], but got ${n.type}`
+				);
 				node = undefined;
 				props = null;
 			} else {

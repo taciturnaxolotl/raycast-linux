@@ -11,7 +11,11 @@
 
 	let { nodeId, uiTree, onDispatch }: Props = $props();
 	const { props: componentProps } = $derived.by(
-		useTypedNode(() => ({ nodeId, uiTree, type: 'Detail.Metadata.Label' }))
+		useTypedNode(() => ({
+			nodeId,
+			uiTree,
+			type: ['Detail.Metadata.Label', 'List.Item.Detail.Metadata.Label']
+		}))
 	);
 
 	const textValue = $derived(

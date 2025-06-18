@@ -20,12 +20,6 @@ import ListDropdown from '$lib/components/nodes/list/Dropdown.svelte';
 import ListDropdownItem from '$lib/components/nodes/list/DropdownItem.svelte';
 import ListDropdownSection from '$lib/components/nodes/list/DropdownSection.svelte';
 import ListItemDetail from '$lib/components/nodes/list/ItemDetail.svelte';
-import ListItemDetailMetadata from '$lib/components/nodes/list/ItemDetailMetadata.svelte';
-import ListItemDetailMetadataLabel from '$lib/components/nodes/list/ItemDetailMetadataLabel.svelte';
-import ListItemDetailMetadataLink from '$lib/components/nodes/list/ItemDetailMetadataLink.svelte';
-import ListItemDetailMetadataTagList from '$lib/components/nodes/list/ItemDetailMetadataTagList.svelte';
-import ListItemDetailMetadataTagListItem from '$lib/components/nodes/list/ItemDetailMetadataTagListItem.svelte';
-import ListItemDetailMetadataSeparator from '$lib/components/nodes/list/ItemDetailMetadataSeparator.svelte';
 import Form from '$lib/components/nodes/form/Form.svelte';
 import FormTextArea from '$lib/components/nodes/form/TextArea.svelte';
 import FormDescription from '$lib/components/nodes/form/Description.svelte';
@@ -60,12 +54,12 @@ export const componentMap = new Map<
 	['List.Dropdown.Item', ListDropdownItem],
 	['List.Dropdown.Section', ListDropdownSection],
 	['List.Item.Detail', ListItemDetail],
-	['List.Item.Detail.Metadata', ListItemDetailMetadata],
-	['List.Item.Detail.Metadata.Label', ListItemDetailMetadataLabel],
-	['List.Item.Detail.Metadata.Link', ListItemDetailMetadataLink],
-	['List.Item.Detail.Metadata.TagList', ListItemDetailMetadataTagList],
-	['List.Item.Detail.Metadata.TagList.Item', ListItemDetailMetadataTagListItem],
-	['List.Item.Detail.Metadata.Separator', ListItemDetailMetadataSeparator],
+	['List.Item.Detail.Metadata', Metadata],
+	['List.Item.Detail.Metadata.Label', MetadataLabel],
+	['List.Item.Detail.Metadata.Link', MetadataLink],
+	['List.Item.Detail.Metadata.TagList', MetadataTagList],
+	['List.Item.Detail.Metadata.TagList.Item', MetadataTagListItem],
+	['List.Item.Detail.Metadata.Separator', MetadataSeparator],
 	['Form', Form],
 	['Form.TextArea', FormTextArea],
 	['Form.Description', FormDescription],

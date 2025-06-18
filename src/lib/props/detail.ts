@@ -18,11 +18,15 @@ export const DetailMetadataLinkPropsSchema = z.object({
 });
 export type DetailMetadataLinkProps = z.infer<typeof DetailMetadataLinkPropsSchema>;
 
-export const DetailMetadataTagListItemPropsSchema = z.object({
-	text: z.string().optional(),
-	color: ColorLikeSchema,
-	icon: ImageLikeSchema.optional()
-});
+export const DetailMetadataTagListItemPropsSchema = z
+	.object({
+		text: z.string().optional(),
+		color: ColorLikeSchema,
+		icon: ImageLikeSchema.optional()
+	})
+	.refine((data) => data.text != null || data.icon != null, {
+		message: 'Either text or icon must be provided for TagList.Item'
+	});
 export type DetailMetadataTagListItemProps = z.infer<typeof DetailMetadataTagListItemPropsSchema>;
 
 export const DetailMetadataTagListPropsSchema = z.object({

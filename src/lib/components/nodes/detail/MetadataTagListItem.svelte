@@ -13,7 +13,11 @@
 	};
 	let { nodeId, uiTree, onDispatch }: Props = $props();
 	const { props: componentProps } = $derived.by(
-		useTypedNode(() => ({ nodeId, uiTree, type: 'Detail.Metadata.TagList.Item' }))
+		useTypedNode(() => ({
+			nodeId,
+			uiTree,
+			type: ['Detail.Metadata.TagList.Item', 'List.Item.Detail.Metadata.TagList.Item']
+		}))
 	);
 	function handleClick() {
 		onDispatch(nodeId, 'onAction', []);
