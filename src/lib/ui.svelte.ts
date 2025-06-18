@@ -22,6 +22,7 @@ function createUiStore() {
 	let selectedNodeId = $state<number | undefined>(undefined);
 	let pluginList = $state<PluginInfo[]>([]);
 	let currentPreferences = $state<Record<string, unknown>>({});
+	let currentRunningPlugin = $state<PluginInfo | null>(null);
 	const toasts = new SvelteMap<number, Toast>();
 
 	const applyCommands = (commands: Command[]) => {
@@ -193,12 +194,18 @@ function createUiStore() {
 		get currentPreferences() {
 			return currentPreferences;
 		},
+		get currentRunningPlugin() {
+			return currentRunningPlugin;
+		},
 		get toasts() {
 			return toasts;
 		},
 		applyCommands,
 		setPluginList,
 		setCurrentPreferences,
+		setCurrentRunningPlugin(plugin: PluginInfo | null) {
+			currentRunningPlugin = plugin;
+		},
 		resetForNewPlugin
 	};
 }

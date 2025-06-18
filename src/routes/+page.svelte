@@ -2,7 +2,7 @@
 	import { sidecarService } from '$lib/sidecar.svelte';
 	import { uiStore } from '$lib/ui.svelte';
 	import type { UINode } from '$lib/types';
-	import { untrack } from 'svelte';
+	import { untrack, setContext } from 'svelte';
 	import MainLayout from '$lib/components/layout/MainLayout.svelte';
 	import Header from '$lib/components/layout/Header.svelte';
 	import Content from '$lib/components/layout/Content.svelte';
@@ -13,19 +13,28 @@
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import { shortcutToText } from '$lib/renderKey';
 	import type { KeyboardShortcut } from '$lib/props';
+	import path from 'path';
 
 	type ViewState = 'plugin-list' | 'plugin-running' | 'settings';
 
 	let viewState = $state<ViewState>('plugin-list');
 	let installedApps = $state<any[]>([]);
 
-	const { uiTree, rootNodeId, selectedNodeId, pluginList, currentPreferences, toasts } =
-		$derived(uiStore);
+	const {
+		uiTree,
+		rootNodeId,
+		selectedNodeId,
+		pluginList,
+		currentPreferences,
+		toasts,
+		currentRunningPlugin
+	} = $derived(uiStore);
 
 	$effect(() => {
 		untrack(() => {
 			sidecarService.setOnGoBackToPluginList(() => {
 				viewState = 'plugin-list';
+				uiStore.setCurrentRunningPlugin(null);
 			});
 			sidecarService.start();
 			return () => sidecarService.stop();
@@ -36,6 +45,11 @@
 	const selectedItemNode = $derived(uiTree.get(selectedNodeId!));
 	let searchText = $state('');
 	const navigationTitle = $derived(rootNode?.props.navigationTitle as string | undefined);
+
+	const assetsPath = $derived(
+		currentRunningPlugin ? path.dirname(currentRunningPlugin.pluginPath) + '/assets' : ''
+	);
+	setContext('assetsPath', assetsPath);
 
 	const actionInfo = $derived.by(() => {
 		const actionsNodeId =
@@ -137,6 +151,7 @@
 	});
 
 	function handleRunPlugin(plugin: PluginInfo) {
+		uiStore.setCurrentRunningPlugin(plugin);
 		sidecarService.dispatchEvent('run-plugin', {
 			pluginPath: plugin.pluginPath,
 			commandName: plugin.commandName,

@@ -133,31 +133,23 @@ export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'
 		data?: Array<{ title: string; value: string }>;
 	}> = [];
 
-	if (pluginPath) {
-		scriptText = loadPlugin(pluginPath);
+	if (!pluginPath) {
+		throw new Error('No plugin specified.');
+	}
 
-		// Extract plugin info from path to set preferences context
-		const pluginDir = path.dirname(pluginPath);
-		const packageJsonPath = path.join(pluginDir, 'package.json');
+	scriptText = loadPlugin(pluginPath);
 
-		if (fs.existsSync(packageJsonPath)) {
-			try {
-				const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-				pluginName = packageJson.name || path.basename(pluginDir);
-				preferences = packageJson.preferences || [];
-			} catch (error) {
-				writeLog(`Error reading plugin package.json: ${error}`);
-			}
-		}
-	} else {
-		const fallbackPluginsDir = config.pluginsDir;
-		const fallbackPath = path.join(fallbackPluginsDir, 'google-translate', 'translate-form.js');
+	// Extract plugin info from path to set preferences context
+	const pluginDir = path.dirname(pluginPath);
+	const packageJsonPath = path.join(pluginDir, 'package.json');
 
-		if (fs.existsSync(fallbackPath)) {
-			scriptText = loadPlugin(fallbackPath);
-			pluginName = 'google-translate';
-		} else {
-			throw new Error('No plugin specified and no fallback plugin found');
+	if (fs.existsSync(packageJsonPath)) {
+		try {
+			const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+			pluginName = packageJson.name || path.basename(pluginDir);
+			preferences = packageJson.preferences || [];
+		} catch (error) {
+			writeLog(`Error reading plugin package.json: ${error}`);
 		}
 	}
 

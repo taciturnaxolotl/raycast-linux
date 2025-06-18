@@ -2,6 +2,7 @@
 	import type { ImageLike } from '$lib/props';
 	import { resolveIcon } from '$lib/assets';
 	import icons from '$lib/icons.svg';
+	import { getContext } from 'svelte';
 
 	type Props = {
 		icon: ImageLike | undefined | null;
@@ -9,7 +10,8 @@
 	};
 	let { icon, class: className }: Props = $props();
 
-	const iconInfo = $derived(resolveIcon(icon));
+	const assetsPath = getContext<string>('assetsPath');
+	const iconInfo = $derived(resolveIcon(icon, assetsPath));
 
 	const maskStyles = $derived(
 		iconInfo?.type === 'image' && iconInfo.mask === 'Circle' ? 'border-radius: 50%;' : ''

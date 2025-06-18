@@ -1,7 +1,6 @@
 import { RaycastIconSchema, type ImageLike } from '$lib/props';
 import { convertFileSrc } from '@tauri-apps/api/core';
-
-const assetsBasePath = '/home/byte/code/raycast-linux/sidecar/dist/plugin/assets/';
+import path from 'path';
 
 // this matches any emoji character (u flag = unicode, \p{Emoji} = any unicode emoji)
 const EMOJI_REGEX = /\p{Emoji}/u;
@@ -22,7 +21,10 @@ export type ResolvedIcon =
 	| { type: 'image'; src: string; mask?: string }
 	| { type: 'emoji'; emoji: string };
 
-export function resolveIcon(icon: ImageLike | undefined | null): ResolvedIcon | null {
+export function resolveIcon(
+	icon: ImageLike | undefined | null,
+	assetsBasePath: string
+): ResolvedIcon | null {
 	if (!icon) return null;
 
 	if (typeof icon === 'string') {
@@ -34,13 +36,13 @@ export function resolveIcon(icon: ImageLike | undefined | null): ResolvedIcon | 
 			return { type: 'raycast', name: icon };
 		}
 
-		return { type: 'image', src: convertFileSrc(assetsBasePath + icon) };
+		return { type: 'image', src: convertFileSrc(path.join(assetsBasePath, icon)) };
 	}
 
 	if (typeof icon === 'object' && 'source' in icon) {
 		return {
 			type: 'image',
-			src: convertFileSrc(assetsBasePath + icon.source),
+			src: convertFileSrc(path.join(assetsBasePath, icon.source)),
 			mask: icon.mask
 		};
 	}
