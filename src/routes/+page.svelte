@@ -7,13 +7,26 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import PluginRunner from '$lib/components/PluginRunner.svelte';
+	import Extensions from '$lib/components/Extensions.svelte';
 
-	type ViewState = 'plugin-list' | 'plugin-running' | 'settings';
+	type ViewState = 'plugin-list' | 'plugin-running' | 'settings' | 'extensions-store';
 
 	let viewState = $state<ViewState>('plugin-list');
 	let installedApps = $state<any[]>([]);
 
+	const storePlugin: PluginInfo = {
+		title: 'Discover Extensions',
+		description: 'Browse and install new extensions from the Store',
+		pluginName: 'Store',
+		commandName: 'index',
+		pluginPath: 'builtin:store',
+		icon: 'store-16',
+		preferences: [],
+		mode: 'view'
+	};
+
 	const { pluginList, currentPreferences } = $derived(uiStore);
+	const allPlugins = $derived([...pluginList, storePlugin]);
 
 	$effect(() => {
 		untrack(() => {
@@ -41,6 +54,11 @@
 	}
 
 	function handleRunPlugin(plugin: PluginInfo) {
+		if (plugin.pluginPath === 'builtin:store') {
+			viewState = 'extensions-store';
+			return;
+		}
+
 		uiStore.setCurrentRunningPlugin(plugin);
 		sidecarService.dispatchEvent('run-plugin', {
 			pluginPath: plugin.pluginPath,
@@ -86,7 +104,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if viewState === 'plugin-list'}
-	<CommandPalette plugins={pluginList} onRunPlugin={handleRunPlugin} {installedApps} />
+	<CommandPalette plugins={allPlugins} onRunPlugin={handleRunPlugin} {installedApps} />
 {:else if viewState === 'settings'}
 	<SettingsView
 		plugins={pluginList}
@@ -95,6 +113,8 @@
 		onGetPreferences={handleGetPreferences}
 		{currentPreferences}
 	/>
+{:else if viewState === 'extensions-store'}
+	<Extensions onBack={() => (viewState = 'plugin-list')} />
 {:else if viewState === 'plugin-running'}
 	<PluginRunner
 		onDispatch={handleDispatch}
