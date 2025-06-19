@@ -44,5 +44,12 @@
       "icons/icon.ico"
     ],
     "externalBin": ["binaries/app"]
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["raycast"]
+      }
+    }
   }
 }

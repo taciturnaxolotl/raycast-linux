@@ -13,7 +13,8 @@ use selection::get_text;
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
-use tauri::Manager;
+use tauri::{Manager, Emitter};
+use tauri_plugin_deep_link::DeepLinkExt;
 
 #[tauri::command]
 fn get_installed_apps() -> Vec<App> {
@@ -98,7 +99,16 @@ fn setup_global_shortcut(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
 pub fn run() {
 	tauri::Builder::default()
 		.manage(WsState::default())
-		.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+		.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+			if args.len() > 1 && args[1].starts_with("raycast://") {
+				if let Some(window) = app.get_webview_window("main") {
+					let _ = window.emit("deep-link", args[1].to_string());
+					window.show().unwrap();
+				}
+
+				return;
+			}
+
 			if let Some(window) = app.get_webview_window("main") {
 				if let Ok(true) = window.is_visible() {
 					let _ = window.hide();
@@ -108,6 +118,7 @@ pub fn run() {
 				}
 			}
 		}))
+		.plugin(tauri_plugin_deep_link::init())
 		.plugin(tauri_plugin_global_shortcut::Builder::new().build())
 		.plugin(tauri_plugin_shell::init())
 		.plugin(tauri_plugin_clipboard_manager::init())

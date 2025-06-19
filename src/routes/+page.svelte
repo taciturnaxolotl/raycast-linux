@@ -5,6 +5,8 @@
 	import SettingsView from '$lib/components/SettingsView.svelte';
 	import type { PluginInfo } from '@raycast-linux/protocol';
 	import { invoke } from '@tauri-apps/api/core';
+	import { listen } from '@tauri-apps/api/event';
+	import { onMount } from 'svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import PluginRunner from '$lib/components/PluginRunner.svelte';
 	import Extensions from '$lib/components/Extensions.svelte';
@@ -44,6 +46,43 @@
 			installedApps = apps as any[];
 		});
 	});
+
+	onMount(() => {
+		const unlisten = listen<string>('deep-link', (event) => {
+			console.log('Received deep link:', event.payload);
+			const url = event.payload;
+			handleDeepLink(url);
+		});
+
+		return () => {
+			unlisten.then((fn) => fn());
+		};
+	});
+
+	function handleDeepLink(url: string) {
+		try {
+			const urlObj = new URL(url);
+			console.log('Processing deep link:', {
+				protocol: urlObj.protocol,
+				host: urlObj.host,
+				pathname: urlObj.pathname,
+				search: urlObj.search
+			});
+
+			if (urlObj.protocol === 'raycast:') {
+				switch (urlObj.host) {
+					case 'extensions':
+						viewState = 'extensions-store';
+						break;
+					default:
+						viewState = 'plugin-list';
+				}
+			}
+		} catch (error) {
+			console.error('Error parsing deep link:', error);
+			viewState = 'plugin-list';
+		}
+	}
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (viewState === 'plugin-list' && event.key === ',' && (event.metaKey || event.ctrlKey)) {
