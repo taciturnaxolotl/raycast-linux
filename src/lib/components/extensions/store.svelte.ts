@@ -20,7 +20,7 @@ export class ExtensionsStore {
 	readonly perPage = 50;
 	#searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-	allCategories = $derived(() => {
+	allCategories = $derived.by(() => {
 		const categories = new Set<string>();
 		const allFetched = [...this.featuredExtensions, ...this.trendingExtensions, ...this.extensions];
 		for (const ext of allFetched) {
