@@ -159,3 +159,57 @@ pub async fn run_server(app_handle: AppHandle) {
         tokio::spawn(handle_connection(stream, app_handle.clone()));
     }
 }
+
+#[tauri::command]
+pub async fn browser_extension_check_connection(state: tauri::State<'_, WsState>) -> Result<bool, String> {
+    Ok(*state.is_connected.lock().unwrap())
+}
+
+#[tauri::command]
+pub async fn browser_extension_request(
+    method: String,
+    params: serde_json::Value,
+    state: tauri::State<'_, WsState>,
+) -> Result<serde_json::Value, String> {
+    use std::time::Duration;
+    
+    let tx = {
+        let lock = state.connection.lock().unwrap();
+        lock.clone()
+    };
+
+    if let Some(tx) = tx {
+        let request_id = {
+            let mut counter = state.request_id_counter.lock().unwrap();
+            *counter += 1;
+            *counter
+        };
+
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+            "id": request_id
+        });
+
+        let (response_tx, response_rx) = tokio::sync::oneshot::channel();
+        state
+            .pending_requests
+            .lock()
+            .unwrap()
+            .insert(request_id, response_tx);
+
+        if tx.send(request.to_string()).await.is_err() {
+            return Err("Failed to send message to browser extension".into());
+        }
+
+        match tokio::time::timeout(Duration::from_secs(5), response_rx).await {
+            Ok(Ok(result)) => result,
+            Ok(Err(_)) => Err("Request cancelled".into()),
+            Err(_) => Err("Request timed out".into()),
+        }
+    } else {
+        Err("Browser extension not connected".into())
+    }
+}
+
