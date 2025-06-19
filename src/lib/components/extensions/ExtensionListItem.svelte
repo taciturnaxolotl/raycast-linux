@@ -6,15 +6,19 @@
 	type Props = {
 		ext: Datum;
 		isSelected: boolean;
+		onclick?: () => void;
+		onfocus?: () => void;
 	};
 
-	let { ext, isSelected }: Props = $props();
+	let { ext, isSelected, onclick, onfocus }: Props = $props();
 </script>
 
 <button
 	type="button"
 	class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-2 text-left"
 	class:bg-accent={isSelected}
+	{onclick}
+	{onfocus}
 >
 	<Icon
 		icon={ext.icons.light ? { source: ext.icons.light, mask: 'Circle' } : undefined}

@@ -28,9 +28,12 @@
 			Search Results
 		</h3>
 		{#each extensionsStore.searchResults as ext, i (ext.id)}
-			<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(i)}>
-				<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === i} />
-			</button>
+			<ExtensionListItem
+				{ext}
+				isSelected={extensionsStore.selectedIndex === i}
+				onclick={() => onSelect(ext)}
+				onfocus={() => handleFocus(i)}
+			/>
 		{/each}
 	{:else}
 		<div class="text-muted-foreground flex h-full items-center justify-center">
@@ -45,9 +48,12 @@
 		{extensionsStore.selectedCategory}
 	</h3>
 	{#each filtered as ext, i (ext.id)}
-		<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(i)}>
-			<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === i} />
-		</button>
+		<ExtensionListItem
+			{ext}
+			isSelected={extensionsStore.selectedIndex === i}
+			onclick={() => onSelect(ext)}
+			onfocus={() => handleFocus(i)}
+		/>
 	{/each}
 	{#if filtered.length === 0}
 		<div class="text-muted-foreground flex items-center justify-center p-4">
@@ -58,18 +64,24 @@
 	{#if extensionsStore.featuredExtensions.length > 0}
 		<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">Featured</h3>
 		{#each extensionsStore.featuredExtensions as ext, i (ext.id)}
-			<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(i)}>
-				<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === i} />
-			</button>
+			<ExtensionListItem
+				{ext}
+				isSelected={extensionsStore.selectedIndex === i}
+				onclick={() => onSelect(ext)}
+				onfocus={() => handleFocus(i)}
+			/>
 		{/each}
 	{/if}
 	{#if extensionsStore.trendingExtensions.length > 0}
 		<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">Trending</h3>
 		{#each extensionsStore.trendingExtensions as ext, i (ext.id)}
 			{@const listIndex = i + extensionsStore.featuredExtensions.length}
-			<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(listIndex)}>
-				<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === listIndex} />
-			</button>
+			<ExtensionListItem
+				{ext}
+				isSelected={extensionsStore.selectedIndex === listIndex}
+				onclick={() => onSelect(ext)}
+				onfocus={() => handleFocus(listIndex)}
+			/>
 		{/each}
 	{/if}
 	<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
@@ -78,9 +90,12 @@
 	{#each extensionsStore.extensions as ext, i (ext.id)}
 		{@const listIndex =
 			i + extensionsStore.featuredExtensions.length + extensionsStore.trendingExtensions.length}
-		<button onclick={() => onSelect(ext)} onfocus={() => handleFocus(listIndex)}>
-			<ExtensionListItem {ext} isSelected={extensionsStore.selectedIndex === listIndex} />
-		</button>
+		<ExtensionListItem
+			{ext}
+			isSelected={extensionsStore.selectedIndex === listIndex}
+			onclick={() => onSelect(ext)}
+			onfocus={() => handleFocus(listIndex)}
+		/>
 	{/each}
 	{#if extensionsStore.isFetchingMore}
 		<div class="text-muted-foreground flex h-10 items-center justify-center">Loading more...</div>
