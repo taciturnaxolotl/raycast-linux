@@ -11,6 +11,7 @@ import {
 	type FileSystemItem
 } from './api/environment';
 import { handleBrowserExtensionResponse } from './api/browserExtension';
+import { handleClipboardResponse } from './api/clipboard';
 
 process.on('unhandledRejection', (reason: unknown) => {
 	writeLog(`--- UNHANDLED PROMISE REJECTION ---`);
@@ -148,6 +149,19 @@ rl.on('line', (line) => {
 				case 'browser-extension-connection-status': {
 					const { isConnected } = command.payload as { isConnected: boolean };
 					browserExtensionState.isConnected = isConnected;
+					break;
+				}
+				case 'clipboard-read-text-response':
+				case 'clipboard-read-response':
+				case 'clipboard-copy-response':
+				case 'clipboard-paste-response':
+				case 'clipboard-clear-response': {
+					const { requestId, result, error } = command.payload as {
+						requestId: string;
+						result?: any;
+						error?: string;
+					};
+					handleClipboardResponse(requestId, result, error);
 					break;
 				}
 				default:

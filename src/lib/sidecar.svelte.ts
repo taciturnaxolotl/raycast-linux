@@ -128,7 +128,7 @@ class SidecarService {
 		}
 	};
 
-	#routeMessage = (message: unknown) => {
+	#routeMessage = async (message: unknown) => {
 		const result = SidecarMessageWithPluginsSchema.safeParse(message);
 
 		if (!result.success) {
@@ -150,6 +150,24 @@ class SidecarService {
 				this.#log(`ERROR: Failed to open '${target}': ${err}`);
 				console.error(`Failed to open '${target}':`, err);
 			});
+			return;
+		}
+
+		if (typedMessage.type.startsWith('clipboard-')) {
+			const { requestId, ...params } = typedMessage.payload as {
+				requestId: string;
+				[key: string]: any;
+			};
+			const command = typedMessage.type.replace(/-/g, '_');
+			const responseType = `${typedMessage.type}-response`;
+			try {
+				const result = await invoke(command, params);
+				this.dispatchEvent(responseType, { requestId, result });
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.#log(`ERROR from ${command}: ${errorMessage}`);
+				this.dispatchEvent(responseType, { requestId, error: errorMessage });
+			}
 			return;
 		}
 

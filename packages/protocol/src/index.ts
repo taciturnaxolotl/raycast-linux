@@ -194,6 +194,61 @@ const BrowserExtensionRequestMessageSchema = z.object({
 	payload: BrowserExtensionRequestPayloadSchema
 });
 
+const ClipboardContentSchema = z.object({
+	text: z.string().optional(),
+	html: z.string().optional(),
+	file: z.string().optional()
+});
+
+const CopyOptionsSchema = z.object({
+	concealed: z.boolean().optional()
+});
+
+const ClipboardCopyPayloadSchema = z.object({
+	requestId: z.string(),
+	content: ClipboardContentSchema,
+	options: CopyOptionsSchema.optional()
+});
+const ClipboardCopyMessageSchema = z.object({
+	type: z.literal('clipboard-copy'),
+	payload: ClipboardCopyPayloadSchema
+});
+
+const ClipboardPastePayloadSchema = z.object({
+	requestId: z.string(),
+	content: ClipboardContentSchema
+});
+const ClipboardPasteMessageSchema = z.object({
+	type: z.literal('clipboard-paste'),
+	payload: ClipboardPastePayloadSchema
+});
+
+const ClipboardReadPayloadSchema = z.object({
+	requestId: z.string(),
+	offset: z.number().optional()
+});
+const ClipboardReadMessageSchema = z.object({
+	type: z.literal('clipboard-read'),
+	payload: ClipboardReadPayloadSchema
+});
+
+const ClipboardReadTextPayloadSchema = z.object({
+	requestId: z.string(),
+	offset: z.number().optional()
+});
+const ClipboardReadTextMessageSchema = z.object({
+	type: z.literal('clipboard-read-text'),
+	payload: ClipboardReadTextPayloadSchema
+});
+
+const ClipboardClearPayloadSchema = z.object({
+	requestId: z.string()
+});
+const ClipboardClearMessageSchema = z.object({
+	type: z.literal('clipboard-clear'),
+	payload: ClipboardClearPayloadSchema
+});
+
 export const SidecarMessageWithPluginsSchema = z.union([
 	BatchUpdateSchema,
 	CommandSchema,
@@ -204,6 +259,11 @@ export const SidecarMessageWithPluginsSchema = z.union([
 	OpenMessageSchema,
 	GetSelectedTextMessageSchema,
 	GetSelectedFinderItemsMessageSchema,
-	BrowserExtensionRequestMessageSchema
+	BrowserExtensionRequestMessageSchema,
+	ClipboardCopyMessageSchema,
+	ClipboardPasteMessageSchema,
+	ClipboardReadMessageSchema,
+	ClipboardReadTextMessageSchema,
+	ClipboardClearMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

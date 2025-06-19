@@ -14,6 +14,7 @@ import { environment, getSelectedFinderItems, getSelectedText, open } from './en
 import { preferencesStore } from '../preferences';
 import { showToast } from './toast';
 import { BrowserExtensionAPI } from './browserExtension';
+import { Clipboard } from './clipboard';
 
 let currentPluginName: string | null = null;
 let currentPluginPreferences: Array<{
@@ -50,6 +51,7 @@ export const getRaycastApi = () => {
 		Form,
 		Grid,
 		List,
+		Clipboard,
 		environment,
 		getPreferenceValues: () => {
 			if (currentPluginName) {
