@@ -2,8 +2,10 @@
 	import type { PluginInfo } from '@raycast-linux/protocol';
 	import { Input } from '$lib/components/ui/input';
 	import Calculator from '$lib/components/Calculator.svelte';
-	import PluginListItems from '$lib/components/PluginListItems.svelte';
-	import AppList from '$lib/components/AppList.svelte';
+	import BaseList from '$lib/components/BaseList.svelte';
+	import Icon from '$lib/components/Icon.svelte';
+	import { convertFileSrc, invoke } from '@tauri-apps/api/core';
+	import Fuse from 'fuse.js';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -11,85 +13,70 @@
 		installedApps?: any[];
 	};
 
+	type UnifiedItem =
+		| { type: 'calculator'; id: 'calculator'; value: string }
+		| { type: 'plugin'; id: string; data: PluginInfo }
+		| { type: 'app'; id: string; data: any };
+
 	let { plugins, onRunPlugin, installedApps = [] }: Props = $props();
 
 	let searchText = $state('');
-	let selectedIndex = $state(0);
-	let calculator: Calculator;
-	let pluginList: PluginListItems;
-	let appList: AppList;
+	let calculator: Calculator | null = $state(null);
 
-	$effect(() => {
-		if (calculator?.getHasResult()) {
-			selectedIndex = 0;
-		}
+	const pluginFuse = $derived(
+		new Fuse(plugins, {
+			keys: [
+				{ name: 'title', weight: 0.7 },
+				{ name: 'description', weight: 0.2 },
+				{ name: 'pluginName', weight: 0.1 }
+			],
+			threshold: 0.4
+		})
+	);
+
+	const appFuse = $derived(
+		new Fuse(installedApps, {
+			keys: ['name', 'comment', 'exec'],
+			threshold: 0.4
+		})
+	);
+
+	const displayItems = $derived.by(() => {
+		const filteredPlugins = searchText
+			? pluginFuse.search(searchText)
+			: plugins.map((p) => ({ item: p }));
+		const uniquePlugins = [...new Map(filteredPlugins.map((p) => [p.item.pluginPath, p])).values()];
+
+		const filteredApps = searchText
+			? appFuse.search(searchText)
+			: installedApps.map((a) => ({ item: a }));
+		const uniqueApps = [...new Map(filteredApps.map((a) => [a.item.exec, a])).values()];
+
+		return [
+			{ type: 'calculator', id: 'calculator', value: searchText } as const,
+			...uniquePlugins.map(
+				(p) => ({ type: 'plugin', id: p.item.pluginPath, data: p.item }) as const
+			),
+			...uniqueApps.map((a) => ({ type: 'app', id: a.item.exec, data: a.item }) as const)
+		];
 	});
 
-	$effect(() => {
-		const calculatorCount = calculator?.getHasResult() ? 1 : 0;
-		const pluginCount = pluginList?.getFilteredPlugins()?.length || 0;
-		const appCount = appList?.getFilteredApps()?.length || 0;
-		const totalItems = calculatorCount + pluginCount + appCount;
-
-		if (selectedIndex >= totalItems) {
-			selectedIndex = Math.max(0, totalItems - 1);
-		}
-	});
-
-	function handleKeydown(event: KeyboardEvent) {
-		const calculatorCount = calculator?.getHasResult() ? 1 : 0;
-		const pluginCount = pluginList?.getFilteredPlugins()?.length || 0;
-		const appCount = appList?.getFilteredApps()?.length || 0;
-		const totalItems = calculatorCount + pluginCount + appCount;
-
-		if (totalItems === 0) return;
-
-		if (event.key === 'ArrowDown') {
-			event.preventDefault();
-			selectedIndex = (selectedIndex + 1) % totalItems;
-		} else if (event.key === 'ArrowUp') {
-			event.preventDefault();
-			selectedIndex = (selectedIndex - 1 + totalItems) % totalItems;
-		} else if (event.key === 'Enter') {
-			event.preventDefault();
-			handleEnter();
-		}
-	}
-
-	function handleEnter() {
-		const calculatorCount = calculator?.getHasResult() ? 1 : 0;
-		const pluginCount = pluginList?.getFilteredPlugins()?.length || 0;
-
-		if (calculatorCount && selectedIndex === 0) {
-			calculator?.handleClick?.();
-		} else {
-			const itemIndex = selectedIndex - calculatorCount;
-			if (itemIndex < pluginCount) {
-				const filteredPlugins = pluginList?.getFilteredPlugins() || [];
-				if (filteredPlugins[itemIndex]) {
-					onRunPlugin(filteredPlugins[itemIndex]);
+	function handleEnter(item: UnifiedItem) {
+		switch (item.type) {
+			case 'calculator':
+				calculator?.handleClick();
+				break;
+			case 'plugin':
+				onRunPlugin(item.data);
+				break;
+			case 'app':
+				if (item.data.exec) {
+					invoke('launch_app', { exec: item.data.exec }).catch(console.error);
 				}
-			} else {
-				const appIndex = itemIndex - pluginCount;
-				const filteredApps = appList?.getFilteredApps() || [];
-				if (filteredApps[appIndex]) {
-					const app = filteredApps[appIndex];
-					if (app.exec) {
-						import('@tauri-apps/api/core').then(({ invoke }) => {
-							invoke('launch_app', { exec: app.exec }).catch(console.error);
-						});
-					}
-				}
-			}
+				break;
 		}
-	}
-
-	function handleItemClick(index: number) {
-		selectedIndex = index;
 	}
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <main class="bg-background text-foreground flex h-screen flex-col">
 	<header class="flex h-12 shrink-0 items-center border-b px-2">
@@ -101,31 +88,55 @@
 		/>
 	</header>
 	<div class="grow overflow-y-auto">
-		<Calculator
-			bind:this={calculator}
-			{searchText}
-			isSelected={selectedIndex === 0}
-			onSelect={() => handleItemClick(0)}
-		/>
-		<div>
-			<PluginListItems
-				bind:this={pluginList}
-				{plugins}
-				{searchText}
-				{selectedIndex}
-				startIndex={calculator?.getHasResult() ? 1 : 0}
-				onItemClick={handleItemClick}
-				{onRunPlugin}
-			/>
-			<AppList
-				bind:this={appList}
-				apps={installedApps}
-				{searchText}
-				{selectedIndex}
-				startIndex={(calculator?.getHasResult() ? 1 : 0) +
-					(pluginList?.getFilteredPlugins()?.length || 0)}
-				onItemClick={handleItemClick}
-			/>
-		</div>
+		<BaseList items={displayItems} onenter={handleEnter}>
+			{#snippet itemSnippet({ item, isSelected, onclick })}
+				{#if item.type === 'calculator'}
+					<Calculator
+						bind:this={calculator}
+						searchText={item.value}
+						{isSelected}
+						onSelect={onclick}
+					/>
+				{:else if item.type === 'plugin'}
+					<button
+						type="button"
+						class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-2 text-left"
+						class:bg-accent={isSelected}
+						{onclick}
+					>
+						<div class="flex size-5 shrink-0 items-center justify-center">
+							<Icon icon="app-window-16" class="size-4" />
+						</div>
+						<div class="flex flex-col">
+							<span class="font-medium">{item.data.title}</span>
+							<span class="text-muted-foreground text-sm">{item.data.description}</span>
+						</div>
+						<span class="ml-auto text-xs text-gray-500">{item.data.pluginName}</span>
+					</button>
+				{:else if item.type === 'app'}
+					<button
+						type="button"
+						class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-2 text-left"
+						class:bg-accent={isSelected}
+						{onclick}
+					>
+						<div class="flex size-5 shrink-0 items-center justify-center">
+							{#if item.data.icon_path}
+								<img src={convertFileSrc(item.data.icon_path)} alt="" class="size-4" />
+							{:else}
+								<Icon icon="app-window-16" class="size-4" />
+							{/if}
+						</div>
+						<div class="flex flex-col">
+							<span class="font-medium">{item.data.name}</span>
+							<span class="text-muted-foreground text-sm"
+								>{item.data.comment || 'No description'}</span
+							>
+						</div>
+						<span class="ml-auto text-xs text-gray-500">System App</span>
+					</button>
+				{/if}
+			{/snippet}
+		</BaseList>
 	</div>
 </main>

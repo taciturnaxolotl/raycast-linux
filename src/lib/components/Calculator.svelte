@@ -57,10 +57,6 @@
 		}
 	});
 
-	export function getHasResult() {
-		return !!mathResult;
-	}
-
 	export function handleClick() {
 		onSelect();
 		if (mathResult) {
@@ -104,7 +100,7 @@
 	}
 </script>
 
-{#if getHasResult() && mathResult}
+{#if mathResult}
 	<button
 		type="button"
 		class="w-full p-4 pt-2 text-left"
