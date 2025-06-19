@@ -85,4 +85,4 @@ impl AppCache {
             eprintln!("Error refreshing app cache in background: {:?}", e);
         }
     }
-} 
+}

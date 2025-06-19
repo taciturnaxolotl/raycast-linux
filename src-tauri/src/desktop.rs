@@ -90,13 +90,13 @@ impl DesktopFileManager {
     fn deduplicate_and_sort_apps(apps: Vec<App>) -> Vec<App> {
         let mut unique_apps = Vec::new();
         let mut seen_app_names = HashSet::new();
-        
+
         for app in apps {
             if seen_app_names.insert(app.name.clone()) {
                 unique_apps.push(app);
             }
         }
-        
+
         unique_apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
         unique_apps
     }
@@ -114,4 +114,4 @@ impl DesktopFileManager {
             })
             .collect())
     }
-} 
+}

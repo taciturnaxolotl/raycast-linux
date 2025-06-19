@@ -32,4 +32,4 @@ impl App {
         self.icon_path = icon_path;
         self
     }
-} 
+}
