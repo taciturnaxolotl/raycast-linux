@@ -13,8 +13,16 @@
     "windows": [
       {
         "title": "raycast-linux",
-        "width": 800,
-        "height": 600
+        "visible": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "transparent": true,
+        "resizable": false,
+        "skipTaskbar": true,
+        "fullscreen": false,
+        "width": 600,
+        "height": 80,
+        "center": true
       }
     ],
     "security": {

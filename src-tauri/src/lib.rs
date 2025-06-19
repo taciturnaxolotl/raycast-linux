@@ -3,18 +3,18 @@ mod cache;
 mod desktop;
 mod error;
 
+use crate::{app::App, cache::AppCache};
 #[cfg(target_os = "linux")]
 use arboard;
-use crate::{app::App, cache::AppCache};
 use selection::get_text;
 use std::fs;
 use std::io::{self, Cursor};
+#[cfg(target_os = "linux")]
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
-#[cfg(target_os = "linux")]
-use std::path::Path;
 use tauri::Manager;
 #[cfg(target_os = "linux")]
 use url::Url;
@@ -217,7 +217,7 @@ async fn get_from_file_manager() -> Result<Vec<FileSystemItem>, String> {
         Ok(r) => r,
         Err(_) => return Ok(vec![]),
     };
-    
+
     let body = response.body();
     let windows: Vec<zbus::zvariant::ObjectPath> = body.deserialize().unwrap_or_default();
 
@@ -230,14 +230,17 @@ async fn get_from_file_manager() -> Result<Vec<FileSystemItem>, String> {
             window_path,
             window_interface_ref,
         )
-        .await 
-            {
-                Ok(p) => p,
-                Err(_) => continue,
-            };
+        .await
+        {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
         if let Ok(is_active) = window_proxy.get_property::<bool>("Active").await {
             if is_active {
-                if let Ok(uris) = window_proxy.get_property::<Vec<String>>("SelectedUris").await {
+                if let Ok(uris) = window_proxy
+                    .get_property::<Vec<String>>("SelectedUris")
+                    .await
+                {
                     let paths = uris
                         .iter()
                         .filter_map(|uri_str| Url::parse(uri_str).ok())
@@ -354,7 +357,7 @@ async fn install_extension(
         .map_err(|e| format!("Failed to read response bytes: {}", e))?;
 
     let mut archive = zip::ZipArchive::new(Cursor::new(content)).map_err(|e| e.to_string())?;
-    
+
     let prefix_to_strip = {
         let file_names: Vec<PathBuf> = archive.file_names().map(PathBuf::from).collect();
 
@@ -363,7 +366,10 @@ async fn install_extension(
         } else {
             let first_path = &file_names[0];
             if let Some(first_component) = first_path.components().next() {
-                if file_names.iter().all(|path| path.starts_with(first_component)) {
+                if file_names
+                    .iter()
+                    .all(|path| path.starts_with(first_component))
+                {
                     Some(PathBuf::from(first_component.as_os_str()))
                 } else {
                     None
@@ -425,6 +431,7 @@ async fn install_extension(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
@@ -435,7 +442,9 @@ pub fn run() {
             get_selected_finder_items,
             install_extension
         ])
-        .setup(|_app| {
+        .setup(|app| {
+            use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+
             thread::spawn(|| {
                 thread::sleep(Duration::from_secs(60));
                 loop {
@@ -443,8 +452,35 @@ pub fn run() {
                     thread::sleep(Duration::from_secs(300));
                 }
             });
+
+            let spotlight_shortcut = Shortcut::new(Some(Modifiers::ALT), Code::Space);
+
+            let handle = app.handle().clone();
+
+            println!("Spotlight shortcut: {:?}", spotlight_shortcut);
+
+            app.handle().plugin(
+                tauri_plugin_global_shortcut::Builder::new()
+                    .with_handler(move |_app, shortcut, event| {
+                        println!("Shortcut: {:?}, Event: {:?}", shortcut, event);
+                        if shortcut == &spotlight_shortcut && event.state() == ShortcutState::Pressed {
+                            let spotlight_window = handle.get_webview_window("raycast-linux").unwrap();
+                            println!("Spotlight window: {:?}", spotlight_window);
+                            if spotlight_window.is_visible().unwrap_or(false) {
+                                spotlight_window.hide().unwrap();
+                            } else {
+                                spotlight_window.show().unwrap();
+                                spotlight_window.set_focus().unwrap();
+                            }
+                        }
+                    })
+                    .build(),
+            )?;
+
+            app.global_shortcut().register(spotlight_shortcut)?;
+
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}   
+}
