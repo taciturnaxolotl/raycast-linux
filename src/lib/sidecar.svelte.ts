@@ -10,6 +10,7 @@ class SidecarService {
 	#receiveBuffer = Buffer.alloc(0);
 	#unpackr = new Unpackr();
 	#onGoBackToPluginList: (() => void) | null = null;
+	#browserExtensionConnectionInterval: ReturnType<typeof setInterval> | null = null;
 
 	logs: string[] = $state([]);
 
@@ -46,6 +47,16 @@ class SidecarService {
 			this.#log(`Sidecar spawned with PID: ${this.#sidecarChild.pid}`);
 
 			this.requestPluginList();
+
+			this.#browserExtensionConnectionInterval = setInterval(async () => {
+				try {
+					const isConnected = await invoke<boolean>('browser_extension_check_connection');
+					this.dispatchEvent('browser-extension-connection-status', { isConnected });
+				} catch (e) {
+					this.#log(`Error checking browser extension connection: ${e}`);
+					this.dispatchEvent('browser-extension-connection-status', { isConnected: false });
+				}
+			}, 5000);
 		} catch (e) {
 			this.#log(`ERROR starting sidecar: ${e}`);
 			console.error('Failed to start sidecar:', e);
@@ -57,6 +68,10 @@ class SidecarService {
 			this.#log('Stopping sidecar service...');
 			this.#sidecarChild.kill();
 			this.#sidecarChild = null;
+		}
+		if (this.#browserExtensionConnectionInterval) {
+			clearInterval(this.#browserExtensionConnectionInterval);
+			this.#browserExtensionConnectionInterval = null;
 		}
 	};
 
@@ -189,6 +204,19 @@ class SidecarService {
 						requestId,
 						error: String(error)
 					});
+				});
+			return;
+		}
+
+		if (typedMessage.type === 'browser-extension-request') {
+			const { requestId, method, params } = typedMessage.payload;
+			invoke('browser_extension_request', { method, params })
+				.then((result) => {
+					this.dispatchEvent('browser-extension-response', { requestId, result });
+				})
+				.catch((error) => {
+					this.#log(`ERROR from browser extension request: ${error}`);
+					this.dispatchEvent('browser-extension-response', { requestId, error: String(error) });
 				});
 			return;
 		}

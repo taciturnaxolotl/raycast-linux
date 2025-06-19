@@ -13,6 +13,7 @@ import { Detail } from './components/detail';
 import { environment, getSelectedFinderItems, getSelectedText, open } from './environment';
 import { preferencesStore } from '../preferences';
 import { showToast } from './toast';
+import { BrowserExtensionAPI } from './browserExtension';
 
 let currentPluginName: string | null = null;
 let currentPluginPreferences: Array<{
@@ -40,11 +41,15 @@ export const getRaycastApi = () => {
 		LocalStorage,
 		Color,
 		Cache,
+		Icon,
 		LaunchType,
-		getSelectedFinderItems,
-		getSelectedText,
-		showToast,
 		Toast,
+		Action,
+		ActionPanel,
+		Detail,
+		Form,
+		Grid,
+		List,
 		environment,
 		getPreferenceValues: () => {
 			if (currentPluginName) {
@@ -57,6 +62,11 @@ export const getRaycastApi = () => {
 				defaultAction: 'copy'
 			};
 		},
+		getSelectedFinderItems,
+		getSelectedText,
+		open,
+		showToast,
+		useNavigation,
 		usePersistentState: <T>(
 			key: string,
 			initialValue: T
@@ -64,14 +74,6 @@ export const getRaycastApi = () => {
 			const [state, setState] = React.useState(initialValue);
 			return [state, setState, false];
 		},
-		useNavigation,
-		List,
-		Grid,
-		Action,
-		ActionPanel,
-		Detail,
-		Form,
-		Icon,
-		open
+		BrowserExtension: BrowserExtensionAPI
 	};
 };

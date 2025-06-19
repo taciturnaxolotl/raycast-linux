@@ -1,7 +1,7 @@
 import { createInterface } from 'readline';
 import { writeLog, writeOutput } from './io';
 import { runPlugin, sendPluginList } from './plugin';
-import { instances, navigationStack, toasts } from './state';
+import { instances, navigationStack, toasts, browserExtensionState } from './state';
 import { batchedUpdates, updateContainer } from './reconciler';
 import { preferencesStore } from './preferences';
 import type { RaycastInstance } from './types';
@@ -10,6 +10,7 @@ import {
 	handleSelectedTextResponse,
 	type FileSystemItem
 } from './api/environment';
+import { handleBrowserExtensionResponse } from './api/browserExtension';
 
 process.on('unhandledRejection', (reason: unknown) => {
 	writeLog(`--- UNHANDLED PROMISE REJECTION ---`);
@@ -133,6 +134,20 @@ rl.on('line', (line) => {
 						error?: string;
 					};
 					handleGetSelectedFinderItemsResponse(requestId, items ?? null, error);
+					break;
+				}
+				case 'browser-extension-response': {
+					const { requestId, result, error } = command.payload as {
+						requestId: string;
+						result?: any;
+						error?: string;
+					};
+					handleBrowserExtensionResponse(requestId, result, error);
+					break;
+				}
+				case 'browser-extension-connection-status': {
+					const { isConnected } = command.payload as { isConnected: boolean };
+					browserExtensionState.isConnected = isConnected;
 					break;
 				}
 				default:

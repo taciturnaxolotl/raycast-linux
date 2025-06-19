@@ -1,4 +1,5 @@
 mod app;
+mod browser_extension;
 mod cache;
 mod desktop;
 mod error;
@@ -6,6 +7,8 @@ mod error;
 use crate::{app::App, cache::AppCache};
 #[cfg(target_os = "linux")]
 use arboard;
+use browser_extension::WsState;
+use serde_json::json;
 use selection::get_text;
 use std::fs;
 use std::io::{self, Cursor};
@@ -15,7 +18,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
-use tauri::Manager;
+use tauri::{Manager, State};
 #[cfg(target_os = "linux")]
 use url::Url;
 #[cfg(target_os = "linux")]
@@ -166,23 +169,6 @@ fn get_selected_finder_items_windows() -> Result<Vec<FileSystemItem>, String> {
 }
 
 #[cfg(target_os = "linux")]
-async fn get_selected_finder_items_linux() -> Result<Vec<FileSystemItem>, String> {
-    if let Ok(paths) = get_from_file_manager().await {
-        if !paths.is_empty() {
-            return Ok(paths);
-        }
-    }
-
-    if let Ok(paths) = get_from_clipboard() {
-        if !paths.is_empty() {
-            return Ok(paths);
-        }
-    }
-
-    Err("Could not determine selected files. Please copy them to your clipboard.".to_string())
-}
-
-#[cfg(target_os = "linux")]
 async fn get_from_file_manager() -> Result<Vec<FileSystemItem>, String> {
     let connection = match zbus::Connection::session().await {
         Ok(c) => c,
@@ -279,6 +265,23 @@ fn get_from_clipboard() -> Result<Vec<FileSystemItem>, String> {
         return Ok(paths);
     }
     Ok(vec![])
+}
+
+#[cfg(target_os = "linux")]
+async fn get_selected_finder_items_linux() -> Result<Vec<FileSystemItem>, String> {
+    if let Ok(paths) = get_from_file_manager().await {
+        if !paths.is_empty() {
+            return Ok(paths);
+        }
+    }
+
+    if let Ok(paths) = get_from_clipboard() {
+        if !paths.is_empty() {
+            return Ok(paths);
+        }
+    }
+
+    Err("Could not determine selected files. Please copy them to your clipboard.".to_string())
 }
 
 #[tauri::command]
@@ -428,9 +431,61 @@ async fn install_extension(
     Ok(())
 }
 
+#[tauri::command]
+async fn browser_extension_check_connection(state: State<'_, WsState>) -> Result<bool, String> {
+    Ok(*state.is_connected.lock().unwrap())
+}
+
+#[tauri::command]
+async fn browser_extension_request(
+    method: String,
+    params: serde_json::Value,
+    state: State<'_, WsState>,
+) -> Result<serde_json::Value, String> {
+    let tx = {
+        let lock = state.connection.lock().unwrap();
+        lock.clone()
+    };
+
+    if let Some(tx) = tx {
+        let request_id = {
+            let mut counter = state.request_id_counter.lock().unwrap();
+            *counter += 1;
+            *counter
+        };
+
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+            "id": request_id
+        });
+
+        let (response_tx, response_rx) = tokio::sync::oneshot::channel();
+        state
+            .pending_requests
+            .lock()
+            .unwrap()
+            .insert(request_id, response_tx);
+
+        if tx.send(request.to_string()).await.is_err() {
+            return Err("Failed to send message to browser extension".into());
+        }
+
+        match tokio::time::timeout(Duration::from_secs(5), response_rx).await {
+            Ok(Ok(result)) => result,
+            Ok(Err(_)) => Err("Request cancelled".into()),
+            Err(_) => Err("Request timed out".into()),
+        }
+    } else {
+        Err("Browser extension not connected".into())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(WsState::default())
         .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 if let Ok(true) = window.is_visible() {
@@ -450,12 +505,17 @@ pub fn run() {
             launch_app,
             get_selected_text,
             get_selected_finder_items,
-            install_extension
+            install_extension,
+            browser_extension_check_connection,
+            browser_extension_request
         ])
         .setup(|app| {
             use tauri_plugin_global_shortcut::{
                 Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
             };
+
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(browser_extension::run_server(app_handle));
 
             thread::spawn(|| {
                 thread::sleep(Duration::from_secs(60));

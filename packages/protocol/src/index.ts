@@ -184,6 +184,16 @@ const GetSelectedFinderItemsMessageSchema = z.object({
 	payload: GetSelectedFinderItemsPayloadSchema
 });
 
+const BrowserExtensionRequestPayloadSchema = z.object({
+	requestId: z.string(),
+	method: z.string(),
+	params: z.unknown()
+});
+const BrowserExtensionRequestMessageSchema = z.object({
+	type: z.literal('browser-extension-request'),
+	payload: BrowserExtensionRequestPayloadSchema
+});
+
 export const SidecarMessageWithPluginsSchema = z.union([
 	BatchUpdateSchema,
 	CommandSchema,
@@ -193,6 +203,7 @@ export const SidecarMessageWithPluginsSchema = z.union([
 	GoBackToPluginListSchema,
 	OpenMessageSchema,
 	GetSelectedTextMessageSchema,
-	GetSelectedFinderItemsMessageSchema
+	GetSelectedFinderItemsMessageSchema,
+	BrowserExtensionRequestMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

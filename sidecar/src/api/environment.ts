@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import { writeOutput } from '../io';
 import type { Application } from './types';
 import { config } from '../config';
+import { browserExtensionState } from '../state';
 
 const supportPath = config.supportDir;
 try {
@@ -17,6 +18,8 @@ export interface FileSystemItem {
 	path: string;
 }
 
+export const BrowserExtension = { name: 'BrowserExtension' };
+
 export const environment = {
 	appearance: 'dark' as const,
 	assetsPath: config.assetsDir,
@@ -29,7 +32,10 @@ export const environment = {
 	raycastVersion: '1.0.0',
 	supportPath: supportPath,
 	textSize: 'medium' as const,
-	canAccess: (): boolean => {
+	canAccess: (feature: { name: string }): boolean => {
+		if (feature && feature.name === 'BrowserExtension') {
+			return browserExtensionState.isConnected;
+		}
 		return true;
 	}
 };
