@@ -431,6 +431,16 @@ async fn install_extension(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                if let Ok(true) = window.is_visible() {
+                    let _ = window.hide();
+                } else {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        }))
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -443,7 +453,9 @@ pub fn run() {
             install_extension
         ])
         .setup(|app| {
-            use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+            use tauri_plugin_global_shortcut::{
+                Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
+            };
 
             thread::spawn(|| {
                 thread::sleep(Duration::from_secs(60));
@@ -463,8 +475,11 @@ pub fn run() {
                 tauri_plugin_global_shortcut::Builder::new()
                     .with_handler(move |_app, shortcut, event| {
                         println!("Shortcut: {:?}, Event: {:?}", shortcut, event);
-                        if shortcut == &spotlight_shortcut && event.state() == ShortcutState::Pressed {
-                            let spotlight_window = handle.get_webview_window("raycast-linux").unwrap();
+                        if shortcut == &spotlight_shortcut
+                            && event.state() == ShortcutState::Pressed
+                        {
+                            let spotlight_window =
+                                handle.get_webview_window("raycast-linux").unwrap();
                             println!("Spotlight window: {:?}", spotlight_window);
                             if spotlight_window.is_visible().unwrap_or(false) {
                                 spotlight_window.hide().unwrap();
