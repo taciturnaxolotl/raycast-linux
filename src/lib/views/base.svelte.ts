@@ -8,6 +8,7 @@ import {
 	type ListSectionProps,
 	type ListItemProps
 } from '$lib/props';
+import Fuse from 'fuse.js';
 
 export type FlatViewItem = { id: number } & (
 	| { type: 'header'; props: ListSectionProps }
@@ -24,19 +25,15 @@ export type BaseViewArgs = {
 };
 
 function filterItems(items: FlatViewItem[], searchText: string): FlatViewItem[] {
-	const lowerSearchText = searchText.toLowerCase();
-	return items.filter((item) => {
-		if (item.type !== 'item') return false;
-
-		const props = item.props;
-		const title = 'title' in props ? (props.title as string) : undefined;
-		const keywords = 'keywords' in props ? (props.keywords as string[]) : undefined;
-
-		const titleMatch = title?.toLowerCase().includes(lowerSearchText);
-		const keywordsMatch = keywords?.some((k) => k.toLowerCase().includes(lowerSearchText));
-
-		return !!(titleMatch || keywordsMatch);
+	const fuse = new Fuse(items, {
+		keys: [
+			{ name: 'props.title', weight: 0.7 },
+			{ name: 'props.subtitle', weight: 0.5 },
+			{ name: 'props.keywords', weight: 0.3 }
+		],
+		threshold: 0.4
 	});
+	return fuse.search(searchText).map((result) => result.item);
 }
 
 export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | 'Grid.Item') {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Fuse from 'fuse.js';
 	import Icon from '$lib/components/Icon.svelte';
 	import { convertFileSrc } from '@tauri-apps/api/core';
 	import { invoke } from '@tauri-apps/api/core';
@@ -13,15 +14,16 @@
 
 	let { apps, searchText, selectedIndex, startIndex, onItemClick }: Props = $props();
 
+	const fuse = $derived(
+		new Fuse(apps, {
+			keys: ['name', 'comment', 'exec'],
+			threshold: 0.4
+		})
+	);
+
 	const filteredApps = $derived.by(() => {
 		if (!searchText) return apps;
-		const lowerCaseSearch = searchText.toLowerCase();
-		return apps.filter(
-			(app: any) =>
-				app.name.toLowerCase().includes(lowerCaseSearch) ||
-				app.comment?.toLowerCase().includes(lowerCaseSearch) ||
-				app.exec.toLowerCase().includes(lowerCaseSearch)
-		);
+		return fuse.search(searchText).map((result) => result.item);
 	});
 
 	export function getFilteredApps() {

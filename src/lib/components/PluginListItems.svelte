@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Fuse from 'fuse.js';
 	import type { PluginInfo } from '@raycast-linux/protocol';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -14,15 +15,20 @@
 	let { plugins, searchText, selectedIndex, startIndex, onItemClick, onRunPlugin }: Props =
 		$props();
 
+	const fuse = $derived(
+		new Fuse(plugins, {
+			keys: [
+				{ name: 'title', weight: 0.7 },
+				{ name: 'description', weight: 0.2 },
+				{ name: 'pluginName', weight: 0.1 }
+			],
+			threshold: 0.4
+		})
+	);
+
 	const filteredPlugins = $derived.by(() => {
 		if (!searchText) return plugins;
-		const lowerCaseSearch = searchText.toLowerCase();
-		return plugins.filter(
-			(p: PluginInfo) =>
-				p.title.toLowerCase().includes(lowerCaseSearch) ||
-				p.description?.toLowerCase().includes(lowerCaseSearch) ||
-				p.pluginName.toLowerCase().includes(lowerCaseSearch)
-		);
+		return fuse.search(searchText).map((result) => result.item);
 	});
 
 	export function getFilteredPlugins() {
