@@ -12,8 +12,14 @@
 	import Extensions from '$lib/components/Extensions.svelte';
 	import OAuthView from '$lib/components/OAuthView.svelte';
 	import { openUrl } from '@tauri-apps/plugin-opener';
+	import ClipboardHistoryView from '$lib/components/ClipboardHistoryView.svelte';
 
-	type ViewState = 'plugin-list' | 'plugin-running' | 'settings' | 'extensions-store';
+	type ViewState =
+		| 'plugin-list'
+		| 'plugin-running'
+		| 'settings'
+		| 'extensions-store'
+		| 'clipboard-history';
 
 	let viewState = $state<ViewState>('plugin-list');
 	let installedApps = $state<any[]>([]);
@@ -31,8 +37,20 @@
 		mode: 'view'
 	};
 
+	const clipboardHistoryPlugin: PluginInfo = {
+		title: 'Clipboard History',
+		description: 'View, search, and manage your clipboard history',
+		pluginTitle: 'Clipboard History',
+		pluginName: 'Clipboard History',
+		commandName: 'index',
+		pluginPath: 'builtin:history',
+		icon: 'copy-clipboard-16',
+		preferences: [],
+		mode: 'view'
+	};
+
 	const { pluginList, currentPreferences } = $derived(uiStore);
-	const allPlugins = $derived([...pluginList, storePlugin]);
+	const allPlugins = $derived([...pluginList, storePlugin, clipboardHistoryPlugin]);
 
 	$effect(() => {
 		untrack(() => {
@@ -126,6 +144,10 @@
 			viewState = 'extensions-store';
 			return;
 		}
+		if (plugin.pluginPath === 'builtin:history') {
+			viewState = 'clipboard-history';
+			return;
+		}
 
 		uiStore.setCurrentRunningPlugin(plugin);
 		sidecarService.dispatchEvent('run-plugin', {
@@ -213,4 +235,6 @@
 		onToastAction={handleToastAction}
 		onHideToast={handleHideToast}
 	/>
+{:else if viewState === 'clipboard-history'}
+	<ClipboardHistoryView onBack={() => (viewState = 'plugin-list')} />
 {/if}

@@ -234,6 +234,13 @@ impl ClipboardHistoryManager {
         items.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
     }
 
+    fn item_was_copied(&self, id: i64) -> RusqliteResult<usize> {
+        self.db.lock().unwrap().execute(
+            "UPDATE clipboard_history SET last_copied_at = ?, times_copied = times_copied + 1 WHERE id = ?",
+            params![Utc::now().timestamp(), id],
+        )
+    }
+
     fn delete_item(&self, id: i64) -> RusqliteResult<usize> {
         self.db
             .lock()
@@ -316,7 +323,7 @@ fn start_monitoring(_app_handle: AppHandle) {
                 let current_hash = hex::encode(Sha256::digest(&image_data.bytes));
                 if current_hash != last_image_hash {
                     if let Some(manager) = MANAGER.lock().unwrap().as_ref() {
-                        let image_path = manager.image_dir.join(format!("{}.png", &current_hash));
+                        let image_path = manager.image_dir.join(format!("{}.png", current_hash));
                         match image::save_buffer(
                             &image_path,
                             &image_data.bytes,
@@ -351,6 +358,16 @@ fn start_monitoring(_app_handle: AppHandle) {
 pub fn history_get_items(filter: String, limit: u32) -> Result<Vec<ClipboardItem>, String> {
     if let Some(manager) = MANAGER.lock().unwrap().as_ref() {
         manager.get_items(filter, limit).map_err(|e| e.to_string())
+    } else {
+        Err("Clipboard history manager not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn history_item_was_copied(id: i64) -> Result<(), String> {
+    if let Some(manager) = MANAGER.lock().unwrap().as_ref() {
+        manager.item_was_copied(id).map_err(|e| e.to_string())?;
+        Ok(())
     } else {
         Err("Clipboard history manager not initialized".to_string())
     }

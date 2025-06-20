@@ -143,7 +143,8 @@ pub fn run() {
             clipboard_history::history_get_items,
             clipboard_history::history_delete_item,
             clipboard_history::history_toggle_pin,
-            clipboard_history::history_clear_all
+            clipboard_history::history_clear_all,
+            clipboard_history::history_item_was_copied
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
