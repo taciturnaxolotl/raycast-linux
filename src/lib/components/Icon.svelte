@@ -2,15 +2,18 @@
 	import type { ImageLike } from '$lib/props';
 	import { resolveIcon } from '$lib/assets';
 	import icons from '$lib/icons.svg';
-	import { getContext } from 'svelte';
+	import { getContext, hasContext } from 'svelte';
 
 	type Props = {
 		icon: ImageLike | undefined | null;
 		class?: string;
+		assetsPath?: string;
 	};
-	let { icon, class: className }: Props = $props();
+	let { icon, class: className, assetsPath: propAssetsPath }: Props = $props();
 
-	const assetsPath = getContext<string>('assetsPath');
+	const assetsPath = $derived(
+		propAssetsPath ?? (hasContext('assetsPath') ? getContext<string>('assetsPath') : '')
+	);
 	const iconInfo = $derived(resolveIcon(icon, assetsPath));
 
 	const maskStyles = $derived(

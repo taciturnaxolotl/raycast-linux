@@ -10,9 +10,11 @@
 		icon?: ImageLike | null;
 		isSelected: boolean;
 		accessories?: Snippet;
+		assetsPath?: string;
 	} & HTMLButtonAttributes;
 
-	let { title, subtitle, icon, isSelected, accessories, ...restProps }: Props = $props();
+	let { title, subtitle, icon, isSelected, accessories, assetsPath, ...restProps }: Props =
+		$props();
 </script>
 
 <button
@@ -23,7 +25,7 @@
 >
 	<div class="flex size-5 shrink-0 items-center justify-center">
 		{#if icon}
-			<Icon {icon} class="size-4" />
+			<Icon {icon} {assetsPath} class="size-4" />
 		{:else}
 			<div class="size-4"></div>
 		{/if}

@@ -3,9 +3,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import Calculator from '$lib/components/Calculator.svelte';
 	import BaseList from '$lib/components/BaseList.svelte';
-	import { convertFileSrc, invoke } from '@tauri-apps/api/core';
+	import { invoke } from '@tauri-apps/api/core';
 	import Fuse from 'fuse.js';
 	import ListItemBase from './nodes/shared/ListItemBase.svelte';
+	import path from 'path';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -98,10 +99,12 @@
 						onSelect={onclick}
 					/>
 				{:else if item.type === 'plugin'}
+					{@const assetsPath = path.dirname(item.data.pluginPath) + '/assets'}
 					<ListItemBase
 						title={item.data.title}
 						subtitle={item.data.pluginTitle}
-						icon="app-window-16"
+						icon={item.data.icon || 'app-window-16'}
+						{assetsPath}
 						{isSelected}
 						{onclick}
 					>
