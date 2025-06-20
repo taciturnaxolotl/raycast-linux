@@ -56,7 +56,8 @@ enum IncomingMessage {
 pub struct WsState {
     pub connection: Arc<Mutex<Option<tokio::sync::mpsc::Sender<String>>>>,
     pub is_connected: Arc<Mutex<bool>>,
-    pub pending_requests: Arc<Mutex<HashMap<u64, oneshot::Sender<Result<serde_json::Value, String>>>>>,
+    pub pending_requests:
+        Arc<Mutex<HashMap<u64, oneshot::Sender<Result<serde_json::Value, String>>>>>,
     pub request_id_counter: Arc<Mutex<u64>>,
 }
 
@@ -90,7 +91,11 @@ async fn handle_connection(stream: TcpStream, app_handle: AppHandle) {
 
     let sender_task = tokio::spawn(async move {
         while let Some(msg_to_send) = rx.recv().await {
-            if ws_sender.send(Message::Binary(msg_to_send.into())).await.is_err() {
+            if ws_sender
+                .send(Message::Binary(msg_to_send.into()))
+                .await
+                .is_err()
+            {
                 break;
             }
         }
@@ -113,14 +118,24 @@ async fn handle_connection(stream: TcpStream, app_handle: AppHandle) {
                                 "result": null,
                                 "id": id
                             });
-                            let tx = app_clone_for_receiver.state::<WsState>().connection.lock().unwrap().clone();
+                            let tx = app_clone_for_receiver
+                                .state::<WsState>()
+                                .connection
+                                .lock()
+                                .unwrap()
+                                .clone();
                             if let Some(tx) = tx {
                                 let _ = tx.send(response.to_string()).await;
                             }
                         }
                     }
                     Ok(IncomingMessage::Response { id, result, error }) => {
-                        let sender = app_clone_for_receiver.state::<WsState>().pending_requests.lock().unwrap().remove(&id);
+                        let sender = app_clone_for_receiver
+                            .state::<WsState>()
+                            .pending_requests
+                            .lock()
+                            .unwrap()
+                            .remove(&id);
                         if let Some(sender) = sender {
                             if !error.is_null() {
                                 let _ = sender.send(Err(error.to_string()));
@@ -161,7 +176,9 @@ pub async fn run_server(app_handle: AppHandle) {
 }
 
 #[tauri::command]
-pub async fn browser_extension_check_connection(state: tauri::State<'_, WsState>) -> Result<bool, String> {
+pub async fn browser_extension_check_connection(
+    state: tauri::State<'_, WsState>,
+) -> Result<bool, String> {
     Ok(*state.is_connected.lock().unwrap())
 }
 
@@ -172,7 +189,7 @@ pub async fn browser_extension_request(
     state: tauri::State<'_, WsState>,
 ) -> Result<serde_json::Value, String> {
     use std::time::Duration;
-    
+
     let tx = {
         let lock = state.connection.lock().unwrap();
         lock.clone()
@@ -212,4 +229,3 @@ pub async fn browser_extension_request(
         Err("Browser extension not connected".into())
     }
 }
-

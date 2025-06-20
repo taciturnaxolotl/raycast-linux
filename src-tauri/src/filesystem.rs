@@ -263,4 +263,4 @@ async fn get_selected_finder_items_linux() -> Result<Vec<FileSystemItem>, String
     }
 
     Err("Could not determine selected files. Please copy them to your clipboard.".to_string())
-} 
+}

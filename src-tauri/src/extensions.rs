@@ -112,4 +112,4 @@ pub async fn install_extension(
     }
 
     Ok(())
-} 
+}
