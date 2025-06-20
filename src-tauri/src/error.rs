@@ -6,11 +6,26 @@ pub enum AppError {
     Serialization(String),
     DirectoryNotFound,
     CacheError(String),
+    Rusqlite(rusqlite::Error),
+    Keyring(keyring::Error),
+    ClipboardHistory(String),
 }
 
 impl From<io::Error> for AppError {
     fn from(error: io::Error) -> Self {
         AppError::Io(error)
+    }
+}
+
+impl From<rusqlite::Error> for AppError {
+    fn from(error: rusqlite::Error) -> Self {
+        AppError::Rusqlite(error)
+    }
+}
+
+impl From<keyring::Error> for AppError {
+    fn from(error: keyring::Error) -> Self {
+        AppError::Keyring(error)
     }
 }
 
@@ -33,6 +48,9 @@ impl std::fmt::Display for AppError {
             AppError::Serialization(msg) => write!(f, "Serialization error: {}", msg),
             AppError::DirectoryNotFound => write!(f, "Directory not found"),
             AppError::CacheError(msg) => write!(f, "Cache error: {}", msg),
+            AppError::Rusqlite(err) => write!(f, "Database error: {}", err),
+            AppError::Keyring(err) => write!(f, "Keychain error: {}", err),
+            AppError::ClipboardHistory(msg) => write!(f, "Clipboard history error: {}", msg),
         }
     }
 }

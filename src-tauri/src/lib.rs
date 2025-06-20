@@ -2,6 +2,7 @@ mod app;
 mod browser_extension;
 mod cache;
 mod clipboard;
+mod clipboard_history;
 mod desktop;
 mod error;
 mod extensions;
@@ -15,7 +16,6 @@ use std::process::Command;
 use std::thread;
 use std::time::Duration;
 use tauri::{Emitter, Manager};
-use tauri_plugin_deep_link::DeepLinkExt;
 
 #[tauri::command]
 fn get_installed_apps() -> Vec<App> {
@@ -139,11 +139,18 @@ pub fn run() {
             clipboard::clipboard_clear,
             oauth::oauth_set_tokens,
             oauth::oauth_get_tokens,
-            oauth::oauth_remove_tokens
+            oauth::oauth_remove_tokens,
+            clipboard_history::history_get_items,
+            clipboard_history::history_delete_item,
+            clipboard_history::history_toggle_pin,
+            clipboard_history::history_clear_all
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(browser_extension::run_server(app_handle));
+
+            let app_handle_for_history = app.handle().clone();
+            clipboard_history::init(app_handle_for_history);
 
             setup_background_refresh();
             setup_global_shortcut(app)?;
