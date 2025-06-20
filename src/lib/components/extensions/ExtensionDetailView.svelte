@@ -1,12 +1,14 @@
 <script lang="ts">
-	import { StoreListingsReturnTypeSchema, type Datum } from '$lib/store';
+	import type { Datum } from '$lib/store';
 	import { Button } from '$lib/components/ui/button';
 	import { Download, ArrowUpRight } from '@lucide/svelte';
 	import Icon from '../Icon.svelte';
 	import { openUrl } from '@tauri-apps/plugin-opener';
-	import { Kbd } from '../ui/kbd';
 	import { Separator } from '../ui/separator';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import ActionBar from '$lib/components/nodes/shared/ActionBar.svelte';
+	import ActionMenu from '../nodes/shared/ActionMenu.svelte';
+	import { DropdownMenuItem } from '../ui/dropdown-menu';
 
 	type Props = {
 		extension: Datum;
@@ -205,18 +207,21 @@
 		</div>
 	</div>
 </div>
-<footer class="bg-card flex h-12 shrink-0 items-center justify-between border-t px-4">
-	<div class="flex items-center gap-2">
-		<Icon
-			icon={extension.icons.light ? { source: extension.icons.light, mask: 'Circle' } : undefined}
-			class="size-5"
-		/>
-		<span class="text-sm">{extension.title}</span>
-	</div>
-	<div class="flex items-center gap-2">
-		<Button size="sm" onclick={onInstall} disabled={isInstalling}>
+
+<ActionBar
+	title={extension.title}
+	icon={extension.icons.light ? { source: extension.icons.light, mask: 'Circle' } : undefined}
+>
+	{#snippet primaryAction({ props })}
+		<Button {...props} onclick={onInstall} disabled={isInstalling}>
 			{isInstalling ? 'Installing...' : 'Install Extension'}
 		</Button>
-		<Button variant="outline" size="sm">Actions <Kbd>⌘ K</Kbd></Button>
-	</div>
-</footer>
+	{/snippet}
+	{#snippet actions()}
+		<ActionMenu>
+			<DropdownMenuItem onclick={onInstall} disabled={isInstalling}>
+				{isInstalling ? 'Installing...' : 'Install Extension'}
+			</DropdownMenuItem>
+		</ActionMenu>
+	{/snippet}
+</ActionBar>

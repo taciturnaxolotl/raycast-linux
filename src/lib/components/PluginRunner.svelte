@@ -3,9 +3,11 @@
 	import MainLayout from '$lib/components/layout/MainLayout.svelte';
 	import Header from '$lib/components/layout/Header.svelte';
 	import Content from '$lib/components/layout/Content.svelte';
-	import Footer from '$lib/components/layout/Footer.svelte';
 	import { uiStore } from '$lib/ui.svelte';
 	import path from 'path';
+	import ActionBar from './nodes/shared/ActionBar.svelte';
+	import Footer from './layout/Footer.svelte';
+	import NodeRenderer from './NodeRenderer.svelte';
 
 	const {
 		uiTree,
@@ -13,7 +15,7 @@
 		selectedNodeId,
 		toasts,
 		currentRunningPlugin,
-		primaryAction,
+		primaryAction: primaryActionObject,
 		secondaryAction,
 		actionPanel,
 		allActions
@@ -32,6 +34,8 @@
 	const selectedItemNode = $derived(uiTree.get(selectedNodeId!));
 	let searchText = $state('');
 	const navigationTitle = $derived(rootNode?.props.navigationTitle as string | undefined);
+	const toastToShow = $derived(Array.from(toasts.entries()).sort((a, b) => b[0] - a[0])[0]?.[1]);
+	const showActionPanelDropdown = $derived((allActions?.length ?? 0) > 1);
 
 	const assetsPath = $derived(
 		currentRunningPlugin ? path.dirname(currentRunningPlugin.pluginPath) + '/assets' : ''
@@ -62,7 +66,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if rootNode}
-	<MainLayout {primaryAction} {secondaryAction} {onDispatch}>
+	<MainLayout primaryAction={primaryActionObject} {secondaryAction} {onDispatch}>
 		{#snippet header()}
 			<Header {rootNode} bind:searchText {onPopView} {onDispatch} {uiTree} showBackButton={true} />
 		{/snippet}
@@ -79,18 +83,34 @@
 		{/snippet}
 
 		{#snippet footer()}
-			<Footer
-				{uiTree}
-				{onDispatch}
-				{primaryAction}
-				{secondaryAction}
-				{actionPanel}
-				actions={allActions}
-				{navigationTitle}
-				{toasts}
-				{onToastAction}
-				{onHideToast}
-			/>
+			{#if toastToShow}
+				<Footer toast={toastToShow} {onToastAction} />
+			{:else}
+				<ActionBar title={navigationTitle}>
+					{#snippet primaryAction({ props })}
+						{#if primaryActionObject}
+							<NodeRenderer
+								{...props}
+								nodeId={primaryActionObject.id}
+								{uiTree}
+								{onDispatch}
+								displayAs="button"
+							/>
+						{/if}
+					{/snippet}
+					{#snippet actions()}
+						{#if showActionPanelDropdown && actionPanel}
+							<NodeRenderer
+								nodeId={actionPanel.id}
+								{uiTree}
+								{onDispatch}
+								primaryActionNodeId={primaryActionObject?.id}
+								secondaryActionNodeId={secondaryAction?.id}
+							/>
+						{/if}
+					{/snippet}
+				</ActionBar>
+			{/if}
 		{/snippet}
 	</MainLayout>
 {/if}

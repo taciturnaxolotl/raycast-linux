@@ -1,12 +1,8 @@
 <script lang="ts">
 	import type { UINode } from '$lib/types';
 	import NodeRenderer from '../NodeRenderer.svelte';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { useTypedNode } from '$lib/node.svelte';
-	import { setContext } from 'svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { MoreHorizontal } from '@lucide/svelte';
-	import { Kbd } from '../ui/kbd';
+	import ActionMenu from './shared/ActionMenu.svelte';
 
 	type Props = {
 		nodeId: number;
@@ -17,44 +13,19 @@
 	};
 
 	let { nodeId, uiTree, onDispatch, primaryActionNodeId, secondaryActionNodeId }: Props = $props();
-	const { node, props: componentProps } = $derived.by(
+	const { node } = $derived.by(
 		useTypedNode(() => ({
 			nodeId,
 			uiTree,
 			type: 'ActionPanel'
 		}))
 	);
-
-	setContext('ActionPanelContext', {
-		primaryActionNodeId: () => primaryActionNodeId,
-		secondaryActionNodeId: () => secondaryActionNodeId
-	});
-
-	let open = $state(false);
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
-			e.preventDefault();
-			open = !open;
-		}
-	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-{#if node && componentProps}
-	<DropdownMenu.Root bind:open>
-		<DropdownMenu.Trigger>
-			{#snippet child({ props })}
-				<Button {...props} variant="ghost" size="sm">
-					Actions <Kbd>⌘ K</Kbd>
-				</Button>
-			{/snippet}
-		</DropdownMenu.Trigger>
-		<DropdownMenu.Content>
-			{#each node.children as childId}
-				<NodeRenderer nodeId={childId} {uiTree} {onDispatch} />
-			{/each}
-		</DropdownMenu.Content>
-	</DropdownMenu.Root>
+{#if node}
+	<ActionMenu {primaryActionNodeId} {secondaryActionNodeId}>
+		{#each node.children as childId}
+			<NodeRenderer nodeId={childId} {uiTree} {onDispatch} />
+		{/each}
+	</ActionMenu>
 {/if}

@@ -13,6 +13,8 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { shortcutToText } from '$lib/renderKey';
 	import * as Select from './ui/select';
+	import ActionBar from './nodes/shared/ActionBar.svelte';
+	import ActionMenu from './nodes/shared/ActionMenu.svelte';
 
 	type Props = {
 		onBack: () => void;
@@ -37,7 +39,6 @@
 	let searchText = $state('');
 	let filter = $state('all');
 	let listElement: HTMLElement | undefined = $state();
-	let actionMenuOpen = $state(false);
 
 	const pinnedItems = $derived(allItems.filter((item) => item.isPinned));
 	const recentItems = $derived(allItems.filter((item) => !item.isPinned));
@@ -61,7 +62,6 @@
 				filter,
 				limit: 200
 			});
-			console.log('items', items);
 			allItems = items;
 			selectedIndex = 0;
 		} catch (e) {
@@ -155,13 +155,7 @@
 			e.preventDefault();
 			if (selectedItem) handleDelete(selectedItem);
 		}
-		if (e.metaKey && e.key.toLowerCase() === 'k') {
-			e.preventDefault();
-			actionMenuOpen = !actionMenuOpen;
-		}
 	}
-
-	$inspect(selectedItem);
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -233,9 +227,9 @@
 				{/each}
 			{/if}
 		</div>
-		<div class="flex flex-col overflow-y-auto p-4">
+		<div class="flex flex-col overflow-y-hidden">
 			{#if selectedItem}
-				<div class="h-full flex-grow overflow-y-auto">
+				<div class="flex-grow overflow-y-auto p-4">
 					{#if selectedItem.contentType === 'color'}
 						<div class="flex flex-col items-center justify-center gap-4 py-8">
 							<div
@@ -255,10 +249,8 @@
 							{selectedItem.contentValue}
 						</div>
 					{/if}
-				</div>
 
-				<div>
-					<div class="border-t py-4">
+					<div class="mt-4 border-t py-4">
 						<h3 class="text-muted-foreground mb-2 text-xs font-semibold uppercase">Information</h3>
 						<div class="flex flex-col gap-3 text-sm">
 							<div class="flex justify-between">
@@ -283,35 +275,33 @@
 							</div>
 						</div>
 					</div>
+				</div>
 
-					<div class="flex items-center justify-end gap-2">
-						<Button size="sm" onclick={() => handleCopy(selectedItem)}>
+				<ActionBar>
+					{#snippet primaryAction({ props })}
+						<Button {...props} onclick={() => handleCopy(selectedItem)}>
 							Copy to Clipboard <Kbd>⏎</Kbd>
 						</Button>
-
-						<DropdownMenu.Root bind:open={actionMenuOpen}>
-							<DropdownMenu.Trigger>
-								<Button variant="outline" size="sm">Actions <Kbd>⌘ K</Kbd></Button>
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content>
-								<DropdownMenu.Item onclick={() => handlePin(selectedItem)}>
-									<Pin class="mr-2 size-4" />
-									<span>{selectedItem.isPinned ? 'Unpin' : 'Pin'}</span>
-									<DropdownMenu.Shortcut>
-										{shortcutToText({ key: 'P', modifiers: ['cmd', 'shift'] })}
-									</DropdownMenu.Shortcut>
-								</DropdownMenu.Item>
-								<DropdownMenu.Item onclick={() => handleDelete(selectedItem)}>
-									<Trash class="mr-2 size-4" />
-									<span>Delete</span>
-									<DropdownMenu.Shortcut>
-										{shortcutToText({ key: 'x', modifiers: ['ctrl'] })}
-									</DropdownMenu.Shortcut>
-								</DropdownMenu.Item>
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
-					</div>
-				</div>
+					{/snippet}
+					{#snippet actions()}
+						<ActionMenu>
+							<DropdownMenu.Item onclick={() => handlePin(selectedItem)}>
+								<Pin class="mr-2 size-4" />
+								<span>{selectedItem.isPinned ? 'Unpin' : 'Pin'}</span>
+								<DropdownMenu.Shortcut>
+									{shortcutToText({ key: 'P', modifiers: ['cmd', 'shift'] })}
+								</DropdownMenu.Shortcut>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => handleDelete(selectedItem)}>
+								<Trash class="mr-2 size-4" />
+								<span>Delete</span>
+								<DropdownMenu.Shortcut>
+									{shortcutToText({ key: 'x', modifiers: ['ctrl'] })}
+								</DropdownMenu.Shortcut>
+							</DropdownMenu.Item>
+						</ActionMenu>
+					{/snippet}
+				</ActionBar>
 			{/if}
 		</div>
 	</div>
