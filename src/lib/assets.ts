@@ -1,5 +1,6 @@
 import { RaycastIconSchema, type ImageLike } from '$lib/props';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { mode } from 'mode-watcher';
 import path from 'path';
 
 // this matches any emoji character (u flag = unicode, \p{Emoji} = any unicode emoji)
@@ -40,6 +41,13 @@ export function resolveIcon(
 	}
 
 	if (typeof icon === 'object' && 'source' in icon) {
+		if (typeof icon.source === 'object') {
+			return {
+				type: 'image',
+				src: mode.current === 'dark' ? icon.source.dark : icon.source.light,
+				mask: icon.mask
+			};
+		}
 		if (icon.source.startsWith('http')) {
 			return {
 				type: 'image',

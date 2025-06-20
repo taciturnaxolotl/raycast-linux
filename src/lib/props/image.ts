@@ -6,7 +6,7 @@ export const ImageLikeSchema = z.union([
 	RaycastIconSchema,
 	z.string(),
 	z.object({
-		source: z.string(),
+		source: z.union([z.string(), z.object({ light: z.string(), dark: z.string() })]),
 		mask: z.string().optional()
 	})
 ]);
