@@ -29,10 +29,10 @@
 		{/if}
 	</div>
 
-	<div class="flex-grow overflow-hidden">
-		<p class="font-medium">{title}</p>
+	<div class="flex flex-grow items-baseline gap-4 overflow-hidden">
+		<p class="font-medium whitespace-nowrap">{title}</p>
 		{#if subtitle}
-			<p class="text-muted-foreground truncate text-sm">{subtitle}</p>
+			<p class="text-muted-foreground truncate">{subtitle}</p>
 		{/if}
 	</div>
 
