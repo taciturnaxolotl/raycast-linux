@@ -37,6 +37,14 @@ export function resolveIcon(
 			return { type: 'raycast', name: icon };
 		}
 
+		if (icon.startsWith('data:') || icon.startsWith('blob:')) {
+			return { type: 'image', src: icon };
+		}
+
+		if (icon.startsWith('/')) {
+			return { type: 'image', src: convertFileSrc(icon) };
+		}
+
 		return { type: 'image', src: convertFileSrc(path.join(assetsBasePath, icon)) };
 	}
 
@@ -55,6 +63,23 @@ export function resolveIcon(
 				mask: icon.mask
 			};
 		}
+
+		if (icon.source.startsWith('data:') || icon.source.startsWith('blob:')) {
+			return {
+				type: 'image',
+				src: icon.source,
+				mask: icon.mask
+			};
+		}
+
+		if (icon.source.startsWith('/')) {
+			return {
+				type: 'image',
+				src: convertFileSrc(icon.source),
+				mask: icon.mask
+			};
+		}
+
 		return {
 			type: 'image',
 			src: convertFileSrc(path.join(assetsBasePath, icon.source)),

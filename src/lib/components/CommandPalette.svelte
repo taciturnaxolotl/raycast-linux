@@ -3,9 +3,9 @@
 	import { Input } from '$lib/components/ui/input';
 	import Calculator from '$lib/components/Calculator.svelte';
 	import BaseList from '$lib/components/BaseList.svelte';
-	import Icon from '$lib/components/Icon.svelte';
 	import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 	import Fuse from 'fuse.js';
+	import ListItemBase from './nodes/shared/ListItemBase.svelte';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -98,45 +98,33 @@
 						onSelect={onclick}
 					/>
 				{:else if item.type === 'plugin'}
-					<button
-						type="button"
-						class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-2 text-left"
-						class:bg-accent={isSelected}
+					<ListItemBase
+						title={item.data.title}
+						subtitle={item.data.description}
+						icon="app-window-16"
+						{isSelected}
 						{onclick}
 					>
-						<div class="flex size-5 shrink-0 items-center justify-center">
-							<Icon icon="app-window-16" class="size-4" />
-						</div>
-						<div class="flex flex-col">
-							<span class="font-medium">{item.data.title}</span>
-							<span class="text-muted-foreground text-sm">{item.data.description}</span>
-						</div>
-						<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap"
-							>{item.data.pluginName}</span
-						>
-					</button>
+						{#snippet accessories()}
+							<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">
+								{item.data.pluginName}
+							</span>
+						{/snippet}
+					</ListItemBase>
 				{:else if item.type === 'app'}
-					<button
-						type="button"
-						class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-2 text-left"
-						class:bg-accent={isSelected}
+					<ListItemBase
+						title={item.data.name}
+						subtitle={item.data.comment || 'No description'}
+						icon={item.data.icon_path ? item.data.icon_path : 'app-window-16'}
+						{isSelected}
 						{onclick}
 					>
-						<div class="flex size-5 shrink-0 items-center justify-center">
-							{#if item.data.icon_path}
-								<img src={convertFileSrc(item.data.icon_path)} alt="" class="size-4" />
-							{:else}
-								<Icon icon="app-window-16" class="size-4" />
-							{/if}
-						</div>
-						<div class="flex flex-col">
-							<span class="font-medium">{item.data.name}</span>
-							<span class="text-muted-foreground text-sm"
-								>{item.data.comment || 'No description'}</span
-							>
-						</div>
-						<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">System App</span>
-					</button>
+						{#snippet accessories()}
+							<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">
+								System App
+							</span>
+						{/snippet}
+					</ListItemBase>
 				{/if}
 			{/snippet}
 		</BaseList>
