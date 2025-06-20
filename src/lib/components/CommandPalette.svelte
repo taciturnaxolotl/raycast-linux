@@ -115,8 +115,8 @@
 				{:else if item.type === 'app'}
 					<ListItemBase
 						title={item.data.name}
-						subtitle={item.data.comment || 'No description'}
-						icon={item.data.icon_path ? item.data.icon_path : 'app-window-16'}
+						subtitle={item.data.comment}
+						icon={item.data.icon_path ?? 'app-window-16'}
 						{isSelected}
 						{onclick}
 					>
