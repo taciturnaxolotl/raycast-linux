@@ -110,7 +110,7 @@ export type SidecarMessage = z.infer<typeof SidecarMessageSchema>;
 
 export const PreferenceSchema = z.object({
 	name: z.string(),
-	title: z.string(),
+	title: z.string().optional(),
 	description: z.string().optional(),
 	type: z.enum(['textfield', 'dropdown', 'checkbox', 'directory']),
 	required: z.boolean().optional(),
@@ -249,6 +249,45 @@ const ClipboardClearMessageSchema = z.object({
 	payload: ClipboardClearPayloadSchema
 });
 
+const OauthAuthorizePayloadSchema = z.object({
+	url: z.string(),
+	providerName: z.string(),
+	providerIcon: z.string().optional(),
+	description: z.string().optional()
+});
+const OauthAuthorizeMessageSchema = z.object({
+	type: z.literal('oauth-authorize'),
+	payload: OauthAuthorizePayloadSchema
+});
+
+const OauthGetTokensPayloadSchema = z.object({
+	requestId: z.string(),
+	providerId: z.string()
+});
+const OauthGetTokensMessageSchema = z.object({
+	type: z.literal('oauth-get-tokens'),
+	payload: OauthGetTokensPayloadSchema
+});
+
+const OauthSetTokensPayloadSchema = z.object({
+	requestId: z.string(),
+	providerId: z.string(),
+	tokens: z.record(z.string(), z.unknown())
+});
+const OauthSetTokensMessageSchema = z.object({
+	type: z.literal('oauth-set-tokens'),
+	payload: OauthSetTokensPayloadSchema
+});
+
+const OauthRemoveTokensPayloadSchema = z.object({
+	requestId: z.string(),
+	providerId: z.string()
+});
+const OauthRemoveTokensMessageSchema = z.object({
+	type: z.literal('oauth-remove-tokens'),
+	payload: OauthRemoveTokensPayloadSchema
+});
+
 export const SidecarMessageWithPluginsSchema = z.union([
 	BatchUpdateSchema,
 	CommandSchema,
@@ -264,6 +303,10 @@ export const SidecarMessageWithPluginsSchema = z.union([
 	ClipboardPasteMessageSchema,
 	ClipboardReadMessageSchema,
 	ClipboardReadTextMessageSchema,
-	ClipboardClearMessageSchema
+	ClipboardClearMessageSchema,
+	OauthAuthorizeMessageSchema,
+	OauthGetTokensMessageSchema,
+	OauthSetTokensMessageSchema,
+	OauthRemoveTokensMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

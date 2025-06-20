@@ -70,12 +70,28 @@
 			});
 
 			if (urlObj.protocol === 'raycast:') {
-				switch (urlObj.host) {
-					case 'extensions':
-						viewState = 'extensions-store';
-						break;
-					default:
-						viewState = 'plugin-list';
+				if (urlObj.host === 'oauth-callback' || urlObj.pathname.startsWith('/redirect')) {
+					const params = urlObj.searchParams;
+					const code = params.get('code');
+					const state = params.get('state');
+					if (code && state) {
+						sidecarService.dispatchEvent('oauth-authorize-response', { code, state });
+					} else {
+						const error = params.get('error') || 'Unknown OAuth error';
+						const errorDescription = params.get('error_description');
+						sidecarService.dispatchEvent('oauth-authorize-response', {
+							state,
+							error: `${error}: ${errorDescription}`
+						});
+					}
+				} else {
+					switch (urlObj.host) {
+						case 'extensions':
+							viewState = 'extensions-store';
+							break;
+						default:
+							viewState = 'plugin-list';
+					}
 				}
 			}
 		} catch (error) {

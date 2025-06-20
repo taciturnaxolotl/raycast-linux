@@ -12,6 +12,7 @@ import {
 } from './api/environment';
 import { handleBrowserExtensionResponse } from './api/browserExtension';
 import { handleClipboardResponse } from './api/clipboard';
+import { handleOAuthResponse, handleTokenResponse } from './api/oauth';
 
 process.on('unhandledRejection', (reason: unknown) => {
 	writeLog(`--- UNHANDLED PROMISE REJECTION ---`);
@@ -149,6 +150,26 @@ rl.on('line', (line) => {
 				case 'browser-extension-connection-status': {
 					const { isConnected } = command.payload as { isConnected: boolean };
 					browserExtensionState.isConnected = isConnected;
+					break;
+				}
+				case 'oauth-authorize-response': {
+					const { code, state, error } = command.payload as {
+						code: string;
+						state: string;
+						error?: string;
+					};
+					handleOAuthResponse(state, code, state, error);
+					break;
+				}
+				case 'oauth-get-tokens-response':
+				case 'oauth-set-tokens-response':
+				case 'oauth-remove-tokens-response': {
+					const { requestId, result, error } = command.payload as {
+						requestId: string;
+						result?: any;
+						error?: string;
+					};
+					handleTokenResponse(requestId, result, error);
 					break;
 				}
 				case 'clipboard-read-text-response':

@@ -6,6 +6,7 @@ mod desktop;
 mod error;
 mod extensions;
 mod filesystem;
+mod oauth;
 
 use crate::{app::App, cache::AppCache};
 use browser_extension::WsState;
@@ -135,7 +136,10 @@ pub fn run() {
 			clipboard::clipboard_read,
 			clipboard::clipboard_copy,
 			clipboard::clipboard_paste,
-			clipboard::clipboard_clear
+			clipboard::clipboard_clear,
+			oauth::oauth_set_tokens,
+			oauth::oauth_get_tokens,
+			oauth::oauth_remove_tokens
 		])
 		.setup(|app| {
 			let app_handle = app.handle().clone();

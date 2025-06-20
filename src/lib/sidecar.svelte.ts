@@ -4,6 +4,7 @@ import { uiStore } from '$lib/ui.svelte';
 import { SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
 import { invoke } from '@tauri-apps/api/core';
 import { appCacheDir, appLocalDataDir } from '@tauri-apps/api/path';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 class SidecarService {
 	#sidecarChild: Child | null = $state(null);
@@ -169,6 +170,41 @@ class SidecarService {
 				this.dispatchEvent(responseType, { requestId, error: errorMessage });
 			}
 			return;
+		}
+
+		if (typedMessage.type.startsWith('oauth-')) {
+			if (typedMessage.type === 'oauth-authorize') {
+				const { url } = typedMessage.payload;
+				openUrl(url).catch((err) => {
+					this.#log(`ERROR: Failed to open OAuth URL '${url}': ${err}`);
+				});
+				return;
+			}
+
+			const { requestId, ...params } = typedMessage.payload as {
+				requestId: string;
+				[key: string]: any;
+			};
+
+			const commandMap: Record<string, string> = {
+				'oauth-get-tokens': 'oauth_get_tokens',
+				'oauth-set-tokens': 'oauth_set_tokens',
+				'oauth-remove-tokens': 'oauth_remove_tokens'
+			};
+			const command = commandMap[typedMessage.type];
+
+			if (command) {
+				const responseType = `${typedMessage.type}-response`;
+				try {
+					const result = await invoke(command, params);
+					this.dispatchEvent(responseType, { requestId, result });
+				} catch (error) {
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					this.#log(`ERROR from ${command}: ${errorMessage}`);
+					this.dispatchEvent(responseType, { requestId, error: errorMessage });
+				}
+				return;
+			}
 		}
 
 		if (typedMessage.type === 'plugin-list') {

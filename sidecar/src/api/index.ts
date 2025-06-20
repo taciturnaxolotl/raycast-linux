@@ -15,6 +15,7 @@ import { preferencesStore } from '../preferences';
 import { showToast } from './toast';
 import { BrowserExtensionAPI } from './browserExtension';
 import { Clipboard } from './clipboard';
+import * as OAuth from './oauth';
 
 let currentPluginName: string | null = null;
 let currentPluginPreferences: Array<{
@@ -45,6 +46,7 @@ export const getRaycastApi = () => {
 		Icon,
 		LaunchType,
 		Toast,
+		OAuth,
 		Action,
 		ActionPanel,
 		Detail,
