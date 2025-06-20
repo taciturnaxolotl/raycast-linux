@@ -57,6 +57,6 @@
 			<span class="font-medium">{plugin.title}</span>
 			<span class="text-muted-foreground text-sm">{plugin.description}</span>
 		</div>
-		<span class="ml-auto text-xs text-gray-500">{plugin.pluginName}</span>
+		<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">{plugin.pluginName}</span>
 	</button>
 {/each}

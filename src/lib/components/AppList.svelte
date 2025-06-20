@@ -59,6 +59,6 @@
 			<span class="font-medium">{app.name}</span>
 			<span class="text-muted-foreground text-sm">{app.comment || 'No description'}</span>
 		</div>
-		<span class="ml-auto text-xs text-gray-500">System App</span>
+		<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">System App</span>
 	</button>
 {/each}

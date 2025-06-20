@@ -111,7 +111,9 @@
 							<span class="font-medium">{item.data.title}</span>
 							<span class="text-muted-foreground text-sm">{item.data.description}</span>
 						</div>
-						<span class="ml-auto text-xs text-gray-500">{item.data.pluginName}</span>
+						<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap"
+							>{item.data.pluginName}</span
+						>
 					</button>
 				{:else if item.type === 'app'}
 					<button
@@ -133,7 +135,7 @@
 								>{item.data.comment || 'No description'}</span
 							>
 						</div>
-						<span class="ml-auto text-xs text-gray-500">System App</span>
+						<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">System App</span>
 					</button>
 				{/if}
 			{/snippet}
