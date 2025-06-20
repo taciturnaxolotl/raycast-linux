@@ -10,11 +10,14 @@
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import PluginRunner from '$lib/components/PluginRunner.svelte';
 	import Extensions from '$lib/components/Extensions.svelte';
+	import OAuthView from '$lib/components/OAuthView.svelte';
+	import { openUrl } from '@tauri-apps/plugin-opener';
 
 	type ViewState = 'plugin-list' | 'plugin-running' | 'settings' | 'extensions-store';
 
 	let viewState = $state<ViewState>('plugin-list');
 	let installedApps = $state<any[]>([]);
+	let oauthStatus: 'initial' | 'authorizing' | 'success' | 'error' = $state('initial');
 
 	const storePlugin: PluginInfo = {
 		title: 'Discover Extensions',
@@ -74,6 +77,15 @@
 					const params = urlObj.searchParams;
 					const code = params.get('code');
 					const state = params.get('state');
+
+					if (sidecarService.oauthState) {
+						oauthStatus = 'success';
+						setTimeout(() => {
+							sidecarService.oauthState = null;
+							oauthStatus = 'initial';
+						}, 2000);
+					}
+
 					if (code && state) {
 						sidecarService.dispatchEvent('oauth-authorize-response', { code, state });
 					} else {
@@ -158,9 +170,28 @@
 	function onExtensionInstalled() {
 		sidecarService.requestPluginList();
 	}
+
+	function handleOauthSignIn() {
+		if (sidecarService.oauthState?.url) {
+			openUrl(sidecarService.oauthState.url);
+			oauthStatus = 'authorizing';
+		}
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
+
+{#if sidecarService.oauthState}
+	<OAuthView
+		providerName={sidecarService.oauthState.providerName}
+		providerIcon={sidecarService.oauthState.providerIcon}
+		description={sidecarService.oauthState.description}
+		authUrl={sidecarService.oauthState.url}
+		status={oauthStatus}
+		onSignIn={handleOauthSignIn}
+		onBack={() => (sidecarService.oauthState = null)}
+	/>
+{/if}
 
 {#if viewState === 'plugin-list'}
 	<CommandPalette plugins={allPlugins} onRunPlugin={handleRunPlugin} {installedApps} />

@@ -4,7 +4,13 @@ import { uiStore } from '$lib/ui.svelte';
 import { SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
 import { invoke } from '@tauri-apps/api/core';
 import { appCacheDir, appLocalDataDir } from '@tauri-apps/api/path';
-import { openUrl } from '@tauri-apps/plugin-opener';
+
+type OauthState = {
+	url: string;
+	providerName: string;
+	providerIcon?: string;
+	description?: string;
+} | null;
 
 class SidecarService {
 	#sidecarChild: Child | null = $state(null);
@@ -13,6 +19,7 @@ class SidecarService {
 	#onGoBackToPluginList: (() => void) | null = null;
 	#browserExtensionConnectionInterval: ReturnType<typeof setInterval> | null = null;
 
+	oauthState: OauthState = $state(null);
 	logs: string[] = $state([]);
 
 	constructor() {}
@@ -174,10 +181,7 @@ class SidecarService {
 
 		if (typedMessage.type.startsWith('oauth-')) {
 			if (typedMessage.type === 'oauth-authorize') {
-				const { url } = typedMessage.payload;
-				openUrl(url).catch((err) => {
-					this.#log(`ERROR: Failed to open OAuth URL '${url}': ${err}`);
-				});
+				this.oauthState = typedMessage.payload;
 				return;
 			}
 
