@@ -22,6 +22,7 @@
 	const storePlugin: PluginInfo = {
 		title: 'Discover Extensions',
 		description: 'Browse and install new extensions from the Store',
+		pluginTitle: 'Store',
 		pluginName: 'Store',
 		commandName: 'index',
 		pluginPath: 'builtin:store',

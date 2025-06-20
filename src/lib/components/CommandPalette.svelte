@@ -100,15 +100,13 @@
 				{:else if item.type === 'plugin'}
 					<ListItemBase
 						title={item.data.title}
-						subtitle={item.data.description}
+						subtitle={item.data.pluginTitle}
 						icon="app-window-16"
 						{isSelected}
 						{onclick}
 					>
 						{#snippet accessories()}
-							<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">
-								{item.data.pluginName}
-							</span>
+							<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap"> Command </span>
 						{/snippet}
 					</ListItemBase>
 				{:else if item.type === 'app'}
@@ -121,7 +119,7 @@
 					>
 						{#snippet accessories()}
 							<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">
-								System App
+								Application
 							</span>
 						{/snippet}
 					</ListItemBase>

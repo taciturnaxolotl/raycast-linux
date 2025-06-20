@@ -84,6 +84,7 @@ export const discoverPlugins = (): PluginInfo[] => {
 							title: command.title || command.name,
 							description:
 								command.description || packageJson.description || `${command.name} command`,
+							pluginTitle: packageJson.title || pluginDirName,
 							pluginName: packageJson.name || pluginDirName,
 							commandName: command.name,
 							pluginPath: commandFilePath,

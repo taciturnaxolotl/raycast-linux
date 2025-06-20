@@ -129,6 +129,7 @@ export type Preference = z.infer<typeof PreferenceSchema>;
 export const PluginInfoSchema = z.object({
 	title: z.string(),
 	description: z.string().optional(),
+	pluginTitle: z.string(),
 	pluginName: z.string(),
 	commandName: z.string(),
 	pluginPath: z.string(),
