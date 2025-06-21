@@ -7,6 +7,8 @@
 	import Fuse from 'fuse.js';
 	import ListItemBase from './nodes/shared/ListItemBase.svelte';
 	import path from 'path';
+	import { create, all } from 'mathjs';
+	import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -15,14 +17,42 @@
 	};
 
 	type UnifiedItem =
-		| { type: 'calculator'; id: 'calculator'; value: string }
+		| { type: 'calculator'; id: 'calculator'; value: string; result: string; resultType: string }
 		| { type: 'plugin'; id: string; data: PluginInfo }
 		| { type: 'app'; id: string; data: any };
 
 	let { plugins, onRunPlugin, installedApps = [] }: Props = $props();
 
 	let searchText = $state('');
-	let calculator: Calculator | null = $state(null);
+
+	const math = create(all);
+
+	const calculatorResult = $derived.by(() => {
+		if (!searchText.trim()) {
+			return null;
+		}
+
+		try {
+			const result = math.evaluate(searchText.trim());
+
+			if (typeof result === 'function' || typeof result === 'undefined') {
+				return null;
+			}
+
+			let resultString = math.format(result, { precision: 14 });
+
+			if (resultString === searchText.trim()) {
+				return null;
+			}
+
+			return {
+				value: resultString,
+				type: math.typeOf(result)
+			};
+		} catch (error) {
+			return null;
+		}
+	});
 
 	const pluginFuse = $derived(
 		new Fuse(plugins, {
@@ -43,6 +73,18 @@
 	);
 
 	const displayItems = $derived.by(() => {
+		const items: UnifiedItem[] = [];
+
+		if (calculatorResult) {
+			items.push({
+				type: 'calculator',
+				id: 'calculator',
+				value: searchText,
+				result: calculatorResult.value,
+				resultType: calculatorResult.type
+			});
+		}
+
 		const filteredPlugins = searchText
 			? pluginFuse.search(searchText)
 			: plugins.map((p) => ({ item: p }));
@@ -53,19 +95,20 @@
 			: installedApps.map((a) => ({ item: a }));
 		const uniqueApps = [...new Map(filteredApps.map((a) => [a.item.exec, a])).values()];
 
-		return [
-			{ type: 'calculator', id: 'calculator', value: searchText } as const,
+		items.push(
 			...uniquePlugins.map(
 				(p) => ({ type: 'plugin', id: p.item.pluginPath, data: p.item }) as const
-			),
-			...uniqueApps.map((a) => ({ type: 'app', id: a.item.exec, data: a.item }) as const)
-		];
+			)
+		);
+		items.push(...uniqueApps.map((a) => ({ type: 'app', id: a.item.exec, data: a.item }) as const));
+
+		return items;
 	});
 
 	function handleEnter(item: UnifiedItem) {
 		switch (item.type) {
 			case 'calculator':
-				calculator?.handleClick();
+				writeText(item.result);
 				break;
 			case 'plugin':
 				onRunPlugin(item.data);
@@ -93,8 +136,9 @@
 			{#snippet itemSnippet({ item, isSelected, onclick })}
 				{#if item.type === 'calculator'}
 					<Calculator
-						bind:this={calculator}
 						searchText={item.value}
+						mathResult={item.result}
+						mathResultType={item.resultType}
 						{isSelected}
 						onSelect={onclick}
 					/>

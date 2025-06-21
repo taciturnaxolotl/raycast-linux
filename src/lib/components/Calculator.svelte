@@ -1,67 +1,25 @@
 <script lang="ts">
-	import { create, all } from 'mathjs';
 	import { ArrowRight } from '@lucide/svelte';
-	import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 
 	type Props = {
 		searchText: string;
+		mathResult: string;
+		mathResultType: string;
 		isSelected: boolean;
 		onSelect: () => void;
 	};
 
-	let { searchText, isSelected, onSelect }: Props = $props();
+	let { searchText, mathResult, mathResultType, isSelected, onSelect }: Props = $props();
 
-	const math = create(all);
-	let mathResult = $state<string | null>(null);
-	let inputWords = $state<string | null>(null);
-	let resultWords = $state<string | null>(null);
+	const inputWords = $derived(
+		isFinite(Number(searchText.trim())) ? numberToWords(searchText.trim()) : 'Expression'
+	);
+	const resultWords = $derived(
+		isFinite(Number(mathResult)) ? numberToWords(mathResult) : mathResultType
+	);
 
-	$effect(() => {
-		if (!searchText.trim()) {
-			mathResult = null;
-			inputWords = null;
-			resultWords = null;
-			return;
-		}
-
-		try {
-			const result = math.evaluate(searchText.trim());
-
-			if (typeof result === 'function' || typeof result === 'undefined') {
-				mathResult = null;
-				inputWords = null;
-				resultWords = null;
-				return;
-			}
-
-			let resultString = math.format(result, { precision: 14 });
-
-			if (resultString === searchText.trim()) {
-				mathResult = null;
-				inputWords = null;
-				resultWords = null;
-				return;
-			}
-
-			mathResult = resultString;
-			inputWords = isFinite(Number(searchText.trim()))
-				? numberToWords(searchText.trim())
-				: 'Expression';
-			resultWords = isFinite(Number(resultString))
-				? numberToWords(resultString)
-				: math.typeOf(result);
-		} catch (error) {
-			mathResult = null;
-			inputWords = null;
-			resultWords = null;
-		}
-	});
-
-	export function handleClick() {
+	function handleClick() {
 		onSelect();
-		if (mathResult) {
-			writeText(mathResult);
-		}
 	}
 
 	function numberToWords(numStr: string | null): string {
