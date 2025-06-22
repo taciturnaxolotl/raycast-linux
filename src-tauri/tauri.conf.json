@@ -21,7 +21,7 @@
         "skipTaskbar": true,
         "fullscreen": false,
         "width": 600,
-        "height": 80,
+        "height": 400,
         "center": true
       },
       {
