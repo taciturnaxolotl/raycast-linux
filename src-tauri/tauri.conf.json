@@ -23,6 +23,18 @@
         "width": 600,
         "height": 80,
         "center": true
+      },
+      {
+        "label": "hud",
+        "url": "/hud",
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "center": true,
+        "width": 300,
+        "height": 80
       }
     ],
     "security": {

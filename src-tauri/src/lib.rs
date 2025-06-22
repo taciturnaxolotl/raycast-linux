@@ -56,6 +56,42 @@ fn get_selected_text() -> String {
     get_text()
 }
 
+#[tauri::command]
+async fn show_hud(app: tauri::AppHandle, title: String) -> Result<(), String> {
+    let url = format!("/hud?title={}", title);
+    let hud_window = match app.get_webview_window("hud") {
+        Some(window) => window,
+        None => tauri::WebviewWindowBuilder::new(&app, "hud", tauri::WebviewUrl::App(url.into()))
+            .decorations(false)
+            .transparent(true)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .center()
+            .min_inner_size(300.0, 80.0)
+            .max_inner_size(300.0, 80.0)
+            .inner_size(300.0, 80.0)
+            .build()
+            .map_err(|e| e.to_string())?,
+    };
+
+    let window_clone = hud_window.clone();
+    window_clone
+        .emit("hud-message", &title)
+        .map_err(|e| e.to_string())?;
+    window_clone
+        .set_ignore_cursor_events(true)
+        .map_err(|e| e.to_string())?;
+    window_clone.show().map_err(|e| e.to_string())?;
+    window_clone.set_focus().map_err(|e| e.to_string())?;
+
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        let _ = window_clone.hide();
+    });
+
+    Ok(())
+}
+
 fn setup_background_refresh() {
     thread::spawn(|| {
         thread::sleep(Duration::from_secs(60));
@@ -107,8 +143,8 @@ pub fn run() {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.emit("deep-link", args[1].to_string());
                     window.show().unwrap();
+                    window.set_focus().unwrap();
                 }
-
                 return;
             }
 
@@ -130,6 +166,7 @@ pub fn run() {
             get_installed_apps,
             launch_app,
             get_selected_text,
+            show_hud,
             filesystem::get_selected_finder_items,
             extensions::install_extension,
             browser_extension::browser_extension_check_connection,

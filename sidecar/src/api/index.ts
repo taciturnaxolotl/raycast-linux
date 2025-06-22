@@ -13,6 +13,7 @@ import { Detail } from './components/detail';
 import { environment, getSelectedFinderItems, getSelectedText, open } from './environment';
 import { preferencesStore } from '../preferences';
 import { showToast } from './toast';
+import { showHUD } from './hud';
 import { BrowserExtensionAPI } from './browserExtension';
 import { Clipboard } from './clipboard';
 import * as OAuth from './oauth';
@@ -70,6 +71,7 @@ export const getRaycastApi = () => {
 		getSelectedText,
 		open,
 		showToast,
+		showHUD,
 		useNavigation,
 		usePersistentState: <T>(
 			key: string,

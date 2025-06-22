@@ -78,6 +78,15 @@ const HideToastPayloadSchema = z.object({
 	id: z.number()
 });
 
+const ShowHudPayloadSchema = z.object({
+	title: z.string()
+});
+
+const ShowHudMessageSchema = z.object({
+	type: z.literal('SHOW_HUD'),
+	payload: ShowHudPayloadSchema
+});
+
 export const CommandSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('CREATE_INSTANCE'), payload: CreateInstancePayloadSchema }),
 	z.object({ type: z.literal('CREATE_TEXT_INSTANCE'), payload: CreateTextInstancePayloadSchema }),
@@ -292,6 +301,7 @@ const OauthRemoveTokensMessageSchema = z.object({
 export const SidecarMessageWithPluginsSchema = z.union([
 	BatchUpdateSchema,
 	CommandSchema,
+	ShowHudMessageSchema,
 	LogMessageSchema,
 	PluginListSchema,
 	PreferenceValuesSchema,

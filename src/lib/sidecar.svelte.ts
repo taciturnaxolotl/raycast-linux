@@ -152,6 +152,11 @@ class SidecarService {
 			return;
 		}
 
+		if (typedMessage.type === 'SHOW_HUD') {
+			invoke('show_hud', { title: typedMessage.payload.title });
+			return;
+		}
+
 		if (typedMessage.type === 'open') {
 			const { target, application } = typedMessage.payload;
 			shellOpen(target, application).catch((err) => {
