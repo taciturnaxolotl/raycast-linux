@@ -8,6 +8,7 @@ import * as path from 'path';
 import type { PluginInfo } from '@raycast-linux/protocol';
 import { environment } from './api/environment';
 import { config } from './config';
+import * as ReactJsxRuntime from 'react/jsx-runtime';
 
 const createPluginRequire =
 	() =>
@@ -18,6 +19,14 @@ const createPluginRequire =
 
 		if (moduleName.startsWith('@raycast/api')) {
 			return getRaycastApi();
+		}
+
+		if (moduleName === 'react') {
+			return React;
+		}
+
+		if (moduleName === 'react/jsx-runtime') {
+			return ReactJsxRuntime;
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-require-imports
