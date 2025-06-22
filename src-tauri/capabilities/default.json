@@ -32,6 +32,11 @@
         }
       ]
     },
-    "opener:default"
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://backend.raycast.com/api/v1/*" }
+      ]
+    }
   ]
 }

@@ -1,4 +1,5 @@
 import { StoreListingsReturnTypeSchema, type Datum } from '$lib/store';
+import { fetch } from '@tauri-apps/plugin-http';
 
 export class ExtensionsStore {
 	extensions = $state<Datum[]>([]);

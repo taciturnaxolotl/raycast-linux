@@ -137,6 +137,7 @@ fn setup_global_shortcut(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .manage(WsState::default())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.len() > 1 && args[1].starts_with("raycast://") {
