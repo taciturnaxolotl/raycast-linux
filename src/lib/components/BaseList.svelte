@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends { id: string | number }">
+<script lang="ts" generics="T extends { id: string | number; itemType: string }">
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 
@@ -21,37 +21,67 @@
 	}: Props = $props();
 
 	$effect(() => {
-		if (selectedIndex >= items.length) {
-			selectedIndex = Math.max(0, items.length - 1);
-		}
+		const selectedItemElement = listElement?.querySelector(`[data-index="${selectedIndex}"]`);
+		selectedItemElement?.scrollIntoView({ block: 'nearest' });
 	});
 
 	$effect(() => {
-		const selectedItemElement = listElement?.querySelector(`[data-index="${selectedIndex}"]`);
-		selectedItemElement?.scrollIntoView({ block: 'nearest' });
+		if (
+			selectedIndex < 0 ||
+			selectedIndex >= items.length ||
+			items[selectedIndex]?.itemType !== 'item'
+		) {
+			let iterations = 0;
+			do {
+				selectedIndex = (selectedIndex + 1) % items.length;
+				iterations++;
+				if (iterations > items.length) {
+					selectedIndex = 0;
+					break;
+				}
+			} while (items[selectedIndex]?.itemType !== 'item');
+		}
 	});
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (items.length === 0) return;
 
+		const itemIndices = items
+			.map((item, i) => (item.itemType === 'item' ? i : -1))
+			.filter((i) => i !== -1);
+		if (itemIndices.length === 0) return;
+
+		const currentItemIndexInSublist = itemIndices.indexOf(selectedIndex);
+		let newIndexInSublist = currentItemIndexInSublist;
+
 		if (event.key === 'ArrowDown') {
 			event.preventDefault();
-			selectedIndex = (selectedIndex + 1) % items.length;
+			if (newIndexInSublist === -1) {
+				newIndexInSublist = 0;
+			} else {
+				newIndexInSublist = Math.min(itemIndices.length - 1, newIndexInSublist + 1);
+			}
+			selectedIndex = itemIndices[newIndexInSublist];
 		} else if (event.key === 'ArrowUp') {
 			event.preventDefault();
-			selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+			if (newIndexInSublist === -1) {
+				newIndexInSublist = itemIndices.length - 1;
+			} else {
+				newIndexInSublist = Math.max(0, newIndexInSublist - 1);
+			}
+			selectedIndex = itemIndices[newIndexInSublist];
 		} else if (event.key === 'Enter') {
-			event.preventDefault();
 			const selectedItem = items[selectedIndex];
-			if (selectedItem) {
+			if (selectedItem?.itemType === 'item') {
+				event.preventDefault();
 				onenter(selectedItem);
 			}
 		}
 	}
 
 	onMount(() => {
-		if (autofocus) {
-			listElement?.focus();
+		if (autofocus && listElement) {
+			listElement.focus();
 		}
 	});
 </script>
@@ -65,8 +95,10 @@
 				item,
 				isSelected: selectedIndex === index,
 				onclick: () => {
-					selectedIndex = index;
-					onenter(item);
+					if (item.itemType === 'item') {
+						selectedIndex = index;
+						onenter(item);
+					}
 				}
 			})}
 		</div>

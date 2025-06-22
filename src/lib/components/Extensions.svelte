@@ -47,39 +47,6 @@
 			}
 			return;
 		}
-
-		if (expandedImageUrl || selectedExtension) return;
-
-		let currentList: Datum[] = [];
-		if (extensionsStore.searchText) {
-			currentList = extensionsStore.searchResults;
-		} else if (extensionsStore.selectedCategory !== 'All Categories') {
-			currentList = extensionsStore.extensions.filter((ext) =>
-				ext.categories.includes(extensionsStore.selectedCategory)
-			);
-		} else {
-			currentList = [
-				...extensionsStore.featuredExtensions,
-				...extensionsStore.trendingExtensions,
-				...extensionsStore.extensions
-			];
-		}
-
-		if (currentList.length === 0) return;
-
-		if (e.key === 'ArrowDown') {
-			e.preventDefault();
-			extensionsStore.selectedIndex = (extensionsStore.selectedIndex + 1) % currentList.length;
-		} else if (e.key === 'ArrowUp') {
-			e.preventDefault();
-			extensionsStore.selectedIndex =
-				(extensionsStore.selectedIndex - 1 + currentList.length) % currentList.length;
-		} else if (e.key === 'Enter') {
-			e.preventDefault();
-			if (currentList[extensionsStore.selectedIndex]) {
-				selectedExtension = currentList[extensionsStore.selectedIndex];
-			}
-		}
 	}
 
 	async function handleInstall() {
@@ -139,7 +106,7 @@
 			onOpenLightbox={(imageUrl) => (expandedImageUrl = imageUrl)}
 		/>
 	{:else}
-		<div class="grow overflow-y-auto" role="listbox" tabindex={0} bind:this={scrollContainer}>
+		<div class="grow overflow-y-auto" role="listbox" tabindex={-1} bind:this={scrollContainer}>
 			<ExtensionListView onSelect={(ext) => (selectedExtension = ext)} />
 		</div>
 	{/if}

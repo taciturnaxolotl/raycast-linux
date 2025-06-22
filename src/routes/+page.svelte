@@ -162,6 +162,7 @@
 	}
 
 	function handleRunPlugin(plugin: PluginInfo) {
+		console.log('handleRunPlugin', plugin);
 		if (plugin.pluginPath === 'builtin:store') {
 			viewState = 'extensions-store';
 			return;

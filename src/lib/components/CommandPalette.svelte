@@ -200,7 +200,7 @@
 
 	<div class="grow overflow-y-auto">
 		<BaseList
-			items={displayItems}
+			items={displayItems.map((item) => ({ ...item, itemType: 'item' }))}
 			onenter={handleEnter}
 			bind:selectedIndex
 			bind:listElement
