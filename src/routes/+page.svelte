@@ -13,13 +13,16 @@
 	import OAuthView from '$lib/components/OAuthView.svelte';
 	import { openUrl } from '@tauri-apps/plugin-opener';
 	import ClipboardHistoryView from '$lib/components/ClipboardHistoryView.svelte';
+	import QuicklinkForm from '$lib/components/QuicklinkForm.svelte';
+	import { quicklinksStore } from '$lib/quicklinks.svelte';
 
 	type ViewState =
 		| 'plugin-list'
 		| 'plugin-running'
 		| 'settings'
 		| 'extensions-store'
-		| 'clipboard-history';
+		| 'clipboard-history'
+		| 'create-quicklink';
 
 	let viewState = $state<ViewState>('plugin-list');
 	let installedApps = $state<any[]>([]);
@@ -49,8 +52,26 @@
 		mode: 'view'
 	};
 
+	const createQuicklinkPlugin: PluginInfo = {
+		title: 'Create Quicklink',
+		description: 'Create a new Quicklink',
+		pluginTitle: 'Quicklinks',
+		pluginName: 'Quicklinks',
+		commandName: 'create-quicklink',
+		pluginPath: 'builtin:create-quicklink',
+		icon: 'link-16',
+		preferences: [],
+		mode: 'view'
+	};
+
 	const { pluginList, currentPreferences } = $derived(uiStore);
-	const allPlugins = $derived([...pluginList, storePlugin, clipboardHistoryPlugin]);
+	const { quicklinks } = $derived(quicklinksStore);
+	const allPlugins = $derived([
+		...pluginList,
+		storePlugin,
+		clipboardHistoryPlugin,
+		createQuicklinkPlugin
+	]);
 
 	$effect(() => {
 		untrack(() => {
@@ -59,6 +80,7 @@
 				uiStore.setCurrentRunningPlugin(null);
 			});
 			sidecarService.start();
+			quicklinksStore.fetchQuicklinks();
 			return () => sidecarService.stop();
 		});
 	});
@@ -148,6 +170,10 @@
 			viewState = 'clipboard-history';
 			return;
 		}
+		if (plugin.pluginPath === 'builtin:create-quicklink') {
+			viewState = 'create-quicklink';
+			return;
+		}
 
 		uiStore.setCurrentRunningPlugin(plugin);
 		sidecarService.dispatchEvent('run-plugin', {
@@ -217,7 +243,7 @@
 {/if}
 
 {#if viewState === 'plugin-list'}
-	<CommandPalette plugins={allPlugins} onRunPlugin={handleRunPlugin} {installedApps} />
+	<CommandPalette plugins={allPlugins} onRunPlugin={handleRunPlugin} {installedApps} {quicklinks} />
 {:else if viewState === 'settings'}
 	<SettingsView
 		plugins={pluginList}
@@ -237,4 +263,6 @@
 	/>
 {:else if viewState === 'clipboard-history'}
 	<ClipboardHistoryView onBack={() => (viewState = 'plugin-list')} />
+{:else if viewState === 'create-quicklink'}
+	<QuicklinkForm onBack={handleBackToPluginList} onSave={handleBackToPluginList} />
 {/if}

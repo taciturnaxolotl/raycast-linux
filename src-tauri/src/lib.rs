@@ -8,9 +8,11 @@ mod error;
 mod extensions;
 mod filesystem;
 mod oauth;
+mod quicklinks;
 
 use crate::{app::App, cache::AppCache};
 use browser_extension::WsState;
+use quicklinks::QuicklinkManager;
 use selection::get_text;
 use std::process::Command;
 use std::thread;
@@ -144,7 +146,12 @@ pub fn run() {
             clipboard_history::history_delete_item,
             clipboard_history::history_toggle_pin,
             clipboard_history::history_clear_all,
-            clipboard_history::history_item_was_copied
+            clipboard_history::history_item_was_copied,
+            quicklinks::create_quicklink,
+            quicklinks::list_quicklinks,
+            quicklinks::update_quicklink,
+            quicklinks::delete_quicklink,
+            quicklinks::execute_quicklink
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -152,6 +159,10 @@ pub fn run() {
 
             let app_handle_for_history = app.handle().clone();
             clipboard_history::init(app_handle_for_history);
+
+            let quicklink_manager = QuicklinkManager::new(app.handle().clone())?;
+            quicklink_manager.init_db()?;
+            app.manage(quicklink_manager);
 
             setup_background_refresh();
             setup_global_shortcut(app)?;

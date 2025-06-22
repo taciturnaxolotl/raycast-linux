@@ -7,12 +7,18 @@
 		itemSnippet: Snippet<[{ item: T; isSelected: boolean; onclick: () => void }]>;
 		autofocus?: boolean;
 		onenter: (item: T) => void;
+		selectedIndex?: number;
+		listElement?: HTMLElement | null;
 	};
 
-	let { items, itemSnippet, autofocus = false, onenter }: Props = $props();
-
-	let selectedIndex = $state(0);
-	let listElement: HTMLElement | null = $state(null);
+	let {
+		items,
+		itemSnippet,
+		autofocus = false,
+		onenter,
+		selectedIndex = $bindable(0),
+		listElement = $bindable()
+	}: Props = $props();
 
 	$effect(() => {
 		if (selectedIndex >= items.length) {

@@ -55,4 +55,13 @@ impl std::fmt::Display for AppError {
     }
 }
 
-impl std::error::Error for AppError {}
+impl std::error::Error for AppError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            AppError::Io(err) => Some(err),
+            AppError::Rusqlite(err) => Some(err),
+            AppError::Keyring(err) => Some(err),
+            _ => None,
+        }
+    }
+}

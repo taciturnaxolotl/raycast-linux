@@ -9,68 +9,57 @@
 	import path from 'path';
 	import { create, all } from 'mathjs';
 	import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+	import type { Quicklink } from '$lib/quicklinks.svelte';
+	import { tick } from 'svelte';
 
 	type Props = {
 		plugins: PluginInfo[];
 		onRunPlugin: (plugin: PluginInfo) => void;
 		installedApps?: any[];
+		quicklinks?: Quicklink[];
 	};
 
 	type UnifiedItem =
 		| { type: 'calculator'; id: 'calculator'; value: string; result: string; resultType: string }
 		| { type: 'plugin'; id: string; data: PluginInfo }
-		| { type: 'app'; id: string; data: any };
+		| { type: 'app'; id: string; data: any }
+		| { type: 'quicklink'; id: number; data: Quicklink };
 
-	let { plugins, onRunPlugin, installedApps = [] }: Props = $props();
+	let { plugins, onRunPlugin, installedApps = [], quicklinks = [] }: Props = $props();
 
 	let searchText = $state('');
+	let quicklinkArgument = $state('');
+	let selectedIndex = $state(0);
+	let listElement: HTMLElement | null = $state(null);
+	let searchInputEl: HTMLInputElement | null = $state(null);
+	let argumentInputEl: HTMLInputElement | null = $state(null);
+	let selectedQuicklinkForArgument: Quicklink | null = $state(null);
 
 	const math = create(all);
 
 	const calculatorResult = $derived.by(() => {
-		if (!searchText.trim()) {
+		if (!searchText.trim() || selectedQuicklinkForArgument) {
 			return null;
 		}
 
 		try {
 			const result = math.evaluate(searchText.trim());
-
-			if (typeof result === 'function' || typeof result === 'undefined') {
-				return null;
-			}
-
+			if (typeof result === 'function' || typeof result === 'undefined') return null;
 			let resultString = math.format(result, { precision: 14 });
-
-			if (resultString === searchText.trim()) {
-				return null;
-			}
-
-			return {
-				value: resultString,
-				type: math.typeOf(result)
-			};
+			if (resultString === searchText.trim()) return null;
+			return { value: resultString, type: math.typeOf(result) };
 		} catch (error) {
 			return null;
 		}
 	});
 
 	const pluginFuse = $derived(
-		new Fuse(plugins, {
-			keys: [
-				{ name: 'title', weight: 0.7 },
-				{ name: 'description', weight: 0.2 },
-				{ name: 'pluginName', weight: 0.1 }
-			],
-			threshold: 0.4
-		})
+		new Fuse(plugins, { keys: ['title', 'description', 'pluginName'], threshold: 0.4 })
 	);
-
 	const appFuse = $derived(
-		new Fuse(installedApps, {
-			keys: ['name', 'comment', 'exec'],
-			threshold: 0.4
-		})
+		new Fuse(installedApps, { keys: ['name', 'comment', 'exec'], threshold: 0.4 })
 	);
+	const quicklinkFuse = $derived(new Fuse(quicklinks, { keys: ['name', 'link'], threshold: 0.4 }));
 
 	const displayItems = $derived.by(() => {
 		const items: UnifiedItem[] = [];
@@ -85,27 +74,54 @@
 			});
 		}
 
-		const filteredPlugins = searchText
-			? pluginFuse.search(searchText)
-			: plugins.map((p) => ({ item: p }));
-		const uniquePlugins = [...new Map(filteredPlugins.map((p) => [p.item.pluginPath, p])).values()];
+		const filterAndMap = (
+			data: any[],
+			fuse: Fuse<any>,
+			type: 'plugin' | 'app' | 'quicklink',
+			idKey: string
+		) => {
+			const filtered = searchText ? fuse.search(searchText) : data.map((item) => ({ item }));
+			const unique = [...new Map(filtered.map((res) => [res.item[idKey], res.item])).values()];
+			return unique.map((item) => ({ type, id: item[idKey], data: item }));
+		};
 
-		const filteredApps = searchText
-			? appFuse.search(searchText)
-			: installedApps.map((a) => ({ item: a }));
-		const uniqueApps = [...new Map(filteredApps.map((a) => [a.item.exec, a])).values()];
+		items.push(...filterAndMap(plugins, pluginFuse, 'plugin', 'pluginPath'));
+		items.push(...filterAndMap(installedApps, appFuse, 'app', 'exec'));
+		items.push(...filterAndMap(quicklinks, quicklinkFuse, 'quicklink', 'id'));
 
-		items.push(
-			...uniquePlugins.map(
-				(p) => ({ type: 'plugin', id: p.item.pluginPath, data: p.item }) as const
-			)
-		);
-		items.push(...uniqueApps.map((a) => ({ type: 'app', id: a.item.exec, data: a.item }) as const));
-
-		return items;
+		return items as UnifiedItem[];
 	});
 
-	function handleEnter(item: UnifiedItem) {
+	$effect(() => {
+		const selectedItem = displayItems[selectedIndex];
+		if (selectedItem?.type === 'quicklink') {
+			selectedQuicklinkForArgument = selectedItem.data;
+			searchInputEl?.focus();
+		} else {
+			selectedQuicklinkForArgument = null;
+		}
+	});
+
+	function resetState() {
+		searchText = '';
+		quicklinkArgument = '';
+		selectedIndex = 0;
+		selectedQuicklinkForArgument = null;
+		tick().then(() => searchInputEl?.focus());
+	}
+
+	async function executeQuicklink(quicklink: Quicklink, argument?: string) {
+		const finalLink = argument
+			? quicklink.link.replace(/\{argument\}/g, encodeURIComponent(argument))
+			: quicklink.link.replace(/\{argument\}/g, '');
+		await invoke('execute_quicklink', {
+			link: finalLink,
+			application: quicklink.application
+		});
+		resetState();
+	}
+
+	async function handleEnter(item: UnifiedItem) {
 		switch (item.type) {
 			case 'calculator':
 				writeText(item.result);
@@ -118,21 +134,78 @@
 					invoke('launch_app', { exec: item.data.exec }).catch(console.error);
 				}
 				break;
+			case 'quicklink':
+				if (item.data.link.includes('{argument}')) {
+					await tick();
+					argumentInputEl?.focus();
+				} else {
+					executeQuicklink(item.data);
+				}
+				break;
+		}
+	}
+
+	async function handleArgumentKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			if (selectedQuicklinkForArgument) {
+				await executeQuicklink(selectedQuicklinkForArgument, quicklinkArgument);
+			}
+		} else if (e.key === 'Escape' || (e.key === 'Backspace' && quicklinkArgument === '')) {
+			e.preventDefault();
+			quicklinkArgument = '';
+			await tick();
+			searchInputEl?.focus();
 		}
 	}
 </script>
 
 <main class="bg-background text-foreground flex h-screen flex-col">
 	<header class="flex h-12 shrink-0 items-center border-b px-2">
-		<Input
-			class="rounded-none border-none !bg-transparent pr-0"
-			placeholder="Search for extensions and commands..."
-			bind:value={searchText}
-			autofocus
-		/>
+		<div class="relative flex w-full items-center">
+			<Input
+				class="w-full rounded-none border-none !bg-transparent pr-0 text-base"
+				placeholder={selectedQuicklinkForArgument ? '' : 'Search for extensions and commands...'}
+				bind:value={searchText}
+				bind:ref={searchInputEl}
+				autofocus
+			/>
+
+			{#if selectedQuicklinkForArgument}
+				<div class="pointer-events-none absolute top-0 left-0 flex h-full w-full items-center">
+					<span class="whitespace-pre text-transparent">{searchText}</span>
+					<span class="w-2"></span>
+					<div class="pointer-events-auto">
+						<div class="inline-grid items-center">
+							<span
+								class="invisible col-start-1 row-start-1 px-3 text-base whitespace-pre md:text-sm"
+								aria-hidden="true"
+							>
+								{quicklinkArgument || 'Query'}
+							</span>
+
+							<Input
+								class="col-start-1 row-start-1 h-7 w-full"
+								placeholder="Query"
+								bind:value={quicklinkArgument}
+								bind:ref={argumentInputEl}
+								onkeydown={handleArgumentKeydown}
+							/>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
 	</header>
+
 	<div class="grow overflow-y-auto">
-		<BaseList items={displayItems} onenter={handleEnter}>
+		<BaseList
+			items={displayItems}
+			onenter={handleEnter}
+			bind:selectedIndex
+			bind:listElement
+			autofocus={!selectedQuicklinkForArgument}
+		>
 			{#snippet itemSnippet({ item, isSelected, onclick })}
 				{#if item.type === 'calculator'}
 					<Calculator
@@ -167,6 +240,20 @@
 						{#snippet accessories()}
 							<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">
 								Application
+							</span>
+						{/snippet}
+					</ListItemBase>
+				{:else if item.type === 'quicklink'}
+					<ListItemBase
+						title={item.data.name}
+						subtitle={item.data.link.replace(/\{argument\}/g, '...')}
+						icon={item.data.icon ?? 'link-16'}
+						{isSelected}
+						{onclick}
+					>
+						{#snippet accessories()}
+							<span class="text-muted-foreground ml-auto text-xs whitespace-nowrap">
+								Quicklink
 							</span>
 						{/snippet}
 					</ListItemBase>
