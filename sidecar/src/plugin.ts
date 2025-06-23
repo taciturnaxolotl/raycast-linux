@@ -5,7 +5,7 @@ import { getRaycastApi, setCurrentPlugin } from './api';
 import { inspect } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { PluginInfo } from '@raycast-linux/protocol';
+import type { PluginInfo, Preference } from '@raycast-linux/protocol';
 import { environment } from './api/environment';
 import { config } from './config';
 import * as ReactJsxRuntime from 'react/jsx-runtime';
@@ -29,7 +29,6 @@ const createPluginRequire =
 			return ReactJsxRuntime;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		return require(moduleName);
 	};
 
@@ -71,16 +70,9 @@ export const discoverPlugins = (): PluginInfo[] => {
 						icon?: string;
 						subtitle?: string;
 						mode?: 'view' | 'no-view';
+						preferences?: Preference[];
 					}>;
-					preferences?: Array<{
-						name: string;
-						title: string;
-						description?: string;
-						type: 'textfield' | 'dropdown' | 'checkbox' | 'directory';
-						required?: boolean;
-						default?: string | boolean;
-						data?: Array<{ title: string; value: string }>;
-					}>;
+					preferences?: Preference[];
 				} = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 
 				const commands = packageJson.commands || [];
@@ -99,6 +91,7 @@ export const discoverPlugins = (): PluginInfo[] => {
 							pluginPath: commandFilePath,
 							icon: command.icon || packageJson.icon,
 							preferences: packageJson.preferences,
+							commandPreferences: command.preferences,
 							mode: command.mode
 						});
 					} else {
@@ -131,7 +124,6 @@ export const loadPlugin = (pluginPath: string): string => {
 };
 
 export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'): void => {
-	let scriptText: string;
 	let pluginName = 'unknown';
 	let preferences: Array<{
 		name: string;
@@ -147,9 +139,8 @@ export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'
 		throw new Error('No plugin specified.');
 	}
 
-	scriptText = loadPlugin(pluginPath);
+	const scriptText = loadPlugin(pluginPath);
 
-	// Extract plugin info from path to set preferences context
 	const pluginDir = path.dirname(pluginPath);
 	const packageJsonPath = path.join(pluginDir, 'package.json');
 
@@ -215,7 +206,6 @@ export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'
 				})
 				.catch((e) => {
 					writeLog(`No-view command failed: ${e}`);
-					// TODO: show error to user
 					writeOutput({ type: 'go-back-to-plugin-list', payload: {} });
 				});
 		} else {
