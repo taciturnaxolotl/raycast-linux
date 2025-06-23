@@ -5,6 +5,7 @@
 	import { Label } from './ui/label';
 	import { Checkbox } from './ui/checkbox';
 	import * as Select from './ui/select';
+	import BaseList from './BaseList.svelte';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -20,10 +21,19 @@
 	let selectedPluginIndex = $state(0);
 	let preferenceValues = $state<Record<string, unknown>>({});
 
-	const selectedPlugin = $derived(plugins[selectedPluginIndex]);
 	const pluginsWithPreferences = $derived(
 		plugins.filter((p) => p.preferences && p.preferences.length > 0)
 	);
+
+	const displayItems = $derived(
+		pluginsWithPreferences.map((plugin) => ({
+			id: plugin.pluginPath,
+			itemType: 'item' as const,
+			data: plugin
+		}))
+	);
+
+	const selectedPlugin = $derived(pluginsWithPreferences[selectedPluginIndex]);
 
 	$effect(() => {
 		if (selectedPlugin) {
@@ -39,12 +49,6 @@
 		if (event.key === 'Escape') {
 			event.preventDefault();
 			onBack();
-		} else if (event.key === 'ArrowUp') {
-			event.preventDefault();
-			selectedPluginIndex = Math.max(0, selectedPluginIndex - 1);
-		} else if (event.key === 'ArrowDown') {
-			event.preventDefault();
-			selectedPluginIndex = Math.min(pluginsWithPreferences.length - 1, selectedPluginIndex + 1);
 		}
 	}
 
@@ -75,22 +79,29 @@
 		</header>
 
 		<div class="flex-1 overflow-y-auto">
-			{#each pluginsWithPreferences as plugin, index}
-				<button
-					type="button"
-					class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-3 text-left"
-					class:bg-accent={selectedPluginIndex === index}
-					onclick={() => (selectedPluginIndex = index)}
-				>
-					<div class="flex size-8 shrink-0 items-center justify-center">
-						<Icon icon={plugin.icon || 'app-window-16'} class="size-5" />
-					</div>
-					<div class="flex flex-col">
-						<span class="text-sm font-medium">{plugin.title}</span>
-						<span class="text-muted-foreground text-xs">{plugin.pluginName}</span>
-					</div>
-				</button>
-			{/each}
+			<BaseList
+				items={displayItems}
+				bind:selectedIndex={selectedPluginIndex}
+				onenter={() => {}}
+				autofocus
+			>
+				{#snippet itemSnippet({ item, isSelected, onclick })}
+					<button
+						type="button"
+						class="hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-3 text-left"
+						class:bg-accent={isSelected}
+						{onclick}
+					>
+						<div class="flex size-8 shrink-0 items-center justify-center">
+							<Icon icon={item.data.icon || 'app-window-16'} class="size-5" />
+						</div>
+						<div class="flex flex-col">
+							<span class="text-sm font-medium">{item.data.title}</span>
+							<span class="text-muted-foreground text-xs">{item.data.pluginName}</span>
+						</div>
+					</button>
+				{/snippet}
+			</BaseList>
 		</div>
 	</div>
 
