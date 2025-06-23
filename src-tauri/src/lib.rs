@@ -58,10 +58,9 @@ fn get_selected_text() -> String {
 
 #[tauri::command]
 async fn show_hud(app: tauri::AppHandle, title: String) -> Result<(), String> {
-    let url = format!("/hud?title={}", title);
     let hud_window = match app.get_webview_window("hud") {
         Some(window) => window,
-        None => tauri::WebviewWindowBuilder::new(&app, "hud", tauri::WebviewUrl::App(url.into()))
+        None => tauri::WebviewWindowBuilder::new(&app, "hud", tauri::WebviewUrl::App("/hud".into()))
             .decorations(false)
             .transparent(true)
             .always_on_top(true)
