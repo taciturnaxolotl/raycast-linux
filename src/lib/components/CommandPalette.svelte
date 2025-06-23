@@ -50,7 +50,7 @@
 			let resultString = math.format(result, { precision: 14 });
 			if (resultString === searchText.trim()) return null;
 			return { value: resultString, type: math.typeOf(result) };
-		} catch (_error) {
+		} catch {
 			return null;
 		}
 	});
@@ -206,7 +206,6 @@
 			onenter={handleEnter}
 			bind:selectedIndex
 			bind:listElement
-			autofocus={!selectedQuicklinkForArgument}
 		>
 			{#snippet itemSnippet({ item, isSelected, onclick })}
 				{#if item.type === 'calculator'}

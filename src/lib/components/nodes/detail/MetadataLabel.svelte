@@ -6,7 +6,6 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 	};
 
 	let { nodeId, uiTree }: Props = $props();

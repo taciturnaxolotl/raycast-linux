@@ -10,7 +10,6 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 		onSelect: (nodeId: number | undefined) => void;
 		searchText: string;
 	};

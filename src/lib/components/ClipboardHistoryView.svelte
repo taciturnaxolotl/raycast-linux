@@ -177,7 +177,6 @@
 	});
 
 	$effect(() => {
-		[searchText, filter];
 		if (isInitialMount) return;
 
 		const id = setTimeout(() => {

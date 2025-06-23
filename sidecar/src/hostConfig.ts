@@ -132,7 +132,7 @@ function createInstanceFromElement(
 	}
 
 	if (typeof element.type === 'function') {
-		const FunctionComponent = element.type as React.FunctionComponent<any>;
+		const FunctionComponent = element.type as React.FunctionComponent;
 		const rendered = FunctionComponent(element.props);
 
 		if (rendered === null || rendered === undefined) return [];

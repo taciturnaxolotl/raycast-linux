@@ -29,7 +29,6 @@ const createPluginRequire =
 			return ReactJsxRuntime;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-implied-eval
 		return (0, eval)('require')(moduleName);
 	};
 

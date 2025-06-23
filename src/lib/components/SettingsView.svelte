@@ -28,10 +28,14 @@
 		$props();
 
 	let selectedIndex = $state(0);
-	let preferenceValues = $state(currentPreferences);
+	let preferenceValues = $state<Record<string, unknown>>({});
 	let searchText = $state('');
 
 	$effect(() => {
+		// This effect syncs the local preference values with the prop.
+		// It's necessary because the form is a mutable copy of the preferences
+		// that needs to be reset when the selected plugin changes.
+		// eslint-disable-next-line svelte/prefer-writable-derived
 		preferenceValues = { ...currentPreferences };
 	});
 
@@ -149,7 +153,7 @@
 		</header>
 
 		<div class="flex-1 overflow-y-auto">
-			<BaseList items={displayItems} bind:selectedIndex onenter={() => {}} autofocus>
+			<BaseList items={displayItems} bind:selectedIndex onenter={() => {}}>
 				{#snippet itemSnippet({ item, isSelected, onclick })}
 					{@const assetsPath = path.dirname(item.data.pluginPath) + '/assets'}
 					<div class="relative">

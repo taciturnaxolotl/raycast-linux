@@ -7,7 +7,6 @@
 		itemSnippet: Snippet<[{ item: T; isSelected: boolean; onclick: () => void }]>;
 		onenter: (item: T) => void;
 		isItemSelectable?: (item: T) => boolean;
-		autofocus?: boolean;
 		selectedIndex?: number;
 		listElement?: HTMLElement | null;
 	};
@@ -17,7 +16,6 @@
 		itemSnippet,
 		onenter,
 		isItemSelectable = () => true,
-		autofocus = false,
 		selectedIndex = $bindable(0),
 		listElement = $bindable()
 	}: Props = $props();

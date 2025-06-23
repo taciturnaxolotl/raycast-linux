@@ -5,7 +5,7 @@ declare module '*.txt' {
 declare global {
 	namespace JSX {
 		interface IntrinsicElements {
-			[elemName: string]: any;
+			[elemName: string]: Record<string, unknown> & { children?: React.ReactNode };
 		}
 	}
 }
