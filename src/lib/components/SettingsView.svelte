@@ -7,6 +7,7 @@
 	import * as Select from './ui/select';
 	import BaseList from './BaseList.svelte';
 	import { Button } from './ui/button';
+	import path from 'path';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -149,6 +150,7 @@
 		<div class="flex-1 overflow-y-auto">
 			<BaseList items={displayItems} bind:selectedIndex onenter={() => {}} autofocus>
 				{#snippet itemSnippet({ item, isSelected, onclick })}
+					{@const assetsPath = path.dirname(item.data.pluginPath) + '/assets'}
 					<div class="relative">
 						<button
 							type="button"
@@ -159,7 +161,7 @@
 							{onclick}
 						>
 							<div class="flex size-8 shrink-0 items-center justify-center">
-								<Icon icon={item.data.icon || 'app-window-16'} class="size-5" />
+								<Icon icon={item.data.icon || 'app-window-16'} {assetsPath} class="size-5" />
 							</div>
 							<div class="flex min-w-0 flex-col">
 								<span class="truncate text-sm font-medium">
