@@ -6,7 +6,7 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 	};
 
 	let { nodeId, uiTree, onDispatch }: Props = $props();
@@ -17,7 +17,7 @@
 
 {#if node}
 	<div class="flex flex-col gap-4">
-		{#each node.children as childId}
+		{#each node.children as childId (childId)}
 			<NodeRenderer nodeId={childId} {uiTree} {onDispatch} />
 		{/each}
 	</div>

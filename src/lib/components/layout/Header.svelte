@@ -9,7 +9,7 @@
 		rootNode: UINode | undefined;
 		searchText: string;
 		onPopView: () => void;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 		uiTree: Map<number, UINode>;
 		showBackButton: boolean;
 	};

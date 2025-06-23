@@ -12,7 +12,7 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 	};
 
 	let { nodeId, uiTree, onDispatch }: Props = $props();
@@ -26,7 +26,7 @@
 	const itemsMap = $derived.by(() => new Map(dropdownItems.map((i) => [i.value, i])));
 	const firstItemValue = $derived.by(() => dropdownItems[0]?.value);
 
-	let internalValue = $state<string | undefined>();
+	let internalValue = $state(componentProps?.defaultValue);
 	let mounted = $state(false);
 	let open = $state(false);
 	let triggerRef = $state<HTMLButtonElement>(null!);
@@ -42,7 +42,6 @@
 
 	$effect(() => {
 		if (!mounted) {
-			internalValue = componentProps?.defaultValue;
 			if (internalValue === undefined && firstItemValue !== undefined) {
 				onDispatch(nodeId, 'onChange', [firstItemValue]);
 				if (!isControlled) {

@@ -28,7 +28,7 @@
 			<Command.Input placeholder="Search category..." />
 			<Command.Empty>No category found.</Command.Empty>
 			<Command.List>
-				{#each extensionsStore.allCategories as category}
+				{#each extensionsStore.allCategories as category (category)}
 					<Command.Item
 						value={category}
 						onSelect={() => {

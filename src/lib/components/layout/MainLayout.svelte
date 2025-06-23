@@ -8,7 +8,7 @@
 		footer: Snippet;
 		primaryAction?: UINode;
 		secondaryAction?: UINode;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 	};
 	let { header, content, footer, primaryAction, secondaryAction, onDispatch }: Props = $props();
 

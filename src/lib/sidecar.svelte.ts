@@ -1,10 +1,7 @@
 import { Command, type Child, open as shellOpen } from '@tauri-apps/plugin-shell';
 import { Unpackr } from 'msgpackr';
 import { uiStore } from '$lib/ui.svelte';
-import {
-	SidecarMessageWithPluginsSchema,
-	type Command as UICommand
-} from '@raycast-linux/protocol';
+import { SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
 import { invoke } from '@tauri-apps/api/core';
 import { appCacheDir, appLocalDataDir } from '@tauri-apps/api/path';
 
@@ -172,7 +169,7 @@ class SidecarService {
 		if (typedMessage.type.startsWith('clipboard-')) {
 			const { requestId, ...params } = typedMessage.payload as {
 				requestId: string;
-				[key: string]: any;
+				[key: string]: unknown;
 			};
 			const command = typedMessage.type.replace(/-/g, '_');
 			const responseType = `${typedMessage.type}-response`;
@@ -195,7 +192,7 @@ class SidecarService {
 
 			const { requestId, ...params } = typedMessage.payload as {
 				requestId: string;
-				[key: string]: any;
+				[key: string]: unknown;
 			};
 
 			const commandMap: Record<string, string> = {
@@ -289,7 +286,7 @@ class SidecarService {
 
 		const commands = typedMessage.type === 'BATCH_UPDATE' ? typedMessage.payload : [typedMessage];
 		if (commands.length > 0) {
-			uiStore.applyCommands(commands as UICommand[]);
+			uiStore.applyCommands(commands);
 		}
 	};
 

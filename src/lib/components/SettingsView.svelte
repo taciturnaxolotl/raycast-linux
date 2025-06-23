@@ -2,7 +2,6 @@
 	import type { PluginInfo, Preference } from '@raycast-linux/protocol';
 	import { Input } from '$lib/components/ui/input';
 	import Icon from '$lib/components/Icon.svelte';
-	import { Label } from './ui/label';
 	import { Checkbox } from './ui/checkbox';
 	import * as Select from './ui/select';
 	import BaseList from './BaseList.svelte';
@@ -29,8 +28,12 @@
 		$props();
 
 	let selectedIndex = $state(0);
-	let preferenceValues = $state<Record<string, unknown>>({});
+	let preferenceValues = $state(currentPreferences);
 	let searchText = $state('');
+
+	$effect(() => {
+		preferenceValues = { ...currentPreferences };
+	});
 
 	const displayItems = $derived.by(() => {
 		const items: DisplayListItem[] = [];
@@ -106,10 +109,6 @@
 		}
 	});
 
-	$effect(() => {
-		preferenceValues = { ...currentPreferences };
-	});
-
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
 			event.preventDefault();
@@ -124,11 +123,13 @@
 	}
 
 	function handlePreferenceChange(prefName: string, value: unknown) {
-		preferenceValues = { ...preferenceValues, [prefName]: value };
+		const newValues = { ...preferenceValues };
+		(newValues as Record<string, unknown>)[prefName] = value;
+		preferenceValues = newValues;
 	}
 
 	function getPreferenceValue(pref: Preference): unknown {
-		return preferenceValues[pref.name] ?? pref.default ?? '';
+		return (preferenceValues as Record<string, unknown>)[pref.name] ?? pref.default ?? '';
 	}
 </script>
 
@@ -199,10 +200,9 @@
 				</div>
 				{#if preferencesToShow.length > 0}
 					<div class="max-w-md space-y-6">
-						{#each preferencesToShow as pref}
-							{@const prefId = `${selectedItem.id}-${pref.name}`}
+						{#each preferencesToShow as pref (pref.name)}
 							<div class="space-y-2">
-								<label for={prefId} class="text-sm font-medium">
+								<label class="text-sm font-medium">
 									{pref.title}
 									{#if pref.required}<span class="text-red-500">*</span>{/if}
 								</label>
@@ -213,20 +213,19 @@
 
 								{#if pref.type === 'textfield'}
 									<Input
-										id={prefId}
 										value={getPreferenceValue(pref) as string}
 										onchange={(e) =>
 											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
 										placeholder={pref.default as string}
 									/>
 								{:else if pref.type === 'checkbox'}
-									<div class="flex items-center gap-2">
+									<label class="flex items-center gap-2">
 										<Checkbox
-											id={prefId}
 											checked={getPreferenceValue(pref) as boolean}
 											onCheckedChange={(checked) => handlePreferenceChange(pref.name, checked)}
 										/>
-									</div>
+										<span class="text-sm">{pref.title}</span>
+									</label>
 								{:else if pref.type === 'dropdown' && pref.data}
 									<Select.Root
 										value={getPreferenceValue(pref) as string}
@@ -234,7 +233,6 @@
 										type="single"
 									>
 										<Select.Trigger
-											id={prefId}
 											class="bg-background border-border w-full rounded border px-3 py-2 text-sm"
 										>
 											{@const preference = pref.data.find(
@@ -243,14 +241,13 @@
 											{preference?.title ?? pref.default}
 										</Select.Trigger>
 										<Select.Content>
-											{#each pref.data as option}
+											{#each pref.data as option (option.value)}
 												<Select.Item value={option.value}>{option.title}</Select.Item>
 											{/each}
 										</Select.Content>
 									</Select.Root>
 								{:else if pref.type === 'directory'}
 									<Input
-										id={prefId}
 										value={getPreferenceValue(pref) as string}
 										onchange={(e) =>
 											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}

@@ -7,7 +7,7 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 	};
 
 	let { nodeId, uiTree, onDispatch }: Props = $props();
@@ -24,7 +24,7 @@
 			</DropdownMenu.Label>
 			<DropdownMenu.Separator />
 		{/if}
-		{#each node.children as childId}
+		{#each node.children as childId (childId)}
 			<!-- TOOD: is this cyclic dependency idiomatic? -->
 			<NodeRenderer nodeId={childId} {uiTree} {onDispatch} />
 		{/each}

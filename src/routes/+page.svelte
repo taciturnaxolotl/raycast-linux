@@ -24,8 +24,10 @@
 		| 'clipboard-history'
 		| 'create-quicklink';
 
+	type App = { name: string; comment?: string; exec: string; icon_path?: string };
+
 	let viewState = $state<ViewState>('plugin-list');
-	let installedApps = $state<any[]>([]);
+	let installedApps = $state<App[]>([]);
 	let oauthStatus: 'initial' | 'authorizing' | 'success' | 'error' = $state('initial');
 
 	const storePlugin: PluginInfo = {
@@ -87,7 +89,7 @@
 
 	$effect(() => {
 		invoke('get_installed_apps').then((apps) => {
-			installedApps = apps as any[];
+			installedApps = apps as App[];
 		});
 	});
 
@@ -201,7 +203,7 @@
 		sidecarService.getPreferences(pluginName);
 	}
 
-	function handleDispatch(instanceId: number, handlerName: string, args: any[]) {
+	function handleDispatch(instanceId: number, handlerName: string, args: unknown[]) {
 		sidecarService.dispatchEvent('dispatch-event', { instanceId, handlerName, args });
 	}
 

@@ -10,11 +10,11 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 		onSelect: (nodeId: number | undefined) => void;
 		searchText: string;
 	};
-	let { nodeId, uiTree, onDispatch, onSelect, searchText }: Props = $props();
+	let { nodeId, uiTree, onSelect, searchText }: Props = $props();
 
 	const { props: listProps } = $derived.by(useTypedNode(() => ({ nodeId, uiTree, type: 'List' })));
 

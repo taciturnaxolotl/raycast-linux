@@ -26,8 +26,6 @@
 			isLinkCopied = false;
 		}, 2000);
 	}
-
-	$inspect(providerIcon);
 </script>
 
 <div class="flex h-screen flex-col items-center justify-center">

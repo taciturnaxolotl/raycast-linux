@@ -4,8 +4,15 @@
 	import { convertFileSrc } from '@tauri-apps/api/core';
 	import { invoke } from '@tauri-apps/api/core';
 
+	type App = {
+		name: string;
+		comment?: string;
+		exec: string;
+		icon_path?: string;
+	};
+
 	type Props = {
-		apps: any[];
+		apps: App[];
 		searchText: string;
 		selectedIndex: number;
 		startIndex: number;
@@ -40,7 +47,7 @@
 	}
 </script>
 
-{#each filteredApps as app, index}
+{#each filteredApps as app, index (app.name)}
 	{@const absoluteIndex = startIndex + index}
 	<button
 		type="button"

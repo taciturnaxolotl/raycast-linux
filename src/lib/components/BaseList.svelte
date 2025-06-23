@@ -1,7 +1,6 @@
 <script lang="ts" generics="T extends { id: string | number }">
 	import { VList, type VListHandle } from 'virtua/svelte';
 	import type { Snippet } from 'svelte';
-	import { onMount } from 'svelte';
 
 	type Props = {
 		items: T[];
@@ -82,7 +81,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div bind:this={listElement} class="h-full" tabindex={autofocus ? -1 : undefined} role="listbox">
+<div bind:this={listElement} class="h-full" tabindex={autofocus ? -1 : undefined}>
 	<VList bind:this={vlistInstance} data={items} getKey={(item) => item.id} class="h-full">
 		{#snippet children(item, index)}
 			<div data-index={index}>

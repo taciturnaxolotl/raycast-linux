@@ -95,7 +95,7 @@
 		{#if extension.metadata_count > 0}
 			<Carousel.Root class="mt-8 w-full">
 				<Carousel.Content>
-					{#each Array(extension.metadata_count) as _, i}
+					{#each Array(extension.metadata_count) as _, i (i)}
 						<Carousel.Item class="basis-1/3">
 							{@const imageUrl = `${extension.readme_assets_path}metadata/${extension.name}-${i + 1}.png`}
 							<button class="w-full cursor-pointer" onclick={() => onOpenLightbox(imageUrl)}>
@@ -183,7 +183,7 @@
 					<div>
 						<h3 class="text-muted-foreground mb-1 text-xs font-medium uppercase">Categories</h3>
 						<div class="flex flex-wrap gap-1.5">
-							{#each extension.categories as category}
+							{#each extension.categories as category (category)}
 								<span
 									class="rounded-full bg-blue-900/50 px-2 py-0.5 text-xs font-semibold text-blue-300"
 								>

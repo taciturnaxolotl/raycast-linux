@@ -12,17 +12,19 @@
 	import type { Quicklink } from '$lib/quicklinks.svelte';
 	import { tick } from 'svelte';
 
+	type App = { name: string; comment?: string; exec: string; icon_path?: string };
+
 	type Props = {
 		plugins: PluginInfo[];
 		onRunPlugin: (plugin: PluginInfo) => void;
-		installedApps?: any[];
+		installedApps?: App[];
 		quicklinks?: Quicklink[];
 	};
 
 	type UnifiedItem =
 		| { type: 'calculator'; id: 'calculator'; value: string; result: string; resultType: string }
 		| { type: 'plugin'; id: string; data: PluginInfo }
-		| { type: 'app'; id: string; data: any }
+		| { type: 'app'; id: string; data: App }
 		| { type: 'quicklink'; id: number; data: Quicklink };
 
 	let { plugins, onRunPlugin, installedApps = [], quicklinks = [] }: Props = $props();
@@ -48,7 +50,7 @@
 			let resultString = math.format(result, { precision: 14 });
 			if (resultString === searchText.trim()) return null;
 			return { value: resultString, type: math.typeOf(result) };
-		} catch (error) {
+		} catch (_error) {
 			return null;
 		}
 	});
@@ -74,20 +76,20 @@
 			});
 		}
 
-		const filterAndMap = (
-			data: any[],
-			fuse: Fuse<any>,
+		const filterAndMap = <T extends { [key: string]: unknown }>(
+			data: T[],
+			fuse: Fuse<T>,
 			type: 'plugin' | 'app' | 'quicklink',
-			idKey: string
+			idKey: keyof T
 		) => {
 			const filtered = searchText ? fuse.search(searchText) : data.map((item) => ({ item }));
 			const unique = [...new Map(filtered.map((res) => [res.item[idKey], res.item])).values()];
 			return unique.map((item) => ({ type, id: item[idKey], data: item }));
 		};
 
-		items.push(...filterAndMap(plugins, pluginFuse, 'plugin', 'pluginPath'));
-		items.push(...filterAndMap(installedApps, appFuse, 'app', 'exec'));
-		items.push(...filterAndMap(quicklinks, quicklinkFuse, 'quicklink', 'id'));
+		items.push(...(filterAndMap(plugins, pluginFuse, 'plugin', 'pluginPath') as UnifiedItem[]));
+		items.push(...(filterAndMap(installedApps, appFuse, 'app', 'exec') as UnifiedItem[]));
+		items.push(...(filterAndMap(quicklinks, quicklinkFuse, 'quicklink', 'id') as UnifiedItem[]));
 
 		return items as UnifiedItem[];
 	});

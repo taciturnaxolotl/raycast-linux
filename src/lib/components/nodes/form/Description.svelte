@@ -5,10 +5,10 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 	};
 
-	let { nodeId, uiTree, onDispatch }: Props = $props();
+	let { nodeId, uiTree }: Props = $props();
 
 	const { node, props: componentProps } = $derived.by(
 		useTypedNode(() => ({ nodeId, uiTree, type: 'Form.Description' }))

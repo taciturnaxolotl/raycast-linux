@@ -9,11 +9,10 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
 		onSelect: (nodeId: number | undefined) => void;
 		searchText: string;
 	};
-	let { nodeId, uiTree, onDispatch, onSelect, searchText }: Props = $props();
+	let { nodeId, uiTree, onSelect, searchText }: Props = $props();
 
 	const { props: gridProps } = $derived.by(useTypedNode(() => ({ nodeId, uiTree, type: 'Grid' })));
 

@@ -8,10 +8,9 @@
 		ext: Datum;
 		isSelected: boolean;
 		onclick?: () => void;
-		onfocus?: () => void;
 	};
 
-	let { ext, isSelected, onclick, onfocus }: Props = $props();
+	let { ext, isSelected, onclick }: Props = $props();
 </script>
 
 <ListItemBase

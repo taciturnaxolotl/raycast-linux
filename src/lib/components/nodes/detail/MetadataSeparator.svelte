@@ -4,10 +4,10 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 	};
 
-	let { nodeId, uiTree, onDispatch }: Props = $props();
+	let {}: Props = $props();
 </script>
 
 <hr class="border-gray-200 dark:border-gray-700" />

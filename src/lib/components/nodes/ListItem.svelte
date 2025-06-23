@@ -41,7 +41,7 @@
 >
 	{#if props.accessories && props.accessories.length > 0}
 		{#snippet accessories()}
-			{#each props.accessories ?? [] as accessory}
+			{#each props.accessories ?? [] as accessory, i (i)}
 				{@const tagContent = accessory.tag ?? accessory.date}
 				{@const textContent = accessory.text}
 

@@ -7,7 +7,7 @@
 	type Props = {
 		nodeId: number;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 		primaryActionNodeId?: number;
 		secondaryActionNodeId?: number;
 	};
@@ -24,7 +24,7 @@
 
 {#if node}
 	<ActionMenu {primaryActionNodeId} {secondaryActionNodeId}>
-		{#each node.children as childId}
+		{#each node.children as childId (childId)}
 			<NodeRenderer nodeId={childId} {uiTree} {onDispatch} />
 		{/each}
 	</ActionMenu>

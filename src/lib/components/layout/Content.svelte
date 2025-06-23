@@ -9,7 +9,7 @@
 		rootNode: UINode | undefined;
 		selectedItemNode: UINode | undefined;
 		uiTree: Map<number, UINode>;
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 		onSelect: (nodeId: number | undefined) => void;
 		searchText: string;
 	};
@@ -31,7 +31,7 @@
 			{#if rootNode.type === 'List'}
 				<List nodeId={rootNode.id} {uiTree} {onDispatch} {onSelect} {searchText} />
 			{:else if rootNode.type === 'Grid'}
-				<Grid nodeId={rootNode.id} {uiTree} {onDispatch} {onSelect} {searchText} />
+				<Grid nodeId={rootNode.id} {uiTree} {onSelect} {searchText} {onDispatch} />
 			{:else if rootNode.type === 'Detail'}
 				<Detail nodeId={rootNode.id} {uiTree} {onDispatch} />
 			{:else}

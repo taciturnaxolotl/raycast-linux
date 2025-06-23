@@ -22,13 +22,12 @@
 	} = $derived(uiStore);
 
 	type Props = {
-		onDispatch: (instanceId: number, handlerName: string, args: any[]) => void;
+		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 		onPopView: () => void;
 		onToastAction: (toastId: number, actionType: 'primary' | 'secondary') => void;
-		onHideToast: (toastId: number) => void;
 	};
 
-	let { onDispatch, onPopView, onToastAction, onHideToast }: Props = $props();
+	let { onDispatch, onPopView, onToastAction }: Props = $props();
 
 	const rootNode = $derived(uiTree.get(rootNodeId!));
 	const selectedItemNode = $derived(uiTree.get(selectedNodeId!));
@@ -40,7 +39,7 @@
 	const assetsPath = $derived(
 		currentRunningPlugin ? path.dirname(currentRunningPlugin.pluginPath) + '/assets' : ''
 	);
-	setContext('assetsPath', () => assetsPath);
+	setContext('assetsPath', assetsPath);
 
 	function handleSelect(nodeId: number | undefined) {
 		uiStore.selectedNodeId = nodeId;
@@ -105,6 +104,7 @@
 								{uiTree}
 								{onDispatch}
 								primaryActionNodeId={primaryActionObject?.id}
+								secondaryActionNodeId={secondaryAction?.id}
 							/>
 						{/if}
 					{/snippet}
