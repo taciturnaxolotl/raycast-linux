@@ -4,7 +4,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { ArrowLeft, Pin, Trash } from '@lucide/svelte';
-	import Icon from './Icon.svelte';
 	import ListItemBase from './nodes/shared/ListItemBase.svelte';
 	import { convertFileSrc } from '@tauri-apps/api/core';
 	import { writeText } from '@tauri-apps/plugin-clipboard-manager';
@@ -15,6 +14,7 @@
 	import * as Select from './ui/select';
 	import ActionBar from './nodes/shared/ActionBar.svelte';
 	import ActionMenu from './nodes/shared/ActionMenu.svelte';
+	import BaseList from './BaseList.svelte';
 
 	type Props = {
 		onBack: () => void;
@@ -34,27 +34,50 @@
 		isPinned: boolean;
 	};
 
+	type DisplayItem = {
+		id: number | string;
+		itemType: 'item' | 'header';
+		data: ClipboardItem | string;
+	};
+
 	let allItems = $state<ClipboardItem[]>([]);
 	let selectedIndex = $state(0);
 	let searchText = $state('');
 	let filter = $state('all');
-	let listElement: HTMLElement | undefined = $state();
-
-	const pinnedItems = $derived(allItems.filter((item) => item.isPinned));
-	const recentItems = $derived(allItems.filter((item) => !item.isPinned));
 
 	const fuse = $derived(
-		new Fuse(recentItems, {
-			keys: ['contentValue'],
-			threshold: 0.3
-		})
+		new Fuse(
+			allItems.filter((item) => !item.isPinned),
+			{
+				keys: ['contentValue'],
+				threshold: 0.3
+			}
+		)
 	);
 
-	const filteredRecentItems = $derived(
-		searchText ? fuse.search(searchText).map((r) => r.item) : recentItems
+	const displayedItems = $derived.by(() => {
+		const items: DisplayItem[] = [];
+		const pinned = allItems.filter((item) => item.isPinned);
+		const recent = searchText
+			? fuse.search(searchText).map((r) => r.item)
+			: allItems.filter((item) => !item.isPinned);
+
+		if (pinned.length > 0) {
+			items.push({ id: 'header-pinned', itemType: 'header', data: 'Pinned' });
+			items.push(...pinned.map((item) => ({ id: item.id, itemType: 'item' as const, data: item })));
+		}
+		if (recent.length > 0) {
+			items.push({ id: 'header-recent', itemType: 'header', data: 'Most Recent' });
+			items.push(...recent.map((item) => ({ id: item.id, itemType: 'item' as const, data: item })));
+		}
+		return items;
+	});
+
+	const selectedItem = $derived(
+		displayedItems[selectedIndex]?.itemType === 'item'
+			? (displayedItems[selectedIndex].data as ClipboardItem)
+			: null
 	);
-	const displayedItems = $derived([...pinnedItems, ...filteredRecentItems]);
-	const selectedItem = $derived(displayedItems[selectedIndex]);
 
 	async function fetchHistory() {
 		try {
@@ -63,7 +86,7 @@
 				limit: 200
 			});
 			allItems = items;
-			selectedIndex = 0;
+			selectedIndex = Math.min(selectedIndex, displayedItems.length - 1);
 		} catch (e) {
 			console.error('Failed to fetch clipboard history:', e);
 		}
@@ -75,13 +98,6 @@
 
 	$effect(() => {
 		fetchHistory();
-	});
-
-	$effect(() => {
-		if (listElement && selectedIndex >= 0) {
-			const el = listElement.querySelector(`[data-index="${selectedIndex}"]`);
-			el?.scrollIntoView({ block: 'nearest' });
-		}
 	});
 
 	function getIconForType(type: ClipboardItem['contentType']): string {
@@ -120,9 +136,6 @@
 	async function handleDelete(item: ClipboardItem) {
 		await invoke('history_delete_item', { id: item.id });
 		await fetchHistory();
-		if (selectedIndex >= displayedItems.length - 1) {
-			selectedIndex = Math.max(0, displayedItems.length - 2);
-		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -131,29 +144,15 @@
 			onBack();
 			return;
 		}
-		if (displayedItems.length === 0) return;
+		if (!selectedItem) return;
 
-		switch (e.key) {
-			case 'ArrowUp':
-				e.preventDefault();
-				selectedIndex = Math.max(0, selectedIndex - 1);
-				break;
-			case 'ArrowDown':
-				e.preventDefault();
-				selectedIndex = Math.min(displayedItems.length - 1, selectedIndex + 1);
-				break;
-			case 'Enter':
-				e.preventDefault();
-				if (selectedItem) handleCopy(selectedItem);
-				break;
-		}
 		if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 'p') {
 			e.preventDefault();
-			if (selectedItem) handlePin(selectedItem);
+			handlePin(selectedItem);
 		}
 		if (e.ctrlKey && e.key.toLowerCase() === 'x') {
 			e.preventDefault();
-			if (selectedItem) handleDelete(selectedItem);
+			handleDelete(selectedItem);
 		}
 	}
 </script>
@@ -185,47 +184,30 @@
 		</Select.Root>
 	</header>
 	<div class="grid grow grid-cols-[minmax(0,_1.5fr)_minmax(0,_2.5fr)] overflow-y-hidden">
-		<div class="flex-grow overflow-y-auto border-r" bind:this={listElement}>
-			{#if pinnedItems.length > 0}
-				<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
-					Pinned
-				</h3>
-				{#each pinnedItems as item, i (item.id)}
-					<button
-						class="w-full"
-						data-index={i}
-						onclick={() => (selectedIndex = i)}
-						onfocus={() => (selectedIndex = i)}
-					>
-						<ListItemBase
-							icon={getIconForType(item.contentType)}
-							title={item.contentValue}
-							isSelected={selectedIndex === i}
-						/>
-					</button>
-				{/each}
-			{/if}
-
-			{#if filteredRecentItems.length > 0}
-				<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
-					Most Recent
-				</h3>
-				{#each filteredRecentItems as item, i (item.id)}
-					{@const listIndex = i + pinnedItems.length}
-					<button
-						class="w-full"
-						data-index={listIndex}
-						onclick={() => (selectedIndex = listIndex)}
-						onfocus={() => (selectedIndex = listIndex)}
-					>
-						<ListItemBase
-							icon={getIconForType(item.contentType)}
-							title={item.contentValue}
-							isSelected={selectedIndex === listIndex}
-						/>
-					</button>
-				{/each}
-			{/if}
+		<div class="flex-grow overflow-y-auto border-r">
+			<BaseList
+				items={displayedItems}
+				bind:selectedIndex
+				onenter={(item) => handleCopy(item.data as ClipboardItem)}
+				isItemSelectable={(item) => item.itemType === 'item'}
+			>
+				{#snippet itemSnippet({ item, isSelected, onclick })}
+					{#if item.itemType === 'header'}
+						<h3 class="text-muted-foreground px-4 pt-2.5 pb-1 text-xs font-semibold uppercase">
+							{item.data as string}
+						</h3>
+					{:else if item.itemType === 'item'}
+						{@const clipboardItem = item.data as ClipboardItem}
+						<button class="w-full" {onclick}>
+							<ListItemBase
+								icon={getIconForType(clipboardItem.contentType)}
+								title={clipboardItem.contentValue}
+								{isSelected}
+							/>
+						</button>
+					{/if}
+				{/snippet}
+			</BaseList>
 		</div>
 		<div class="flex flex-col overflow-y-hidden">
 			{#if selectedItem}
