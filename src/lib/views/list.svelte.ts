@@ -29,7 +29,7 @@ export function useListView(args: () => BaseViewArgs) {
 			Math.min(nextItemIndexInSelection, itemIndexes.length - 1)
 		);
 
-		base.setSelectedItemIndex(itemIndexes[nextItemIndexInSelection]);
+		base.selectedItemIndex = itemIndexes[nextItemIndexInSelection];
 	};
 
 	return {
@@ -39,7 +39,9 @@ export function useListView(args: () => BaseViewArgs) {
 		get selectedItemIndex() {
 			return base.selectedItemIndex;
 		},
-		setSelectedItemIndex: base.setSelectedItemIndex,
+		setSelectedItemIndex: (index: number) => {
+			base.selectedItemIndex = index;
+		},
 		set vlistInstance(instance: VListHandle | undefined) {
 			vlistInstance = instance;
 		},

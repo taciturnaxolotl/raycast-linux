@@ -200,8 +200,9 @@
 				{#if preferencesToShow.length > 0}
 					<div class="max-w-md space-y-6">
 						{#each preferencesToShow as pref}
+							{@const prefId = `${selectedItem.id}-${pref.name}`}
 							<div class="space-y-2">
-								<label class="text-sm font-medium">
+								<label for={prefId} class="text-sm font-medium">
 									{pref.title}
 									{#if pref.required}<span class="text-red-500">*</span>{/if}
 								</label>
@@ -212,19 +213,20 @@
 
 								{#if pref.type === 'textfield'}
 									<Input
+										id={prefId}
 										value={getPreferenceValue(pref) as string}
 										onchange={(e) =>
 											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
 										placeholder={pref.default as string}
 									/>
 								{:else if pref.type === 'checkbox'}
-									<Label class="flex items-center gap-2">
+									<div class="flex items-center gap-2">
 										<Checkbox
+											id={prefId}
 											checked={getPreferenceValue(pref) as boolean}
 											onCheckedChange={(checked) => handlePreferenceChange(pref.name, checked)}
 										/>
-										<span class="text-sm">{pref.title}</span>
-									</Label>
+									</div>
 								{:else if pref.type === 'dropdown' && pref.data}
 									<Select.Root
 										value={getPreferenceValue(pref) as string}
@@ -232,6 +234,7 @@
 										type="single"
 									>
 										<Select.Trigger
+											id={prefId}
 											class="bg-background border-border w-full rounded border px-3 py-2 text-sm"
 										>
 											{@const preference = pref.data.find(
@@ -247,6 +250,7 @@
 									</Select.Root>
 								{:else if pref.type === 'directory'}
 									<Input
+										id={prefId}
 										value={getPreferenceValue(pref) as string}
 										onchange={(e) =>
 											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}

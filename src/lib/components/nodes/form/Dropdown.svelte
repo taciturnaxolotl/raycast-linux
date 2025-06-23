@@ -26,7 +26,7 @@
 	const itemsMap = $derived.by(() => new Map(dropdownItems.map((i) => [i.value, i])));
 	const firstItemValue = $derived.by(() => dropdownItems[0]?.value);
 
-	let internalValue = $state(componentProps?.defaultValue);
+	let internalValue = $state<string | undefined>();
 	let mounted = $state(false);
 	let open = $state(false);
 	let triggerRef = $state<HTMLButtonElement>(null!);
@@ -42,6 +42,7 @@
 
 	$effect(() => {
 		if (!mounted) {
+			internalValue = componentProps?.defaultValue;
 			if (internalValue === undefined && firstItemValue !== undefined) {
 				onDispatch(nodeId, 'onChange', [firstItemValue]);
 				if (!isControlled) {

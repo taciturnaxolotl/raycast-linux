@@ -43,7 +43,7 @@ export function useGridView(args: () => BaseViewArgs & { columns: number }) {
 			(item) => item.flatListIndex === base.selectedItemIndex
 		);
 		if (currentGridIndex === -1) {
-			if (gridMap.length > 0) base.setSelectedItemIndex(gridMap[0].flatListIndex);
+			if (gridMap.length > 0) base.selectedItemIndex = gridMap[0].flatListIndex;
 			return;
 		}
 
@@ -86,7 +86,7 @@ export function useGridView(args: () => BaseViewArgs & { columns: number }) {
 		}
 
 		if (newGridIndex !== -1) {
-			base.setSelectedItemIndex(gridMap[newGridIndex].flatListIndex);
+			base.selectedItemIndex = gridMap[newGridIndex].flatListIndex;
 		}
 	};
 
@@ -97,7 +97,9 @@ export function useGridView(args: () => BaseViewArgs & { columns: number }) {
 		get selectedItemIndex() {
 			return base.selectedItemIndex;
 		},
-		setSelectedItemIndex: base.setSelectedItemIndex,
+		setSelectedItemIndex: (index: number) => {
+			base.selectedItemIndex = index;
+		},
 		handleKeydown
 	};
 }

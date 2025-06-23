@@ -82,7 +82,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div bind:this={listElement} class="h-full" tabindex={autofocus ? -1 : undefined}>
+<div bind:this={listElement} class="h-full" tabindex={autofocus ? -1 : undefined} role="listbox">
 	<VList bind:this={vlistInstance} data={items} getKey={(item) => item.id} class="h-full">
 		{#snippet children(item, index)}
 			<div data-index={index}>

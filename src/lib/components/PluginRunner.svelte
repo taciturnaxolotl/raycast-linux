@@ -40,7 +40,7 @@
 	const assetsPath = $derived(
 		currentRunningPlugin ? path.dirname(currentRunningPlugin.pluginPath) + '/assets' : ''
 	);
-	setContext('assetsPath', assetsPath);
+	setContext('assetsPath', () => assetsPath);
 
 	function handleSelect(nodeId: number | undefined) {
 		uiStore.selectedNodeId = nodeId;
@@ -105,7 +105,6 @@
 								{uiTree}
 								{onDispatch}
 								primaryActionNodeId={primaryActionObject?.id}
-								secondaryActionNodeId={secondaryAction?.id}
 							/>
 						{/if}
 					{/snippet}
