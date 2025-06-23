@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Nonce};
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use rusqlite::{params, Connection, Result as RusqliteResult};
@@ -254,8 +254,8 @@ impl ClipboardHistoryManager {
                 preview,
                 content_size_bytes: row.get(8)?,
                 source_app_name: row.get(3)?,
-                first_copied_at: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(first_ts, 0).unwrap_or_default(), Utc),
-                last_copied_at: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(last_ts, 0).unwrap_or_default(), Utc),
+                first_copied_at: DateTime::from_timestamp(first_ts, 0).unwrap_or_default(),
+                last_copied_at: DateTime::from_timestamp(last_ts, 0).unwrap_or_default(),
                 times_copied: row.get(6)?,
                 is_pinned: row.get::<_, i32>(7)? == 1,
             })
