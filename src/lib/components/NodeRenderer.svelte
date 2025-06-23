@@ -8,6 +8,7 @@
 		onDispatch: (instanceId: number, handlerName: string, args: unknown[]) => void;
 		displayAs?: 'item' | 'button';
 		primaryActionNodeId?: number;
+		secondaryActionNodeId?: number;
 		selectedValue?: string;
 	};
 

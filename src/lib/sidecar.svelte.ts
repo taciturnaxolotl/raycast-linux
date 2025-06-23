@@ -1,7 +1,7 @@
 import { Command, type Child, open as shellOpen } from '@tauri-apps/plugin-shell';
 import { Unpackr } from 'msgpackr';
 import { uiStore } from '$lib/ui.svelte';
-import { SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
+import { CommandSchema, SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
 import { invoke } from '@tauri-apps/api/core';
 import { appCacheDir, appLocalDataDir } from '@tauri-apps/api/path';
 
@@ -284,9 +284,13 @@ class SidecarService {
 			return;
 		}
 
-		const commands = typedMessage.type === 'BATCH_UPDATE' ? typedMessage.payload : [typedMessage];
-		if (commands.length > 0) {
-			uiStore.applyCommands(commands);
+		if (typedMessage.type === 'BATCH_UPDATE') {
+			uiStore.applyCommands(typedMessage.payload);
+		} else {
+			const parseResult = CommandSchema.safeParse(typedMessage);
+			if (parseResult.success) {
+				uiStore.applyCommands([parseResult.data]);
+			}
 		}
 	};
 

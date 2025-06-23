@@ -202,10 +202,10 @@
 					<div class="max-w-md space-y-6">
 						{#each preferencesToShow as pref (pref.name)}
 							<div class="space-y-2">
-								<label class="text-sm font-medium">
+								<div class="text-sm font-medium">
 									{pref.title}
 									{#if pref.required}<span class="text-red-500">*</span>{/if}
-								</label>
+								</div>
 
 								{#if pref.description}
 									<p class="text-muted-foreground text-xs">{pref.description}</p>

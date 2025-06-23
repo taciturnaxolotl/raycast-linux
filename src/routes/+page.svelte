@@ -211,10 +211,6 @@
 		sidecarService.dispatchEvent('pop-view');
 	}
 
-	function handleHideToast(toastId: number) {
-		sidecarService.dispatchEvent('trigger-toast-hide', { toastId });
-	}
-
 	function handleToastAction(toastId: number, actionType: 'primary' | 'secondary') {
 		sidecarService.dispatchEvent('dispatch-toast-action', { toastId, actionType });
 	}
@@ -258,12 +254,13 @@
 {:else if viewState === 'extensions-store'}
 	<Extensions onBack={() => (viewState = 'plugin-list')} onInstall={onExtensionInstalled} />
 {:else if viewState === 'plugin-running'}
-	<PluginRunner
-		onDispatch={handleDispatch}
-		onPopView={handlePopView}
-		onToastAction={handleToastAction}
-		onHideToast={handleHideToast}
-	/>
+	{#key uiStore.currentRunningPlugin?.pluginPath}
+		<PluginRunner
+			onDispatch={handleDispatch}
+			onPopView={handlePopView}
+			onToastAction={handleToastAction}
+		/>
+	{/key}
 {:else if viewState === 'clipboard-history'}
 	<ClipboardHistoryView onBack={() => (viewState = 'plugin-list')} />
 {:else if viewState === 'create-quicklink'}
