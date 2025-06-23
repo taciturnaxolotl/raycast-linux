@@ -75,13 +75,13 @@ async fn show_hud(app: tauri::AppHandle, title: String) -> Result<(), String> {
     };
 
     let window_clone = hud_window.clone();
+    window_clone.show().map_err(|e| e.to_string())?;
     window_clone
         .emit("hud-message", &title)
         .map_err(|e| e.to_string())?;
     window_clone
         .set_ignore_cursor_events(true)
         .map_err(|e| e.to_string())?;
-    window_clone.show().map_err(|e| e.to_string())?;
     window_clone.set_focus().map_err(|e| e.to_string())?;
 
     tauri::async_runtime::spawn(async move {
