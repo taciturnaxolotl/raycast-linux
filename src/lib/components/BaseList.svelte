@@ -1,12 +1,14 @@
-<script lang="ts" generics="T extends { id: string | number; itemType: string }">
-	import { onMount } from 'svelte';
+<script lang="ts" generics="T extends { id: string | number }">
+	import { VList, type VListHandle } from 'virtua/svelte';
 	import type { Snippet } from 'svelte';
+	import { onMount } from 'svelte';
 
 	type Props = {
 		items: T[];
 		itemSnippet: Snippet<[{ item: T; isSelected: boolean; onclick: () => void }]>;
-		autofocus?: boolean;
 		onenter: (item: T) => void;
+		isItemSelectable?: (item: T) => boolean;
+		autofocus?: boolean;
 		selectedIndex?: number;
 		listElement?: HTMLElement | null;
 	};
@@ -14,93 +16,82 @@
 	let {
 		items,
 		itemSnippet,
-		autofocus = false,
 		onenter,
+		isItemSelectable = () => true,
+		autofocus = false,
 		selectedIndex = $bindable(0),
 		listElement = $bindable()
 	}: Props = $props();
 
+	let vlistInstance: VListHandle | undefined = $state();
+
+	function findNextSelectableIndex(startIndex: number, direction: 1 | -1): number {
+		if (items.length === 0) return -1;
+		let currentIndex = startIndex;
+		for (let i = 0; i < items.length; i++) {
+			currentIndex = (currentIndex + direction + items.length) % items.length;
+			if (isItemSelectable(items[currentIndex])) {
+				return currentIndex;
+			}
+		}
+		return -1;
+	}
+
 	$effect(() => {
-		const selectedItemElement = listElement?.querySelector(`[data-index="${selectedIndex}"]`);
-		selectedItemElement?.scrollIntoView({ block: 'nearest' });
+		if (items.length > 0 && (selectedIndex < 0 || !isItemSelectable(items[selectedIndex]))) {
+			selectedIndex = findNextSelectableIndex(selectedIndex, 1);
+		} else if (selectedIndex >= items.length) {
+			selectedIndex = findNextSelectableIndex(items.length - 1, 1);
+		}
 	});
 
 	$effect(() => {
-		if (
-			selectedIndex < 0 ||
-			selectedIndex >= items.length ||
-			items[selectedIndex]?.itemType !== 'item'
-		) {
-			let iterations = 0;
-			do {
-				selectedIndex = (selectedIndex + 1) % items.length;
-				iterations++;
-				if (iterations > items.length) {
-					selectedIndex = 0;
-					break;
-				}
-			} while (items[selectedIndex]?.itemType !== 'item');
+		if (selectedIndex !== -1 && vlistInstance) {
+			vlistInstance.scrollToIndex(selectedIndex, { align: 'nearest' });
 		}
 	});
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (items.length === 0) return;
 
-		const itemIndices = items
-			.map((item, i) => (item.itemType === 'item' ? i : -1))
-			.filter((i) => i !== -1);
-		if (itemIndices.length === 0) return;
-
-		const currentItemIndexInSublist = itemIndices.indexOf(selectedIndex);
-		let newIndexInSublist = currentItemIndexInSublist;
-
-		if (event.key === 'ArrowDown') {
-			event.preventDefault();
-			if (newIndexInSublist === -1) {
-				newIndexInSublist = 0;
-			} else {
-				newIndexInSublist = Math.min(itemIndices.length - 1, newIndexInSublist + 1);
-			}
-			selectedIndex = itemIndices[newIndexInSublist];
-		} else if (event.key === 'ArrowUp') {
-			event.preventDefault();
-			if (newIndexInSublist === -1) {
-				newIndexInSublist = itemIndices.length - 1;
-			} else {
-				newIndexInSublist = Math.max(0, newIndexInSublist - 1);
-			}
-			selectedIndex = itemIndices[newIndexInSublist];
-		} else if (event.key === 'Enter') {
-			const selectedItem = items[selectedIndex];
-			if (selectedItem?.itemType === 'item') {
+		switch (event.key) {
+			case 'ArrowUp':
 				event.preventDefault();
-				onenter(selectedItem);
-			}
+				selectedIndex = findNextSelectableIndex(selectedIndex, -1);
+				break;
+			case 'ArrowDown':
+				event.preventDefault();
+				selectedIndex = findNextSelectableIndex(selectedIndex, 1);
+				break;
+			case 'Enter':
+				if (selectedIndex !== -1 && isItemSelectable(items[selectedIndex])) {
+					event.preventDefault();
+					onenter(items[selectedIndex]);
+				}
+				break;
 		}
 	}
 
-	onMount(() => {
-		if (autofocus && listElement) {
-			listElement.focus();
+	function handleClick(index: number) {
+		if (isItemSelectable(items[index])) {
+			selectedIndex = index;
+			onenter(items[index]);
 		}
-	});
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div bind:this={listElement} class="contents" tabindex={-1}>
-	{#each items as item, index (item.id)}
-		<div data-index={index}>
-			{@render itemSnippet({
-				item,
-				isSelected: selectedIndex === index,
-				onclick: () => {
-					if (item.itemType === 'item') {
-						selectedIndex = index;
-						onenter(item);
-					}
-				}
-			})}
-		</div>
-	{/each}
+<div bind:this={listElement} class="h-full" tabindex={autofocus ? -1 : undefined}>
+	<VList bind:this={vlistInstance} data={items} getKey={(item) => item.id} class="h-full">
+		{#snippet children(item, index)}
+			<div data-index={index}>
+				{@render itemSnippet({
+					item,
+					isSelected: selectedIndex === index,
+					onclick: () => handleClick(index)
+				})}
+			</div>
+		{/snippet}
+	</VList>
 </div>
