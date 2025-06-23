@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
 import { ImageLikeSchema } from './image';
-import { DetailMetadataLabelPropsSchema } from './detail';
+import { ColorLikeSchema } from './color';
 import { DetailMetadataPropsSchema } from './grid';
 
 export const ListPropsSchema = z.object({
@@ -16,8 +16,24 @@ export const ListSectionPropsSchema = z.object({
 });
 export type ListSectionProps = z.infer<typeof ListSectionPropsSchema>;
 
+const TextWithColorSchema = z.object({
+	value: z.string(),
+	color: ColorLikeSchema.optional()
+});
+
+const TagValueSchema = z.union([z.string(), z.date()]);
+
+const TagWithColorSchema = z.object({
+	value: TagValueSchema,
+	color: ColorLikeSchema.optional()
+});
+
 const ListItemAccessorySchema = z.object({
-	text: z.string().optional()
+	text: z.union([z.string(), TextWithColorSchema]).optional().nullable(),
+	tag: z.union([TagValueSchema, TagWithColorSchema]).optional().nullable(),
+	date: z.date().optional().nullable(),
+	icon: ImageLikeSchema.optional().nullable(),
+	tooltip: z.string().optional().nullable()
 });
 
 export const ListItemPropsSchema = z.object({
