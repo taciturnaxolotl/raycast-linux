@@ -18,26 +18,34 @@
 	let { plugins, onBack, onSavePreferences, onGetPreferences, currentPreferences }: Props =
 		$props();
 
-	let selectedPluginIndex = $state(0);
+	let selectedExtensionIndex = $state(0);
 	let preferenceValues = $state<Record<string, unknown>>({});
 
-	const pluginsWithPreferences = $derived(
-		plugins.filter((p) => p.preferences && p.preferences.length > 0)
-	);
+	const extensionsWithPreferences = $derived.by(() => {
+		const extMap = new Map<string, PluginInfo>();
+		for (const plugin of plugins) {
+			if (plugin.preferences?.length) {
+				if (!extMap.has(plugin.pluginName)) {
+					extMap.set(plugin.pluginName, plugin);
+				}
+			}
+		}
+		return Array.from(extMap.values());
+	});
 
 	const displayItems = $derived(
-		pluginsWithPreferences.map((plugin) => ({
-			id: plugin.pluginPath,
+		extensionsWithPreferences.map((ext) => ({
+			id: ext.pluginName,
 			itemType: 'item' as const,
-			data: plugin
+			data: ext
 		}))
 	);
 
-	const selectedPlugin = $derived(pluginsWithPreferences[selectedPluginIndex]);
+	const selectedExtension = $derived(extensionsWithPreferences[selectedExtensionIndex]);
 
 	$effect(() => {
-		if (selectedPlugin) {
-			onGetPreferences(selectedPlugin.pluginName);
+		if (selectedExtension) {
+			onGetPreferences(selectedExtension.pluginName);
 		}
 	});
 
@@ -53,8 +61,8 @@
 	}
 
 	function handleSave() {
-		if (selectedPlugin) {
-			onSavePreferences(selectedPlugin.pluginName, preferenceValues);
+		if (selectedExtension) {
+			onSavePreferences(selectedExtension.pluginName, preferenceValues);
 		}
 	}
 
@@ -81,7 +89,7 @@
 		<div class="flex-1 overflow-y-auto">
 			<BaseList
 				items={displayItems}
-				bind:selectedIndex={selectedPluginIndex}
+				bind:selectedIndex={selectedExtensionIndex}
 				onenter={() => {}}
 				autofocus
 			>
@@ -96,8 +104,8 @@
 							<Icon icon={item.data.icon || 'app-window-16'} class="size-5" />
 						</div>
 						<div class="flex flex-col">
-							<span class="text-sm font-medium">{item.data.title}</span>
-							<span class="text-muted-foreground text-xs">{item.data.pluginName}</span>
+							<span class="text-sm font-medium">{item.data.pluginTitle}</span>
+							<span class="text-muted-foreground text-xs">{item.data.description}</span>
 						</div>
 					</button>
 				{/snippet}
@@ -106,11 +114,11 @@
 	</div>
 
 	<div class="flex flex-1 flex-col">
-		{#if selectedPlugin && selectedPlugin.preferences}
+		{#if selectedExtension && selectedExtension.preferences}
 			<header class="flex h-12 shrink-0 items-center justify-between border-b px-6">
 				<div>
-					<h2 class="font-medium">{selectedPlugin.title}</h2>
-					<p class="text-muted-foreground text-sm">{selectedPlugin.description}</p>
+					<h2 class="font-medium">{selectedExtension.pluginTitle}</h2>
+					<p class="text-muted-foreground text-sm">{selectedExtension.description}</p>
 				</div>
 				<button
 					onclick={handleSave}
@@ -122,7 +130,7 @@
 
 			<div class="flex-1 overflow-y-auto p-6">
 				<div class="max-w-md space-y-6">
-					{#each selectedPlugin.preferences as pref}
+					{#each selectedExtension.preferences as pref}
 						<div class="space-y-2">
 							<label class="text-sm font-medium">
 								{pref.title}
@@ -183,7 +191,7 @@
 		{:else}
 			<div class="flex flex-1 items-center justify-center">
 				<div class="text-center">
-					<p class="text-muted-foreground">Select a plugin to configure its settings</p>
+					<p class="text-muted-foreground">Select an extension to configure its settings</p>
 				</div>
 			</div>
 		{/if}
