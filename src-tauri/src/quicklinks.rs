@@ -31,9 +31,7 @@ impl QuicklinkManager {
         let db_path = data_dir.join("quicklinks.sqlite");
         let db = Connection::open(db_path)?;
 
-        Ok(Self {
-            db: Mutex::new(db),
-        })
+        Ok(Self { db: Mutex::new(db) })
     }
 
     pub fn init_db(&self) -> RusqliteResult<()> {
@@ -87,7 +85,9 @@ impl QuicklinkManager {
             })
         })?;
 
-        quicklinks_iter.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
+        quicklinks_iter
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| e.into())
     }
 
     fn update_quicklink(

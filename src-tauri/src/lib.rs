@@ -60,17 +60,19 @@ fn get_selected_text() -> String {
 async fn show_hud(app: tauri::AppHandle, title: String) -> Result<(), String> {
     let hud_window = match app.get_webview_window("hud") {
         Some(window) => window,
-        None => tauri::WebviewWindowBuilder::new(&app, "hud", tauri::WebviewUrl::App("/hud".into()))
-            .decorations(false)
-            .transparent(true)
-            .always_on_top(true)
-            .skip_taskbar(true)
-            .center()
-            .min_inner_size(300.0, 80.0)
-            .max_inner_size(300.0, 80.0)
-            .inner_size(300.0, 80.0)
-            .build()
-            .map_err(|e| e.to_string())?,
+        None => {
+            tauri::WebviewWindowBuilder::new(&app, "hud", tauri::WebviewUrl::App("/hud".into()))
+                .decorations(false)
+                .transparent(true)
+                .always_on_top(true)
+                .skip_taskbar(true)
+                .center()
+                .min_inner_size(300.0, 80.0)
+                .max_inner_size(300.0, 80.0)
+                .inner_size(300.0, 80.0)
+                .build()
+                .map_err(|e| e.to_string())?
+        }
     };
 
     let window_clone = hud_window.clone();
