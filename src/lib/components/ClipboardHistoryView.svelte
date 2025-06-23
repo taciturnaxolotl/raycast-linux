@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
-	import { onMount, tick } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import { VList } from 'virtua/svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -177,13 +177,12 @@
 	});
 
 	$effect(() => {
+		[searchText, filter];
 		if (isInitialMount) return;
 
-		const id = setTimeout(() => {
+		untrack(() => {
 			resetAndFetch();
-		}, 300);
-
-		return () => clearTimeout(id);
+		});
 	});
 
 	$effect(() => {
