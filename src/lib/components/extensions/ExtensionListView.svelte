@@ -86,6 +86,7 @@
 		items={displayedItems}
 		onenter={(item) => onSelect(item.data as Datum)}
 		bind:selectedIndex={extensionsStore.selectedIndex}
+		isItemSelectable={(item) => item.itemType === 'item'}
 		autofocus
 	>
 		{#snippet itemSnippet({ item, isSelected, onclick })}
