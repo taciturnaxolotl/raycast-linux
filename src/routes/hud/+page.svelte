@@ -1,19 +1,30 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { listen } from '@tauri-apps/api/event';
 	import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 
-	let hudText = $derived(page.url.searchParams.get('title') ?? '');
+	let hudText = $state('');
 	let hudEl = $state<HTMLDivElement | null>(null);
 
+	listen('hud-message', (event) => {
+		hudText = event.payload as string;
+	});
+
 	$effect(() => {
-		const bounds = hudEl?.getBoundingClientRect();
-		if (bounds) {
-			const window = getCurrentWindow();
-			window.setMinSize(new LogicalSize(bounds.width, bounds.height));
-			window.setMaxSize(new LogicalSize(bounds.width, bounds.height));
-			window.setSize(new LogicalSize(bounds.width, bounds.height));
-			window.center();
-		}
+		const resizeObserver = new ResizeObserver((entries) => {
+			entries.forEach((entry) => {
+				const bounds = entry.contentRect;
+				const window = getCurrentWindow();
+				window.setMinSize(new LogicalSize(bounds.width, bounds.height));
+				window.setMaxSize(new LogicalSize(bounds.width, bounds.height));
+				window.setSize(new LogicalSize(bounds.width, bounds.height));
+				window.center();
+			});
+		});
+		resizeObserver.observe(hudEl!);
+
+		return () => {
+			resizeObserver.disconnect();
+		};
 	});
 </script>
 
