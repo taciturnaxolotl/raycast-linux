@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ElementType } from 'react';
 import { jsx } from 'react/jsx-runtime';
 
 export const createLocalStorage = () => {
@@ -13,7 +13,7 @@ export const createLocalStorage = () => {
 
 export const createWrapperComponent = (name: string) => {
 	const Component = ({ children, ...rest }: { children?: React.ReactNode }) =>
-		jsx(name as any, { ...rest, children });
+		jsx(name as ElementType, { ...rest, children });
 	Component.displayName = name;
 	return Component;
 };

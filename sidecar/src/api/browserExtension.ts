@@ -3,10 +3,10 @@ import * as crypto from 'crypto';
 
 const pendingRequests = new Map<
 	string,
-	{ resolve: (value: any) => void; reject: (reason?: any) => void }
+	{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }
 >();
 
-export function handleBrowserExtensionResponse(requestId: string, result: any, error?: string) {
+export function handleBrowserExtensionResponse(requestId: string, result: unknown, error?: string) {
 	const promise = pendingRequests.get(requestId);
 	if (promise) {
 		if (error) {
@@ -21,7 +21,7 @@ export function handleBrowserExtensionResponse(requestId: string, result: any, e
 function sendRequest<T>(method: string, params: unknown): Promise<T> {
 	return new Promise((resolve, reject) => {
 		const requestId = crypto.randomUUID();
-		pendingRequests.set(requestId, { resolve, reject });
+		pendingRequests.set(requestId, { resolve: resolve as (value: unknown) => void, reject });
 		writeOutput({
 			type: 'browser-extension-request',
 			payload: { requestId, method, params }
@@ -43,9 +43,17 @@ type Tab = {
 	title?: string;
 };
 
+type RawTab = {
+	tabId: number;
+	url: string;
+	title?: string;
+	favicon?: string;
+	active: boolean;
+};
+
 export const BrowserExtensionAPI = {
 	async getTabs(): Promise<Tab[]> {
-		const result = await sendRequest<{ value: any[] }>('getTabs', {});
+		const result = await sendRequest<{ value: RawTab[] }>('getTabs', {});
 		return result.value.map((tab) => ({
 			id: tab.tabId,
 			url: tab.url,

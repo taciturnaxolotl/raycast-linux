@@ -16,13 +16,13 @@ type ReadResult = {
 
 const pendingRequests = new Map<
 	string,
-	{ resolve: (value: any) => void; reject: (reason?: any) => void }
+	{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }
 >();
 
 function sendRequest<T>(type: string, payload: object): Promise<T> {
 	return new Promise((resolve, reject) => {
 		const requestId = crypto.randomUUID();
-		pendingRequests.set(requestId, { resolve, reject });
+		pendingRequests.set(requestId, { resolve: resolve as (value: unknown) => void, reject });
 		writeOutput({
 			type,
 			payload: { requestId, ...payload }
@@ -36,7 +36,7 @@ function sendRequest<T>(type: string, payload: object): Promise<T> {
 	});
 }
 
-export function handleClipboardResponse(requestId: string, result: any, error?: string) {
+export function handleClipboardResponse(requestId: string, result: unknown, error?: string) {
 	const promise = pendingRequests.get(requestId);
 	if (promise) {
 		if (error) {

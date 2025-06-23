@@ -67,12 +67,12 @@ export interface TokenSet {
 
 const pendingAuthorizationRequests = new Map<
 	string,
-	{ resolve: (value: AuthorizationResponse) => void; reject: (reason?: any) => void }
+	{ resolve: (value: AuthorizationResponse) => void; reject: (reason?: unknown) => void }
 >();
 
 const pendingTokenRequests = new Map<
 	string,
-	{ resolve: (value: any) => void; reject: (reason?: any) => void }
+	{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }
 >();
 
 export function handleOAuthResponse(
@@ -94,7 +94,7 @@ export function handleOAuthResponse(
 	}
 }
 
-export function handleTokenResponse(requestId: string, result: any, error?: string) {
+export function handleTokenResponse(requestId: string, result: unknown, error?: string) {
 	const promise = pendingTokenRequests.get(requestId);
 	if (promise) {
 		if (error) {
@@ -109,7 +109,7 @@ export function handleTokenResponse(requestId: string, result: any, error?: stri
 function sendTokenRequest<T>(type: string, payload: object): Promise<T> {
 	return new Promise((resolve, reject) => {
 		const requestId = crypto.randomUUID();
-		pendingTokenRequests.set(requestId, { resolve, reject });
+		pendingTokenRequests.set(requestId, { resolve: resolve as (value: unknown) => void, reject });
 		writeOutput({
 			type,
 			payload: { requestId, ...payload }
@@ -121,6 +121,10 @@ function sendTokenRequest<T>(type: string, payload: object): Promise<T> {
 			}
 		}, 5000);
 	});
+}
+
+interface StoredTokenSet extends TokenSetOptions {
+	updatedAt: string;
 }
 
 export class PKCEClient {
@@ -218,7 +222,7 @@ export class PKCEClient {
 	}
 
 	async getTokens(): Promise<TokenSet | undefined> {
-		const tokenData = await sendTokenRequest<any | undefined>('oauth-get-tokens', {
+		const tokenData = await sendTokenRequest<StoredTokenSet | undefined>('oauth-get-tokens', {
 			providerId: this.getProviderId()
 		});
 

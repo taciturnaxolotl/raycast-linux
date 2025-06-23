@@ -1,10 +1,10 @@
-import type { AnyInstance, Container } from './types';
+import type { AnyInstance, Container, Toast } from './types';
 import type { Command } from '@raycast-linux/protocol';
 import type React from 'react';
 
 export const instances = new Map<number, AnyInstance>();
 export const root: Container = { id: 'root', children: [] };
-export const toasts = new Map<number, any>();
+export const toasts = new Map<number, Toast>();
 export const browserExtensionState = {
 	isConnected: false
 };

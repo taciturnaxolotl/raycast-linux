@@ -141,7 +141,7 @@ rl.on('line', (line) => {
 				case 'browser-extension-response': {
 					const { requestId, result, error } = command.payload as {
 						requestId: string;
-						result?: any;
+						result?: unknown;
 						error?: string;
 					};
 					handleBrowserExtensionResponse(requestId, result, error);
@@ -166,7 +166,7 @@ rl.on('line', (line) => {
 				case 'oauth-remove-tokens-response': {
 					const { requestId, result, error } = command.payload as {
 						requestId: string;
-						result?: any;
+						result?: unknown;
 						error?: string;
 					};
 					handleTokenResponse(requestId, result, error);
@@ -179,7 +179,7 @@ rl.on('line', (line) => {
 				case 'clipboard-clear-response': {
 					const { requestId, result, error } = command.payload as {
 						requestId: string;
-						result?: any;
+						result?: unknown;
 						error?: string;
 					};
 					handleClipboardResponse(requestId, result, error);

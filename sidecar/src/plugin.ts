@@ -29,7 +29,8 @@ const createPluginRequire =
 			return ReactJsxRuntime;
 		}
 
-		return require(moduleName);
+		// eslint-disable-next-line @typescript-eslint/no-implied-eval
+		return (0, eval)('require')(moduleName);
 	};
 
 export const discoverPlugins = (): PluginInfo[] => {
@@ -123,6 +124,11 @@ export const loadPlugin = (pluginPath: string): string => {
 	}
 };
 
+interface LaunchProps {
+	arguments: Record<string, unknown>;
+	launchType: typeof environment.launchType;
+}
+
 export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'): void => {
 	let pluginName = 'unknown';
 	let preferences: Array<{
@@ -160,7 +166,9 @@ export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'
 	setCurrentPlugin(pluginName, preferences);
 
 	const pluginModule = {
-		exports: {} as { default: React.ComponentType | ((props: any) => Promise<void>) | null }
+		exports: {} as {
+			default: React.ComponentType<LaunchProps> | ((props: LaunchProps) => Promise<void>) | null;
+		}
 	};
 
 	const scriptFunction = new Function(
@@ -192,14 +200,14 @@ export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'
 		throw new Error('Plugin did not export a default component.');
 	}
 
-	const launchProps = {
+	const launchProps: LaunchProps = {
 		arguments: {},
 		launchType: environment.launchType
 	};
 
 	if (mode === 'no-view') {
 		if (typeof PluginRoot === 'function') {
-			(PluginRoot as (props: any) => Promise<void>)(launchProps)
+			(PluginRoot as (props: LaunchProps) => Promise<void>)(launchProps)
 				.then(() => {
 					writeLog('No-view command finished.');
 					writeOutput({ type: 'go-back-to-plugin-list', payload: {} });
