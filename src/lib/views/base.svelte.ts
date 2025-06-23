@@ -37,7 +37,7 @@ function filterItems(items: FlatViewItem[], searchText: string): FlatViewItem[] 
 }
 
 export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | 'Grid.Item') {
-	const { nodeId, uiTree, onSelect, searchText, filtering, onSearchTextChange } = $derived.by(args);
+	const { nodeId, uiTree, searchText, filtering, onSearchTextChange } = $derived.by(args);
 
 	const isFilteringEnabled = $derived(
 		filtering === true || (filtering !== false && !onSearchTextChange)
@@ -118,16 +118,11 @@ export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | '
 		selectedItemIndex = flatList.findIndex((item) => item.type === 'item');
 	});
 
+	const { onSelect } = $derived.by(args);
 	$effect(() => {
 		const selectedItem = flatList[selectedItemIndex];
 		onSelect(selectedItem?.type === 'item' ? selectedItem.id : undefined);
 	});
-
-	const setSelectedItemIndex = (index: number) => {
-		if (flatList[index]?.type === 'item') {
-			selectedItemIndex = index;
-		}
-	};
 
 	return {
 		get flatList() {
@@ -136,6 +131,10 @@ export function _useBaseView(args: () => BaseViewArgs, itemType: 'List.Item' | '
 		get selectedItemIndex() {
 			return selectedItemIndex;
 		},
-		setSelectedItemIndex
+		set selectedItemIndex(index: number) {
+			if (flatList[index]?.type === 'item') {
+				selectedItemIndex = index;
+			}
+		}
 	};
 }

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { VList, type VListHandle } from 'virtua/svelte';
 	import type { UINode } from '$lib/types';
 	import type { ListItemProps } from '$lib/props';
 	import ListItem from './ListItem.svelte';
 	import ListSection from './ListSection.svelte';
-	import { useListView } from '$lib/views';
+	import { _useBaseView } from '$lib/views/base.svelte';
 	import { useTypedNode } from '$lib/node.svelte';
+	import BaseList from '$lib/components/BaseList.svelte';
 
 	type Props = {
 		nodeId: number;
@@ -18,46 +18,36 @@
 
 	const { props: listProps } = $derived.by(useTypedNode(() => ({ nodeId, uiTree, type: 'List' })));
 
-	const view = useListView(() => ({
-		nodeId,
-		uiTree,
-		onSelect,
-		searchText,
-		filtering: listProps?.filtering,
-		onSearchTextChange: !!listProps?.onSearchTextChange
-	}));
+	const view = _useBaseView(
+		() => ({
+			nodeId,
+			uiTree,
+			onSelect,
+			searchText,
+			filtering: listProps?.filtering,
+			onSearchTextChange: !!listProps?.onSearchTextChange
+		}),
+		'List.Item'
+	);
 
-	const listData = $derived.by(() => {
-		const HEADER_HEIGHT = 34;
-		const ITEM_HEIGHT = 40;
-		return view.flatList.map((item) => ({
-			...item,
-			height: item.type === 'header' ? HEADER_HEIGHT : ITEM_HEIGHT
-		}));
-	});
-
-	let vlistInstance: VListHandle | undefined = $state();
-	$effect(() => {
-		view.vlistInstance = vlistInstance;
-	});
+	const listData = $derived(view.flatList);
 </script>
-
-<svelte:window onkeydown={view.handleKeydown} />
 
 <div class="flex h-full flex-col">
 	<div class="flex-grow">
-		<VList bind:this={vlistInstance} data={listData} getKey={(item) => item.id} class="h-full">
-			{#snippet children(item, index)}
+		<BaseList
+			items={listData}
+			bind:selectedIndex={view.selectedItemIndex}
+			isItemSelectable={(item) => item.type === 'item'}
+			onenter={() => {}}
+		>
+			{#snippet itemSnippet({ item, isSelected, onclick })}
 				{#if item.type === 'header'}
 					<ListSection props={item.props} />
 				{:else if item.type === 'item'}
-					<ListItem
-						props={item.props as ListItemProps}
-						selected={view.selectedItemIndex === index}
-						onclick={() => view.setSelectedItemIndex(index)}
-					/>
+					<ListItem props={item.props as ListItemProps} selected={isSelected} {onclick} />
 				{/if}
 			{/snippet}
-		</VList>
+		</BaseList>
 	</div>
 </div>
