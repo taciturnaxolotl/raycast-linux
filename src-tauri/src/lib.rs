@@ -180,6 +180,7 @@ pub fn run() {
             oauth::oauth_get_tokens,
             oauth::oauth_remove_tokens,
             clipboard_history::history_get_items,
+            clipboard_history::history_get_item_content,
             clipboard_history::history_delete_item,
             clipboard_history::history_toggle_pin,
             clipboard_history::history_clear_all,

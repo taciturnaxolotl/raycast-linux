@@ -14,6 +14,8 @@ use tauri::{AppHandle, Manager};
 
 const KEYRING_SERVICE: &str = "dev.byteatatime.raycast";
 const KEYRING_USERNAME: &str = "clipboard_history_key";
+const INLINE_CONTENT_THRESHOLD_BYTES: i64 = 10_000; // 10 KB
+const PREVIEW_LENGTH_CHARS: usize = 500;
 
 static COLOR_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$").unwrap());
@@ -25,7 +27,9 @@ pub struct ClipboardItem {
     id: i64,
     hash: String,
     content_type: ContentType,
-    content_value: String,
+    content_value: Option<String>,
+    preview: Option<String>,
+    content_size_bytes: i64,
     source_app_name: Option<String>,
     first_copied_at: DateTime<Utc>,
     last_copied_at: DateTime<Utc>,
@@ -146,6 +150,8 @@ impl ClipboardHistoryManager {
                 hash TEXT UNIQUE NOT NULL,
                 content_type TEXT NOT NULL,
                 encrypted_content TEXT NOT NULL,
+                encrypted_preview TEXT,
+                content_size_bytes INTEGER,
                 source_app_name TEXT,
                 first_copied_at INTEGER NOT NULL,
                 last_copied_at INTEGER NOT NULL,
@@ -179,59 +185,110 @@ impl ClipboardHistoryManager {
                 params![now.timestamp(), &hash],
             )?;
         } else {
+            let content_size_bytes = content_value.len() as i64;
+            let mut preview_text = content_value.chars().take(PREVIEW_LENGTH_CHARS).collect::<String>();
+            if content_value.chars().count() > PREVIEW_LENGTH_CHARS {
+                preview_text.push_str("...");
+            }
+            
+            let encrypted_preview = encrypt(&preview_text, &self.key)?;
             let encrypted_content = encrypt(&content_value, &self.key)?;
             db.execute(
-                "INSERT INTO clipboard_history (hash, content_type, encrypted_content, source_app_name, first_copied_at, last_copied_at)
-                 VALUES (?, ?, ?, ?, ?, ?)",
-                params![hash, content_type.as_str(), encrypted_content, source_app_name, now.timestamp(), now.timestamp()],
+                "INSERT INTO clipboard_history (hash, content_type, encrypted_content, encrypted_preview, content_size_bytes, source_app_name, first_copied_at, last_copied_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                params![hash, content_type.as_str(), encrypted_content, encrypted_preview, content_size_bytes, source_app_name, now.timestamp(), now.timestamp()],
             )?;
         }
         Ok(())
     }
 
-    fn get_items(&self, filter: String, limit: u32) -> Result<Vec<ClipboardItem>, AppError> {
+    fn get_items(
+        &self,
+        filter: String,
+        search_term: Option<String>,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<ClipboardItem>, AppError> {
         let db = self.db.lock().unwrap();
-        let mut query = "SELECT id, hash, content_type, encrypted_content, source_app_name, first_copied_at, last_copied_at, times_copied, is_pinned FROM clipboard_history".to_string();
+        let mut query = "SELECT id, hash, content_type, source_app_name, first_copied_at, last_copied_at, times_copied, is_pinned, content_size_bytes, encrypted_preview, CASE WHEN content_size_bytes <= ? THEN encrypted_content ELSE NULL END as conditional_encrypted_content FROM clipboard_history".to_string();
+        let mut where_clauses: Vec<String> = Vec::new();
+        let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(INLINE_CONTENT_THRESHOLD_BYTES)];
 
         match filter.as_str() {
-            "all" => {}
-            "pinned" => query.push_str(" WHERE is_pinned = 1"),
-            "text" => query.push_str(" WHERE content_type = 'text'"),
-            "image" => query.push_str(" WHERE content_type = 'image'"),
-            "link" => query.push_str(" WHERE content_type = 'link'"),
-            "color" => query.push_str(" WHERE content_type = 'color'"),
+            "pinned" => where_clauses.push("is_pinned = 1".to_string()),
+            "text" => where_clauses.push("content_type = 'text'".to_string()),
+            "image" => where_clauses.push("content_type = 'image'".to_string()),
+            "link" => where_clauses.push("content_type = 'link'".to_string()),
+            "color" => where_clauses.push("content_type = 'color'".to_string()),
             _ => {}
         }
 
-        query.push_str(" ORDER BY last_copied_at DESC LIMIT ?");
+        if !where_clauses.is_empty() {
+            query.push_str(" WHERE ");
+            query.push_str(&where_clauses.join(" AND "));
+        }
+        
+        query.push_str(" ORDER BY last_copied_at DESC LIMIT ? OFFSET ?");
+        params_vec.push(Box::new(limit));
+        params_vec.push(Box::new(offset));
+        
+        let params_ref: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|b| b.as_ref()).collect();
 
         let mut stmt = db.prepare(&query)?;
-        let items = stmt.query_map(params![limit], |row| {
-            let encrypted_content: String = row.get(3)?;
-            let first_ts: i64 = row.get(5)?;
-            let last_ts: i64 = row.get(6)?;
+        let items_iter = stmt.query_map(&params_ref[..], |row| {
+            let conditional_encrypted_content: Option<String> = row.get(10)?;
+            let content_value = conditional_encrypted_content
+                .and_then(|cec| decrypt(&cec, &self.key).ok());
+            
+            let encrypted_preview: Option<String> = row.get(9)?;
+            let preview = encrypted_preview.and_then(|ep| decrypt(&ep, &self.key).ok());
+            
+            let first_ts: i64 = row.get(4)?;
+            let last_ts: i64 = row.get(5)?;
 
             Ok(ClipboardItem {
                 id: row.get(0)?,
                 hash: row.get(1)?,
-                content_type: ContentType::from_str(&row.get::<_, String>(2)?)
-                    .unwrap_or(ContentType::Text),
-                content_value: decrypt(&encrypted_content, &self.key).unwrap_or_default(),
-                source_app_name: row.get(4)?,
-                first_copied_at: DateTime::from_naive_utc_and_offset(
-                    NaiveDateTime::from_timestamp_opt(first_ts, 0).unwrap_or_default(),
-                    Utc,
-                ),
-                last_copied_at: DateTime::from_naive_utc_and_offset(
-                    NaiveDateTime::from_timestamp_opt(last_ts, 0).unwrap_or_default(),
-                    Utc,
-                ),
-                times_copied: row.get(7)?,
-                is_pinned: row.get::<_, i32>(8)? == 1,
+                content_type: ContentType::from_str(&row.get::<_, String>(2)?).unwrap_or(ContentType::Text),
+                content_value,
+                preview,
+                content_size_bytes: row.get(8)?,
+                source_app_name: row.get(3)?,
+                first_copied_at: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(first_ts, 0).unwrap_or_default(), Utc),
+                last_copied_at: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(last_ts, 0).unwrap_or_default(), Utc),
+                times_copied: row.get(6)?,
+                is_pinned: row.get::<_, i32>(7)? == 1,
             })
         })?;
+        
+        let mut all_items = items_iter.collect::<Result<Vec<_>, _>>()?;
 
-        items.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
+        if let Some(term) = search_term {
+            if !term.is_empty() {
+                let lower_term = term.to_lowercase();
+                all_items.retain(|item| {
+                    if let Some(preview) = &item.preview {
+                        preview.to_lowercase().contains(&lower_term)
+                    } else if let Some(value) = &item.content_value {
+                        value.to_lowercase().contains(&lower_term)
+                    } else {
+                        false
+                    }
+                });
+            }
+        }
+        
+        Ok(all_items)
+    }
+    
+    fn get_item_content(&self, id: i64) -> Result<String, AppError> {
+        let db = self.db.lock().unwrap();
+        let encrypted_content: String = db.query_row(
+            "SELECT encrypted_content FROM clipboard_history WHERE id = ?",
+            params![id],
+            |row| row.get(0),
+        )?;
+        decrypt(&encrypted_content, &self.key)
     }
 
     fn item_was_copied(&self, id: i64) -> RusqliteResult<usize> {
@@ -355,9 +412,24 @@ fn start_monitoring(_app_handle: AppHandle) {
 }
 
 #[tauri::command]
-pub fn history_get_items(filter: String, limit: u32) -> Result<Vec<ClipboardItem>, String> {
+pub fn history_get_items(
+    filter: String,
+    search_term: Option<String>,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<ClipboardItem>, String> {
     if let Some(manager) = MANAGER.lock().unwrap().as_ref() {
-        manager.get_items(filter, limit).map_err(|e| e.to_string())
+        manager.get_items(filter, search_term, limit, offset).map_err(|e| e.to_string())
+    } else {
+        Err("Clipboard history manager not initialized".to_string())
+    }
+}
+
+
+#[tauri::command]
+pub fn history_get_item_content(id: i64) -> Result<String, String> {
+    if let Some(manager) = MANAGER.lock().unwrap().as_ref() {
+        manager.get_item_content(id).map_err(|e| e.to_string())
     } else {
         Err("Clipboard history manager not initialized".to_string())
     }
