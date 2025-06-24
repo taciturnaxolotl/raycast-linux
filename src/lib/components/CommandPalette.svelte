@@ -9,23 +9,14 @@
 	import path from 'path';
 	import { create, all } from 'mathjs';
 	import { writeText } from '@tauri-apps/plugin-clipboard-manager';
-	import type { Quicklink } from '$lib/quicklinks.svelte';
 	import { tick } from 'svelte';
-
-	type App = { name: string; comment?: string; exec: string; icon_path?: string };
-	type FrecencyDataItem = {
-		itemId: string;
-		useCount: number;
-		lastUsedAt: number;
-	};
+	import { quicklinksStore, type Quicklink } from '$lib/quicklinks.svelte';
+	import { appsStore } from '$lib/apps.svelte';
+	import { frecencyStore } from '$lib/frecency.svelte';
 
 	type Props = {
 		plugins: PluginInfo[];
 		onRunPlugin: (plugin: PluginInfo) => void;
-		installedApps?: App[];
-		quicklinks?: Quicklink[];
-		frecencyData?: FrecencyDataItem[];
-		onItemRun: (itemId: string) => void;
 	};
 
 	type UnifiedItem = {
@@ -35,14 +26,11 @@
 		score: number;
 	};
 
-	let {
-		plugins,
-		onRunPlugin,
-		installedApps = [],
-		quicklinks = [],
-		frecencyData = [],
-		onItemRun
-	}: Props = $props();
+	let { plugins, onRunPlugin }: Props = $props();
+
+	const { apps: installedApps } = $derived(appsStore);
+	const { quicklinks } = $derived(quicklinksStore);
+	const { data: frecencyData } = $derived(frecencyStore);
 
 	let searchText = $state('');
 	let quicklinkArgument = $state('');
@@ -121,7 +109,7 @@
 				frecencyScore = (frecency.useCount * 1000) / Math.pow(ageInHours + 2, gravity);
 			}
 
-			const textScore = item.fuseScore !== undefined ? (1 - item.fuseScore) * 100 : 0;
+			const textScore = item.fuseScore !== undefined ? 1 - item.fuseScore * 100 : 0;
 			item.score = frecencyScore + textScore;
 		});
 
@@ -172,7 +160,7 @@
 	}
 
 	async function handleEnter(item: UnifiedItem) {
-		onItemRun(item.id);
+		frecencyStore.recordUsage(item.id);
 
 		switch (item.type) {
 			case 'calculator':

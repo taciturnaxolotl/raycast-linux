@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { sidecarService } from '$lib/sidecar.svelte';
 	import { uiStore } from '$lib/ui.svelte';
-	import { untrack } from 'svelte';
 	import SettingsView from '$lib/components/SettingsView.svelte';
 	import type { PluginInfo } from '@raycast-linux/protocol';
-	import { invoke } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
@@ -14,27 +12,7 @@
 	import { openUrl } from '@tauri-apps/plugin-opener';
 	import ClipboardHistoryView from '$lib/components/ClipboardHistoryView.svelte';
 	import QuicklinkForm from '$lib/components/QuicklinkForm.svelte';
-	import { quicklinksStore, type Quicklink } from '$lib/quicklinks.svelte';
-
-	type ViewState =
-		| 'plugin-list'
-		| 'plugin-running'
-		| 'settings'
-		| 'extensions-store'
-		| 'clipboard-history'
-		| 'create-quicklink';
-
-	type App = { name: string; comment?: string; exec: string; icon_path?: string };
-	type FrecencyDataItem = {
-		itemId: string;
-		useCount: number;
-		lastUsedAt: number;
-	};
-
-	let viewState = $state<ViewState>('plugin-list');
-	let installedApps = $state<App[]>([]);
-	let frecencyData = $state<FrecencyDataItem[]>([]);
-	let oauthStatus: 'initial' | 'authorizing' | 'success' | 'error' = $state('initial');
+	import { viewManager } from '$lib/viewManager.svelte';
 
 	const storePlugin: PluginInfo = {
 		title: 'Discover Extensions',
@@ -73,7 +51,6 @@
 	};
 
 	const { pluginList, currentPreferences } = $derived(uiStore);
-	const { quicklinks } = $derived(quicklinksStore);
 	const allPlugins = $derived([
 		...pluginList,
 		storePlugin,
@@ -81,142 +58,43 @@
 		createQuicklinkPlugin
 	]);
 
-	async function fetchFrecencyData() {
-		try {
-			frecencyData = await invoke('get_frecency_data');
-		} catch (e) {
-			console.error('Failed to fetch frecency data:', e);
-		}
-	}
-
-	async function handleItemRun(itemId: string) {
-		try {
-			await invoke('record_usage', { itemId });
-			fetchFrecencyData(); // Refresh data after recording usage
-		} catch (e) {
-			console.error(`Failed to record usage for ${itemId}:`, e);
-		}
-	}
-
-	$effect(() => {
-		untrack(() => {
-			sidecarService.setOnGoBackToPluginList(() => {
-				viewState = 'plugin-list';
-				uiStore.setCurrentRunningPlugin(null);
-			});
-			sidecarService.start();
-			quicklinksStore.fetchQuicklinks();
-			fetchFrecencyData();
-			return () => sidecarService.stop();
-		});
-	});
-
-	$effect(() => {
-		invoke('get_installed_apps').then((apps) => {
-			installedApps = apps as App[];
-		});
-	});
+	const { currentView, oauthState, oauthStatus, quicklinkToEdit } = $derived(viewManager);
 
 	onMount(() => {
+		sidecarService.setOnGoBackToPluginList(viewManager.showCommandPalette);
+		sidecarService.start();
+
 		const unlisten = listen<string>('deep-link', (event) => {
 			console.log('Received deep link:', event.payload);
-			const url = event.payload;
-			handleDeepLink(url);
+			viewManager.handleDeepLink(event.payload);
 		});
 
 		return () => {
+			sidecarService.stop();
 			unlisten.then((fn) => fn());
 		};
 	});
 
-	function handleDeepLink(url: string) {
-		try {
-			const urlObj = new URL(url);
-			console.log('Processing deep link:', {
-				protocol: urlObj.protocol,
-				host: urlObj.host,
-				pathname: urlObj.pathname,
-				search: urlObj.search
-			});
+	$effect(() => {
+		viewManager.oauthState = sidecarService.oauthState;
+	});
 
-			if (urlObj.protocol === 'raycast:') {
-				if (urlObj.host === 'oauth' || urlObj.pathname.startsWith('/redirect')) {
-					const params = urlObj.searchParams;
-					const code = params.get('code');
-					const state = params.get('state');
-
-					if (sidecarService.oauthState) {
-						oauthStatus = 'success';
-						setTimeout(() => {
-							sidecarService.oauthState = null;
-							oauthStatus = 'initial';
-						}, 2000);
-					}
-
-					if (code && state) {
-						sidecarService.dispatchEvent('oauth-authorize-response', { code, state });
-					} else {
-						const error = params.get('error') || 'Unknown OAuth error';
-						const errorDescription = params.get('error_description');
-						sidecarService.dispatchEvent('oauth-authorize-response', {
-							state,
-							error: `${error}: ${errorDescription}`
-						});
-					}
-				} else {
-					switch (urlObj.host) {
-						case 'extensions':
-							viewState = 'extensions-store';
-							break;
-						default:
-							viewState = 'plugin-list';
-					}
-				}
-			}
-		} catch (error) {
-			console.error('Error parsing deep link:', error);
-			viewState = 'plugin-list';
+	$effect(() => {
+		if (oauthStatus === 'authorizing' && oauthState?.url) {
+			openUrl(oauthState.url);
 		}
-	}
+	});
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (viewState === 'plugin-list' && event.key === ',' && (event.metaKey || event.ctrlKey)) {
+		if (
+			currentView === 'command-palette' &&
+			event.key === ',' &&
+			(event.metaKey || event.ctrlKey)
+		) {
 			event.preventDefault();
-			viewState = 'settings';
+			viewManager.showSettings();
 			return;
 		}
-	}
-
-	function handleRunPlugin(plugin: PluginInfo) {
-		console.log('handleRunPlugin', plugin);
-		if (plugin.pluginPath === 'builtin:store') {
-			viewState = 'extensions-store';
-			return;
-		}
-		if (plugin.pluginPath === 'builtin:history') {
-			viewState = 'clipboard-history';
-			return;
-		}
-		if (plugin.pluginPath === 'builtin:create-quicklink') {
-			viewState = 'create-quicklink';
-			return;
-		}
-
-		uiStore.setCurrentRunningPlugin(plugin);
-		sidecarService.dispatchEvent('run-plugin', {
-			pluginPath: plugin.pluginPath,
-			commandName: plugin.commandName,
-			mode: plugin.mode
-		});
-
-		if (plugin.mode !== 'no-view') {
-			uiStore.resetForNewPlugin();
-			viewState = 'plugin-running';
-		}
-	}
-
-	function handleBackToPluginList() {
-		viewState = 'plugin-list';
 	}
 
 	function handleSavePreferences(pluginName: string, values: Record<string, unknown>) {
@@ -242,49 +120,35 @@
 	function onExtensionInstalled() {
 		sidecarService.requestPluginList();
 	}
-
-	function handleOauthSignIn() {
-		if (sidecarService.oauthState?.url) {
-			openUrl(sidecarService.oauthState.url);
-			oauthStatus = 'authorizing';
-		}
-	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if sidecarService.oauthState}
+{#if oauthState}
 	<OAuthView
-		providerName={sidecarService.oauthState.providerName}
-		providerIcon={sidecarService.oauthState.providerIcon}
-		description={sidecarService.oauthState.description}
-		authUrl={sidecarService.oauthState.url}
+		providerName={oauthState.providerName}
+		providerIcon={oauthState.providerIcon}
+		description={oauthState.description}
+		authUrl={oauthState.url}
 		status={oauthStatus}
-		onSignIn={handleOauthSignIn}
+		onSignIn={viewManager.handleOauthSignIn}
 		onBack={() => (sidecarService.oauthState = null)}
 	/>
 {/if}
 
-{#if viewState === 'plugin-list'}
-	<CommandPalette
-		plugins={allPlugins}
-		onRunPlugin={handleRunPlugin}
-		{installedApps}
-		{quicklinks}
-		{frecencyData}
-		onItemRun={handleItemRun}
-	/>
-{:else if viewState === 'settings'}
+{#if currentView === 'command-palette'}
+	<CommandPalette plugins={allPlugins} onRunPlugin={viewManager.runPlugin} />
+{:else if currentView === 'settings'}
 	<SettingsView
 		plugins={pluginList}
-		onBack={handleBackToPluginList}
+		onBack={viewManager.showCommandPalette}
 		onSavePreferences={handleSavePreferences}
 		onGetPreferences={handleGetPreferences}
 		{currentPreferences}
 	/>
-{:else if viewState === 'extensions-store'}
-	<Extensions onBack={() => (viewState = 'plugin-list')} onInstall={onExtensionInstalled} />
-{:else if viewState === 'plugin-running'}
+{:else if currentView === 'extensions-store'}
+	<Extensions onBack={viewManager.showCommandPalette} onInstall={onExtensionInstalled} />
+{:else if currentView === 'plugin-running'}
 	{#key uiStore.currentRunningPlugin?.pluginPath}
 		<PluginRunner
 			onDispatch={handleDispatch}
@@ -292,8 +156,12 @@
 			onToastAction={handleToastAction}
 		/>
 	{/key}
-{:else if viewState === 'clipboard-history'}
-	<ClipboardHistoryView onBack={() => (viewState = 'plugin-list')} />
-{:else if viewState === 'create-quicklink'}
-	<QuicklinkForm onBack={handleBackToPluginList} onSave={handleBackToPluginList} />
+{:else if currentView === 'clipboard-history'}
+	<ClipboardHistoryView onBack={viewManager.showCommandPalette} />
+{:else if currentView === 'quicklink-form'}
+	<QuicklinkForm
+		quicklink={quicklinkToEdit}
+		onBack={viewManager.showCommandPalette}
+		onSave={viewManager.showCommandPalette}
+	/>
 {/if}
