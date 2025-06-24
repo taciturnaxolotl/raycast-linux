@@ -28,6 +28,13 @@ import { BrowserExtensionAPI } from './browserExtension';
 import { Clipboard } from './clipboard';
 import * as OAuth from './oauth';
 
+const Image = {
+	Mask: {
+		Circle: 'circle',
+		RoundedRectangle: 'roundedRectangle'
+	}
+};
+
 let currentPluginName: string | null = null;
 let currentPluginPreferences: Array<{
 	name: string;
@@ -55,6 +62,7 @@ export const getRaycastApi = () => {
 		Color,
 		Cache,
 		Icon,
+		Image,
 		LaunchType,
 		Toast,
 		OAuth,
