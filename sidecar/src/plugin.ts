@@ -29,7 +29,7 @@ const createPluginRequire =
 			return ReactJsxRuntime;
 		}
 
-		return (0, eval)('require')(moduleName);
+		return require(moduleName);
 	};
 
 export const discoverPlugins = (): PluginInfo[] => {
