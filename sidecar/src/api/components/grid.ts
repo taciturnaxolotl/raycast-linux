@@ -28,10 +28,17 @@ const GridDropdown = createWrapperComponent('Grid.Dropdown');
 const GridDropdownItem = createWrapperComponent('Grid.Dropdown.Item');
 const GridDropdownSection = createWrapperComponent('Grid.Dropdown.Section');
 
+const Inset = {
+	Small: 'small',
+	Medium: 'medium',
+	Large: 'large'
+} as const;
+
 Object.assign(Grid, {
 	Section: GridSection,
 	Item: GridItem,
-	Dropdown: GridDropdown
+	Dropdown: GridDropdown,
+	Inset: Inset
 });
 Object.assign(GridDropdown, {
 	Item: GridDropdownItem,

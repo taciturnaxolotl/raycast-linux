@@ -23,7 +23,8 @@
 		columns: gridProps?.columns ?? 6,
 		searchText,
 		filtering: gridProps?.filtering,
-		onSearchTextChange: !!gridProps?.onSearchTextChange
+		onSearchTextChange: !!gridProps?.onSearchTextChange,
+		inset: gridProps?.inset
 	}));
 </script>
 
@@ -44,6 +45,7 @@
 							props={item.props as GridItemProps}
 							selected={view.selectedItemIndex === index}
 							onclick={() => view.setSelectedItemIndex(index)}
+							inset={item.inset}
 						/>
 					</div>
 				{/if}

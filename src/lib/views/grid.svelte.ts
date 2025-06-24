@@ -1,8 +1,33 @@
 import { _useBaseView, type BaseViewArgs } from './base.svelte';
+import type { GridInset, GridSectionProps } from '$lib/props';
 
-export function useGridView(args: () => BaseViewArgs & { columns: number }) {
+export function useGridView(args: () => BaseViewArgs & { columns: number; inset?: GridInset }) {
 	const base = _useBaseView(args, 'Grid.Item');
-	const { columns } = $derived.by(args);
+	const { columns, inset: gridInset } = $derived.by(args);
+
+	const processedFlatList = $derived.by(() => {
+		const list = base.flatList;
+		const newList: ((typeof list)[number] & { inset?: GridInset })[] = [];
+		let currentSectionInset: GridInset | undefined;
+
+		for (const item of list) {
+			if (item.type === 'header') {
+				const sectionProps = item.props as GridSectionProps;
+				if (item.id === -1) {
+					// This is the synthetic section for top-level items, so it should inherit from the Grid.
+					currentSectionInset = gridInset;
+				} else {
+					// This is a user-defined <Grid.Section>. It does not inherit.
+					// If `sectionProps.inset` is undefined, it's treated as "none" by GridItem.
+					currentSectionInset = sectionProps.inset;
+				}
+				newList.push(item);
+			} else {
+				newList.push({ ...item, inset: currentSectionInset });
+			}
+		}
+		return newList;
+	});
 
 	type GridMapItem = {
 		flatListIndex: number;
@@ -15,7 +40,7 @@ export function useGridView(args: () => BaseViewArgs & { columns: number }) {
 		let sectionIndex = -1,
 			rowIndex = 0,
 			colIndex = 0;
-		base.flatList.forEach((item, index) => {
+		processedFlatList.forEach((item, index) => {
 			if (item.type === 'header') {
 				sectionIndex++;
 				rowIndex = 0;
@@ -31,7 +56,7 @@ export function useGridView(args: () => BaseViewArgs & { columns: number }) {
 
 	$effect(() => {
 		if (base.selectedItemIndex < 0) return;
-		const elementId = `item-${base.flatList[base.selectedItemIndex]?.id}`;
+		const elementId = `item-${processedFlatList[base.selectedItemIndex]?.id}`;
 		document.getElementById(elementId)?.scrollIntoView({ block: 'nearest' });
 	});
 
@@ -92,7 +117,7 @@ export function useGridView(args: () => BaseViewArgs & { columns: number }) {
 
 	return {
 		get flatList() {
-			return base.flatList;
+			return processedFlatList;
 		},
 		get selectedItemIndex() {
 			return base.selectedItemIndex;
