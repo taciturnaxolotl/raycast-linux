@@ -2,7 +2,7 @@ mod app;
 mod browser_extension;
 mod cache;
 mod clipboard;
-mod clipboard_history;
+pub mod clipboard_history;
 mod desktop;
 mod error;
 mod extensions;
