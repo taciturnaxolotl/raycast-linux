@@ -16,14 +16,16 @@
 		data: Datum | string;
 	};
 
-	const displayedItems = $derived.by(() => {
-		const items: DisplayItem[] = [];
+	let currentItems = $state<DisplayItem[]>([]);
+
+	$effect(() => {
+		const newItems: DisplayItem[] = [];
 		const addedIds = new Set<string>();
 
 		const addItems = (exts: Datum[]) => {
 			for (const ext of exts) {
 				if (!addedIds.has(ext.id)) {
-					items.push({ id: ext.id, itemType: 'item', data: ext });
+					newItems.push({ id: ext.id, itemType: 'item', data: ext });
 					addedIds.add(ext.id);
 				}
 			}
@@ -31,7 +33,7 @@
 
 		if (extensionsStore.searchText) {
 			if (extensionsStore.searchResults.length > 0) {
-				items.push({ id: 'header-search', itemType: 'header', data: 'Search Results' });
+				newItems.push({ id: 'header-search', itemType: 'header', data: 'Search Results' });
 				addItems(extensionsStore.searchResults);
 			}
 		} else if (extensionsStore.selectedCategory !== 'All Categories') {
@@ -40,7 +42,7 @@
 					(ext) => ext.categories?.includes(extensionsStore.selectedCategory) ?? false
 				) ?? [];
 			if (filtered.length > 0) {
-				items.push({
+				newItems.push({
 					id: `header-${extensionsStore.selectedCategory}`,
 					itemType: 'header',
 					data: extensionsStore.selectedCategory
@@ -49,45 +51,45 @@
 			}
 		} else {
 			if (extensionsStore.featuredExtensions.length > 0) {
-				items.push({ id: 'header-featured', itemType: 'header', data: 'Featured' });
+				newItems.push({ id: 'header-featured', itemType: 'header', data: 'Featured' });
 				addItems(extensionsStore.featuredExtensions);
 			}
 			if (extensionsStore.trendingExtensions.length > 0) {
-				items.push({ id: 'header-trending', itemType: 'header', data: 'Trending' });
+				newItems.push({ id: 'header-trending', itemType: 'header', data: 'Trending' });
 				addItems(extensionsStore.trendingExtensions);
 			}
 			if (extensionsStore.extensions.length > 0) {
-				items.push({ id: 'header-all', itemType: 'header', data: 'All Extensions' });
+				newItems.push({ id: 'header-all', itemType: 'header', data: 'All Extensions' });
 				addItems(extensionsStore.extensions);
 			}
 		}
-		return items;
+
+		if (!extensionsStore.isSearching) {
+			currentItems = newItems;
+		}
 	});
 </script>
 
-{#if extensionsStore.isLoading && displayedItems.length === 0}
-	<div class="text-muted-foreground flex h-full items-center justify-center">
-		Loading extensions...
-	</div>
-{:else if extensionsStore.error}
+{#if extensionsStore.error}
 	<div class="flex h-full items-center justify-center text-red-500">
 		Error: {extensionsStore.error}
 	</div>
-{:else if displayedItems.length === 0}
-	<div class="text-muted-foreground flex h-full items-center justify-center">
-		{#if extensionsStore.searchText}
-			No results for "{extensionsStore.searchText}"
-		{:else if extensionsStore.selectedCategory !== 'All Categories'}
-			No extensions found in this category.
-		{/if}
-	</div>
+{:else if currentItems.length === 0}
+	{#if !extensionsStore.isSearching}
+		<div class="text-muted-foreground flex h-full items-center justify-center">
+			{#if extensionsStore.searchText}
+				No results for "{extensionsStore.searchText}"
+			{:else if extensionsStore.selectedCategory !== 'All Categories'}
+				No extensions found in this category.
+			{/if}
+		</div>
+	{/if}
 {:else}
 	<BaseList
-		items={displayedItems}
+		items={currentItems}
 		onenter={(item) => onSelect(item.data as Datum)}
 		bind:selectedIndex={extensionsStore.selectedIndex}
 		isItemSelectable={(item) => item.itemType === 'item'}
-		autofocus
 	>
 		{#snippet itemSnippet({ item, isSelected, onclick })}
 			{#if item.itemType === 'header'}

@@ -8,6 +8,7 @@ export class ExtensionsStore {
 	trendingExtensions = $state<Datum[]>([]);
 
 	isLoading = $state(true);
+	isSearching = $state(false);
 	error = $state<string | null>(null);
 
 	#_searchText = $state('');
@@ -20,6 +21,7 @@ export class ExtensionsStore {
 
 	readonly perPage = 50;
 	#searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+	#loadingDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	allCategories = $derived.by(() => {
 		const categories = new Set<string>();
@@ -45,15 +47,26 @@ export class ExtensionsStore {
 	set searchText(value: string) {
 		this.#_searchText = value;
 		clearTimeout(this.#searchDebounceTimer);
+		clearTimeout(this.#loadingDebounceTimer);
 
 		if (!value) {
 			this.searchResults = [];
+			this.isLoading = false;
+			this.isSearching = false;
 			if (this.error) this.error = null;
 			return;
 		}
 
-		this.#searchDebounceTimer = setTimeout(async () => {
+		this.isSearching = true;
+
+		this.#loadingDebounceTimer = setTimeout(() => {
 			this.isLoading = true;
+		}, 200);
+
+		this.#searchDebounceTimer = setTimeout(async () => {
+			if (value !== this.#_searchText) {
+				return;
+			}
 			this.error = null;
 			try {
 				const res = await fetch(
@@ -68,7 +81,11 @@ export class ExtensionsStore {
 				console.error(e);
 				this.searchResults = [];
 			} finally {
-				this.isLoading = false;
+				clearTimeout(this.#loadingDebounceTimer);
+				if (value === this.#_searchText) {
+					this.isLoading = false;
+					this.isSearching = false;
+				}
 			}
 		}, 300);
 	}

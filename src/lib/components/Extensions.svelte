@@ -69,7 +69,7 @@
 <svelte:window onkeydown={handleGlobalKeyDown} />
 
 <main class="bg-background text-foreground flex h-screen flex-col">
-	<header class="flex h-12 shrink-0 items-center border-b px-2">
+	<header class="relative flex h-12 shrink-0 items-center border-b px-2">
 		<Button
 			variant="ghost"
 			size="icon"
@@ -96,6 +96,11 @@
 			/>
 			<CategoryFilter />
 		{/if}
+		<div class="bg-muted absolute right-0 bottom-0 left-0 h-[2px]">
+			{#if extensionsStore.isLoading && !selectedExtension}
+				<div class="raycast-loader h-full w-full"></div>
+			{/if}
+		</div>
 	</header>
 
 	{#if selectedExtension}
