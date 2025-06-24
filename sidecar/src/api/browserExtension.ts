@@ -1,39 +1,4 @@
-import { writeOutput } from '../io';
-import * as crypto from 'crypto';
-
-const pendingRequests = new Map<
-	string,
-	{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }
->();
-
-export function handleBrowserExtensionResponse(requestId: string, result: unknown, error?: string) {
-	const promise = pendingRequests.get(requestId);
-	if (promise) {
-		if (error) {
-			promise.reject(new Error(error));
-		} else {
-			promise.resolve(result);
-		}
-		pendingRequests.delete(requestId);
-	}
-}
-
-function sendRequest<T>(method: string, params: unknown): Promise<T> {
-	return new Promise((resolve, reject) => {
-		const requestId = crypto.randomUUID();
-		pendingRequests.set(requestId, { resolve: resolve as (value: unknown) => void, reject });
-		writeOutput({
-			type: 'browser-extension-request',
-			payload: { requestId, method, params }
-		});
-		setTimeout(() => {
-			if (pendingRequests.has(requestId)) {
-				pendingRequests.delete(requestId);
-				reject(new Error(`Request for ${method} timed out`));
-			}
-		}, 5000);
-	});
-}
+import { sendRequest } from './rpc';
 
 type Tab = {
 	active: boolean;
@@ -51,9 +16,13 @@ type RawTab = {
 	active: boolean;
 };
 
+const sendBrowserRequest = <T>(method: string, params: unknown) => {
+	return sendRequest<T>('browser-extension-request', { method, params });
+};
+
 export const BrowserExtensionAPI = {
 	async getTabs(): Promise<Tab[]> {
-		const result = await sendRequest<{ value: RawTab[] }>('getTabs', {});
+		const result = await sendBrowserRequest<{ value: RawTab[] }>('getTabs', {});
 		return result.value.map((tab) => ({
 			id: tab.tabId,
 			url: tab.url,
@@ -84,7 +53,7 @@ export const BrowserExtensionAPI = {
 			params.tabId = options.tabId;
 		}
 
-		const result = await sendRequest<{ value: string }>('getTab', params);
+		const result = await sendBrowserRequest<{ value: string }>('getTab', params);
 		return result.value;
 	}
 };

@@ -5,9 +5,7 @@ import { instances, navigationStack, toasts, browserExtensionState } from './sta
 import { batchedUpdates, updateContainer } from './reconciler';
 import { preferencesStore } from './preferences';
 import type { RaycastInstance } from './types';
-import { handleSystemResponse } from './api/environment';
-import { handleBrowserExtensionResponse } from './api/browserExtension';
-import { handleClipboardResponse } from './api/clipboard';
+import { handleResponse } from './api/rpc';
 import { handleOAuthResponse, handleTokenResponse } from './api/oauth';
 
 process.on('unhandledRejection', (reason: unknown) => {
@@ -23,13 +21,22 @@ rl.on('line', (line) => {
 		try {
 			const command: { action: string; payload: unknown } = JSON.parse(line);
 
-			if (command.action.startsWith('system-') && command.action.endsWith('-response')) {
-				const { requestId, result, error } = command.payload as {
+			if (command.action.endsWith('-response')) {
+				const { requestId, result, error, state, code } = command.payload as {
 					requestId: string;
 					result?: unknown;
 					error?: string;
+					state?: string;
+					code?: string;
 				};
-				handleSystemResponse(requestId, result, error);
+
+				if (command.action === 'oauth-authorize-response') {
+					handleOAuthResponse(state!, code!, state, error);
+				} else if (command.action.startsWith('oauth-')) {
+					handleTokenResponse(requestId, result, error);
+				} else {
+					handleResponse(requestId, result, error);
+				}
 				return;
 			}
 
@@ -126,51 +133,9 @@ rl.on('line', (line) => {
 					toast?.hide();
 					break;
 				}
-				case 'browser-extension-response': {
-					const { requestId, result, error } = command.payload as {
-						requestId: string;
-						result?: unknown;
-						error?: string;
-					};
-					handleBrowserExtensionResponse(requestId, result, error);
-					break;
-				}
 				case 'browser-extension-connection-status': {
 					const { isConnected } = command.payload as { isConnected: boolean };
 					browserExtensionState.isConnected = isConnected;
-					break;
-				}
-				case 'oauth-authorize-response': {
-					const { code, state, error } = command.payload as {
-						code: string;
-						state: string;
-						error?: string;
-					};
-					handleOAuthResponse(state, code, state, error);
-					break;
-				}
-				case 'oauth-get-tokens-response':
-				case 'oauth-set-tokens-response':
-				case 'oauth-remove-tokens-response': {
-					const { requestId, result, error } = command.payload as {
-						requestId: string;
-						result?: unknown;
-						error?: string;
-					};
-					handleTokenResponse(requestId, result, error);
-					break;
-				}
-				case 'clipboard-read-text-response':
-				case 'clipboard-read-response':
-				case 'clipboard-copy-response':
-				case 'clipboard-paste-response':
-				case 'clipboard-clear-response': {
-					const { requestId, result, error } = command.payload as {
-						requestId: string;
-						result?: unknown;
-						error?: string;
-					};
-					handleClipboardResponse(requestId, result, error);
 					break;
 				}
 				default:
