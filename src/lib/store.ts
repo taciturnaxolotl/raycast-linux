@@ -27,7 +27,7 @@ export type Mode = z.infer<typeof ModeSchema>;
 export const PlatformSchema = z.enum(['macOS', 'Windows']);
 export type Platform = z.infer<typeof PlatformSchema>;
 
-export const StatusSchema = z.enum(['active']);
+export const StatusSchema = z.enum(['active', 'deprecated']);
 export type Status = z.infer<typeof StatusSchema>;
 
 export const AuthorSchema = z.object({
