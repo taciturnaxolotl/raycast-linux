@@ -7,12 +7,14 @@ mod desktop;
 mod error;
 mod extensions;
 mod filesystem;
+mod frecency;
 mod oauth;
 mod quicklinks;
 mod system;
 
 use crate::{app::App, cache::AppCache};
 use browser_extension::WsState;
+use frecency::FrecencyManager;
 use quicklinks::QuicklinkManager;
 use selection::get_text;
 use std::process::Command;
@@ -92,6 +94,20 @@ async fn show_hud(app: tauri::AppHandle, title: String) -> Result<(), String> {
     });
 
     Ok(())
+}
+
+#[tauri::command]
+fn record_usage(app: tauri::AppHandle, item_id: String) -> Result<(), String> {
+    app.state::<FrecencyManager>()
+        .record_usage(item_id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_frecency_data(app: tauri::AppHandle) -> Result<Vec<frecency::FrecencyData>, String> {
+    app.state::<FrecencyManager>()
+        .get_frecency_data()
+        .map_err(|e| e.to_string())
 }
 
 fn setup_background_refresh() {
@@ -197,7 +213,9 @@ pub fn run() {
             system::get_default_application,
             system::get_frontmost_application,
             system::show_in_finder,
-            system::trash
+            system::trash,
+            record_usage,
+            get_frecency_data
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -209,6 +227,9 @@ pub fn run() {
             let quicklink_manager = QuicklinkManager::new(app.handle().clone())?;
             quicklink_manager.init_db()?;
             app.manage(quicklink_manager);
+
+            let frecency_manager = FrecencyManager::new(app.handle().clone())?;
+            app.manage(frecency_manager);
 
             setup_background_refresh();
             setup_global_shortcut(app)?;

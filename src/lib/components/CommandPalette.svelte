@@ -13,21 +13,36 @@
 	import { tick } from 'svelte';
 
 	type App = { name: string; comment?: string; exec: string; icon_path?: string };
+	type FrecencyDataItem = {
+		itemId: string;
+		useCount: number;
+		lastUsedAt: number;
+	};
 
 	type Props = {
 		plugins: PluginInfo[];
 		onRunPlugin: (plugin: PluginInfo) => void;
 		installedApps?: App[];
 		quicklinks?: Quicklink[];
+		frecencyData?: FrecencyDataItem[];
+		onItemRun: (itemId: string) => void;
 	};
 
-	type UnifiedItem =
-		| { type: 'calculator'; id: 'calculator'; value: string; result: string; resultType: string }
-		| { type: 'plugin'; id: string; data: PluginInfo }
-		| { type: 'app'; id: string; data: App }
-		| { type: 'quicklink'; id: number; data: Quicklink };
+	type UnifiedItem = {
+		type: 'calculator' | 'plugin' | 'app' | 'quicklink';
+		id: string;
+		data: any;
+		score: number;
+	};
 
-	let { plugins, onRunPlugin, installedApps = [], quicklinks = [] }: Props = $props();
+	let {
+		plugins,
+		onRunPlugin,
+		installedApps = [],
+		quicklinks = [],
+		frecencyData = [],
+		onItemRun
+	}: Props = $props();
 
 	let searchText = $state('');
 	let quicklinkArgument = $state('');
@@ -38,6 +53,33 @@
 	let selectedQuicklinkForArgument: Quicklink | null = $state(null);
 
 	const math = create(all);
+
+	const frecencyMap = $derived(new Map(frecencyData.map((item) => [item.itemId, item])));
+
+	const allSearchableItems = $derived.by(() => {
+		const items = [];
+		items.push(...plugins.map((p) => ({ type: 'plugin', id: p.pluginPath, data: p }) as const));
+		items.push(...installedApps.map((a) => ({ type: 'app', id: a.exec, data: a }) as const));
+		items.push(
+			...quicklinks.map((q) => ({ type: 'quicklink', id: `quicklink-${q.id}`, data: q }) as const)
+		);
+		return items;
+	});
+
+	const fuse = $derived(
+		new Fuse(allSearchableItems, {
+			keys: [
+				'data.title',
+				'data.pluginTitle',
+				'data.description',
+				'data.name',
+				'data.comment',
+				'data.link'
+			],
+			threshold: 0.4,
+			includeScore: true
+		})
+	);
 
 	const calculatorResult = $derived.by(() => {
 		if (!searchText.trim() || selectedQuicklinkForArgument) {
@@ -55,50 +97,56 @@
 		}
 	});
 
-	const pluginFuse = $derived(
-		new Fuse(plugins, { keys: ['title', 'description', 'pluginName'], threshold: 0.4 })
-	);
-	const appFuse = $derived(
-		new Fuse(installedApps, { keys: ['name', 'comment', 'exec'], threshold: 0.4 })
-	);
-	const quicklinkFuse = $derived(new Fuse(quicklinks, { keys: ['name', 'link'], threshold: 0.4 }));
-
 	const displayItems = $derived.by(() => {
-		const items: UnifiedItem[] = [];
+		let items: (UnifiedItem & { fuseScore?: number })[] = [];
+
+		if (searchText.trim()) {
+			items = fuse.search(searchText).map((result) => ({
+				...result.item,
+				score: 0,
+				fuseScore: result.score
+			}));
+		} else {
+			items = allSearchableItems.map((item) => ({ ...item, score: 0, fuseScore: 1 }));
+		}
+
+		const now = Date.now() / 1000;
+		const gravity = 1.8;
+
+		items.forEach((item) => {
+			const frecency = frecencyMap.get(item.id);
+			let frecencyScore = 0;
+			if (frecency) {
+				const ageInHours = Math.max(1, (now - frecency.lastUsedAt) / 3600);
+				frecencyScore = (frecency.useCount * 1000) / Math.pow(ageInHours + 2, gravity);
+			}
+
+			const textScore = item.fuseScore !== undefined ? (1 - item.fuseScore) * 100 : 0;
+			item.score = frecencyScore + textScore;
+		});
+
+		items.sort((a, b) => b.score - a.score);
 
 		if (calculatorResult) {
-			items.push({
+			items.unshift({
 				type: 'calculator',
 				id: 'calculator',
-				value: searchText,
-				result: calculatorResult.value,
-				resultType: calculatorResult.type
+				data: {
+					value: searchText,
+					result: calculatorResult.value,
+					resultType: calculatorResult.type
+				},
+				score: 9999
 			});
 		}
 
-		const filterAndMap = <T extends { [key: string]: unknown }>(
-			data: T[],
-			fuse: Fuse<T>,
-			type: 'plugin' | 'app' | 'quicklink',
-			idKey: keyof T
-		) => {
-			const filtered = searchText ? fuse.search(searchText) : data.map((item) => ({ item }));
-			const unique = [...new Map(filtered.map((res) => [res.item[idKey], res.item])).values()];
-			return unique.map((item) => ({ type, id: item[idKey], data: item }));
-		};
-
-		items.push(...(filterAndMap(plugins, pluginFuse, 'plugin', 'pluginPath') as UnifiedItem[]));
-		items.push(...(filterAndMap(installedApps, appFuse, 'app', 'exec') as UnifiedItem[]));
-		items.push(...(filterAndMap(quicklinks, quicklinkFuse, 'quicklink', 'id') as UnifiedItem[]));
-
-		return items as UnifiedItem[];
+		return items;
 	});
 
 	$effect(() => {
 		const selectedItem = displayItems[selectedIndex];
-		if (selectedItem?.type === 'quicklink') {
+		if (selectedItem?.type === 'quicklink' && selectedItem.data.link.includes('{argument}')) {
 			selectedQuicklinkForArgument = selectedItem.data;
-			searchInputEl?.focus();
 		} else {
 			selectedQuicklinkForArgument = null;
 		}
@@ -124,12 +172,14 @@
 	}
 
 	async function handleEnter(item: UnifiedItem) {
+		onItemRun(item.id);
+
 		switch (item.type) {
 			case 'calculator':
-				writeText(item.result);
+				writeText(item.data.result);
 				break;
 			case 'plugin':
-				onRunPlugin(item.data);
+				onRunPlugin(item.data as PluginInfo);
 				break;
 			case 'app':
 				if (item.data.exec) {
@@ -137,11 +187,12 @@
 				}
 				break;
 			case 'quicklink':
-				if (item.data.link.includes('{argument}')) {
+				const quicklink = item.data as Quicklink;
+				if (quicklink.link.includes('{argument}')) {
 					await tick();
 					argumentInputEl?.focus();
 				} else {
-					executeQuicklink(item.data);
+					executeQuicklink(quicklink);
 				}
 				break;
 		}
@@ -210,9 +261,9 @@
 			{#snippet itemSnippet({ item, isSelected, onclick })}
 				{#if item.type === 'calculator'}
 					<Calculator
-						searchText={item.value}
-						mathResult={item.result}
-						mathResultType={item.resultType}
+						searchText={item.data.value}
+						mathResult={item.data.result}
+						mathResultType={item.data.resultType}
 						{isSelected}
 						onSelect={onclick}
 					/>

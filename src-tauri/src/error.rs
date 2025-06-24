@@ -8,6 +8,7 @@ pub enum AppError {
     Rusqlite(rusqlite::Error),
     Keyring(keyring::Error),
     ClipboardHistory(String),
+    Frecency(String),
 }
 
 impl From<io::Error> for AppError {
@@ -49,6 +50,7 @@ impl std::fmt::Display for AppError {
             AppError::Rusqlite(err) => write!(f, "Database error: {}", err),
             AppError::Keyring(err) => write!(f, "Keychain error: {}", err),
             AppError::ClipboardHistory(msg) => write!(f, "Clipboard history error: {}", msg),
+            AppError::Frecency(msg) => write!(f, "Frecency error: {}", msg),
         }
     }
 }

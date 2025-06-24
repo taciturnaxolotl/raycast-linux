@@ -14,7 +14,7 @@
 	import { openUrl } from '@tauri-apps/plugin-opener';
 	import ClipboardHistoryView from '$lib/components/ClipboardHistoryView.svelte';
 	import QuicklinkForm from '$lib/components/QuicklinkForm.svelte';
-	import { quicklinksStore } from '$lib/quicklinks.svelte';
+	import { quicklinksStore, type Quicklink } from '$lib/quicklinks.svelte';
 
 	type ViewState =
 		| 'plugin-list'
@@ -25,9 +25,15 @@
 		| 'create-quicklink';
 
 	type App = { name: string; comment?: string; exec: string; icon_path?: string };
+	type FrecencyDataItem = {
+		itemId: string;
+		useCount: number;
+		lastUsedAt: number;
+	};
 
 	let viewState = $state<ViewState>('plugin-list');
 	let installedApps = $state<App[]>([]);
+	let frecencyData = $state<FrecencyDataItem[]>([]);
 	let oauthStatus: 'initial' | 'authorizing' | 'success' | 'error' = $state('initial');
 
 	const storePlugin: PluginInfo = {
@@ -75,6 +81,23 @@
 		createQuicklinkPlugin
 	]);
 
+	async function fetchFrecencyData() {
+		try {
+			frecencyData = await invoke('get_frecency_data');
+		} catch (e) {
+			console.error('Failed to fetch frecency data:', e);
+		}
+	}
+
+	async function handleItemRun(itemId: string) {
+		try {
+			await invoke('record_usage', { itemId });
+			fetchFrecencyData(); // Refresh data after recording usage
+		} catch (e) {
+			console.error(`Failed to record usage for ${itemId}:`, e);
+		}
+	}
+
 	$effect(() => {
 		untrack(() => {
 			sidecarService.setOnGoBackToPluginList(() => {
@@ -83,6 +106,7 @@
 			});
 			sidecarService.start();
 			quicklinksStore.fetchQuicklinks();
+			fetchFrecencyData();
 			return () => sidecarService.stop();
 		});
 	});
@@ -242,7 +266,14 @@
 {/if}
 
 {#if viewState === 'plugin-list'}
-	<CommandPalette plugins={allPlugins} onRunPlugin={handleRunPlugin} {installedApps} {quicklinks} />
+	<CommandPalette
+		plugins={allPlugins}
+		onRunPlugin={handleRunPlugin}
+		{installedApps}
+		{quicklinks}
+		{frecencyData}
+		onItemRun={handleItemRun}
+	/>
 {:else if viewState === 'settings'}
 	<SettingsView
 		plugins={pluginList}
