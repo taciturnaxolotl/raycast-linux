@@ -10,7 +10,17 @@ import { Grid } from './components/grid';
 import { Form } from './components/form';
 import { Action, ActionPanel } from './components/actions';
 import { Detail } from './components/detail';
-import { environment, getSelectedFinderItems, getSelectedText, open } from './environment';
+import {
+	environment,
+	getSelectedFinderItems,
+	getSelectedText,
+	open,
+	getApplications,
+	getDefaultApplication,
+	getFrontmostApplication,
+	showInFinder,
+	trash
+} from './environment';
 import { preferencesStore } from '../preferences';
 import { showToast } from './toast';
 import { showHUD } from './hud';
@@ -56,6 +66,9 @@ export const getRaycastApi = () => {
 		List,
 		Clipboard,
 		environment,
+		getApplications,
+		getDefaultApplication,
+		getFrontmostApplication,
 		getPreferenceValues: () => {
 			if (currentPluginName) {
 				return preferencesStore.getPreferenceValues(currentPluginName, currentPluginPreferences);
@@ -70,8 +83,10 @@ export const getRaycastApi = () => {
 		getSelectedFinderItems,
 		getSelectedText,
 		open,
+		showInFinder,
 		showToast,
 		showHUD,
+		trash,
 		useNavigation,
 		usePersistentState: <T>(
 			key: string,

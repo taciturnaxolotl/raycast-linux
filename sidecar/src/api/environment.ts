@@ -4,6 +4,7 @@ import { writeOutput } from '../io';
 import type { Application } from './types';
 import { config } from '../config';
 import { browserExtensionState } from '../state';
+import * as crypto from 'crypto';
 
 const supportPath = config.supportDir;
 try {
@@ -19,6 +20,40 @@ export interface FileSystemItem {
 }
 
 export const BrowserExtension = { name: 'BrowserExtension' };
+
+const pendingSystemRequests = new Map<
+	string,
+	{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }
+>();
+
+function sendSystemRequest<T>(type: string, payload: object = {}): Promise<T> {
+	return new Promise((resolve, reject) => {
+		const requestId = crypto.randomUUID();
+		pendingSystemRequests.set(requestId, { resolve, reject });
+		writeOutput({
+			type: `system-${type}`,
+			payload: { requestId, ...payload }
+		});
+		setTimeout(() => {
+			if (pendingSystemRequests.has(requestId)) {
+				pendingSystemRequests.delete(requestId);
+				reject(new Error(`Request for ${type} timed out`));
+			}
+		}, 5000); // 5-second timeout
+	});
+}
+
+export function handleSystemResponse(requestId: string, result: unknown, error?: string) {
+	const promise = pendingSystemRequests.get(requestId);
+	if (promise) {
+		if (error) {
+			promise.reject(new Error(error));
+		} else {
+			promise.resolve(result);
+		}
+		pendingSystemRequests.delete(requestId);
+	}
+}
 
 export const environment = {
 	appearance: 'dark' as const,
@@ -40,84 +75,12 @@ export const environment = {
 	}
 };
 
-const pendingFinderItemsRequests = new Map<
-	string,
-	{ resolve: (items: FileSystemItem[]) => void; reject: (error: Error) => void }
->();
-
 export async function getSelectedFinderItems(): Promise<FileSystemItem[]> {
-	return new Promise((resolve, reject) => {
-		const requestId = Math.random().toString(36).substring(7);
-
-		pendingFinderItemsRequests.set(requestId, { resolve, reject });
-
-		writeOutput({
-			type: 'get-selected-finder-items',
-			payload: { requestId }
-		});
-
-		setTimeout(() => {
-			if (pendingFinderItemsRequests.has(requestId)) {
-				pendingFinderItemsRequests.delete(requestId);
-				reject(new Error('Timeout: Could not get selected finder items'));
-			}
-		}, 1000);
-	});
+	return sendSystemRequest<FileSystemItem[]>('get-selected-finder-items');
 }
-
-export function handleGetSelectedFinderItemsResponse(
-	requestId: string,
-	items: FileSystemItem[] | null,
-	error?: string
-) {
-	const pending = pendingFinderItemsRequests.get(requestId);
-	if (pending) {
-		pendingFinderItemsRequests.delete(requestId);
-		if (error) {
-			pending.reject(new Error(error));
-		} else {
-			pending.resolve(items || []);
-		}
-	}
-}
-
-const pendingTextRequests = new Map<
-	string,
-	{ resolve: (text: string) => void; reject: (error: Error) => void }
->();
 
 export async function getSelectedText(): Promise<string> {
-	return new Promise((resolve, reject) => {
-		const requestId = Math.random().toString(36).substring(7);
-
-		pendingTextRequests.set(requestId, { resolve, reject });
-
-		writeOutput({
-			type: 'get-selected-text',
-			payload: {
-				requestId
-			}
-		});
-
-		setTimeout(() => {
-			if (pendingTextRequests.has(requestId)) {
-				pendingTextRequests.delete(requestId);
-				reject(new Error('Timeout: Could not get selected text'));
-			}
-		}, 1000);
-	});
-}
-
-export function handleSelectedTextResponse(requestId: string, text: string | null, error?: string) {
-	const pending = pendingTextRequests.get(requestId);
-	if (pending) {
-		pendingTextRequests.delete(requestId);
-		if (error) {
-			pending.reject(new Error(error));
-		} else {
-			pending.resolve(text || '');
-		}
-	}
+	return sendSystemRequest<string>('get-selected-text');
 }
 
 export async function open(target: string, application?: Application | string): Promise<void> {
@@ -136,4 +99,26 @@ export async function open(target: string, application?: Application | string): 
 			application: openWith
 		}
 	});
+}
+
+export async function getApplications(path?: fs.PathLike): Promise<Application[]> {
+	const pathString = path ? path.toString() : undefined;
+	return sendSystemRequest<Application[]>('get-applications', { path: pathString });
+}
+
+export async function getDefaultApplication(path: fs.PathLike): Promise<Application> {
+	return sendSystemRequest<Application>('get-default-application', { path: path.toString() });
+}
+
+export async function getFrontmostApplication(): Promise<Application> {
+	return sendSystemRequest<Application>('get-frontmost-application');
+}
+
+export async function showInFinder(path: fs.PathLike): Promise<void> {
+	return sendSystemRequest<void>('show-in-finder', { path: path.toString() });
+}
+
+export async function trash(path: fs.PathLike | fs.PathLike[]): Promise<void> {
+	const paths = (Array.isArray(path) ? path : [path]).map((p) => p.toString());
+	return sendSystemRequest<void>('trash', { paths });
 }

@@ -5,11 +5,7 @@ import { instances, navigationStack, toasts, browserExtensionState } from './sta
 import { batchedUpdates, updateContainer } from './reconciler';
 import { preferencesStore } from './preferences';
 import type { RaycastInstance } from './types';
-import {
-	handleGetSelectedFinderItemsResponse,
-	handleSelectedTextResponse,
-	type FileSystemItem
-} from './api/environment';
+import { handleSystemResponse } from './api/environment';
 import { handleBrowserExtensionResponse } from './api/browserExtension';
 import { handleClipboardResponse } from './api/clipboard';
 import { handleOAuthResponse, handleTokenResponse } from './api/oauth';
@@ -26,6 +22,16 @@ rl.on('line', (line) => {
 	batchedUpdates(() => {
 		try {
 			const command: { action: string; payload: unknown } = JSON.parse(line);
+
+			if (command.action.startsWith('system-') && command.action.endsWith('-response')) {
+				const { requestId, result, error } = command.payload as {
+					requestId: string;
+					result?: unknown;
+					error?: string;
+				};
+				handleSystemResponse(requestId, result, error);
+				return;
+			}
 
 			switch (command.action) {
 				case 'request-plugin-list':
@@ -120,24 +126,6 @@ rl.on('line', (line) => {
 					toast?.hide();
 					break;
 				}
-				case 'selected-text-response': {
-					const { requestId, text, error } = command.payload as {
-						requestId: string;
-						text?: string | null;
-						error?: string;
-					};
-					handleSelectedTextResponse(requestId, text ?? null, error);
-					break;
-				}
-				case 'selected-finder-items-response': {
-					const { requestId, items, error } = command.payload as {
-						requestId: string;
-						items?: FileSystemItem[] | null;
-						error?: string;
-					};
-					handleGetSelectedFinderItemsResponse(requestId, items ?? null, error);
-					break;
-				}
 				case 'browser-extension-response': {
 					const { requestId, result, error } = command.payload as {
 						requestId: string;
@@ -195,6 +183,8 @@ rl.on('line', (line) => {
 					: { message: String(err) };
 			writeLog(`ERROR: ${error.message} \n ${error.stack ?? ''}`);
 			writeOutput({ type: 'error', payload: error.message });
+
+			throw err;
 		}
 	});
 });

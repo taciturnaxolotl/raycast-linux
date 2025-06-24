@@ -299,6 +299,50 @@ const OauthRemoveTokensMessageSchema = z.object({
 	payload: OauthRemoveTokensPayloadSchema
 });
 
+const SystemGetApplicationsPayloadSchema = z.object({
+	requestId: z.string(),
+	path: z.string().optional()
+});
+const SystemGetApplicationsMessageSchema = z.object({
+	type: z.literal('system-get-applications'),
+	payload: SystemGetApplicationsPayloadSchema
+});
+
+const SystemGetDefaultApplicationPayloadSchema = z.object({
+	requestId: z.string(),
+	path: z.string()
+});
+const SystemGetDefaultApplicationMessageSchema = z.object({
+	type: z.literal('system-get-default-application'),
+	payload: SystemGetDefaultApplicationPayloadSchema
+});
+
+const SystemGetFrontmostApplicationPayloadSchema = z.object({
+	requestId: z.string()
+});
+const SystemGetFrontmostApplicationMessageSchema = z.object({
+	type: z.literal('system-get-frontmost-application'),
+	payload: SystemGetFrontmostApplicationPayloadSchema
+});
+
+const SystemShowInFinderPayloadSchema = z.object({
+	requestId: z.string(),
+	path: z.string()
+});
+const SystemShowInFinderMessageSchema = z.object({
+	type: z.literal('system-show-in-finder'),
+	payload: SystemShowInFinderPayloadSchema
+});
+
+const SystemTrashPayloadSchema = z.object({
+	requestId: z.string(),
+	paths: z.array(z.string())
+});
+const SystemTrashMessageSchema = z.object({
+	type: z.literal('system-trash'),
+	payload: SystemTrashPayloadSchema
+});
+
 export const SidecarMessageWithPluginsSchema = z.union([
 	BatchUpdateSchema,
 	CommandSchema,
@@ -319,6 +363,11 @@ export const SidecarMessageWithPluginsSchema = z.union([
 	OauthAuthorizeMessageSchema,
 	OauthGetTokensMessageSchema,
 	OauthSetTokensMessageSchema,
-	OauthRemoveTokensMessageSchema
+	OauthRemoveTokensMessageSchema,
+	SystemGetApplicationsMessageSchema,
+	SystemGetDefaultApplicationMessageSchema,
+	SystemGetFrontmostApplicationMessageSchema,
+	SystemShowInFinderMessageSchema,
+	SystemTrashMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

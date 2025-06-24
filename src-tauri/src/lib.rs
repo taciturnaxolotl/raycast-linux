@@ -9,6 +9,7 @@ mod extensions;
 mod filesystem;
 mod oauth;
 mod quicklinks;
+mod system;
 
 use crate::{app::App, cache::AppCache};
 use browser_extension::WsState;
@@ -191,7 +192,12 @@ pub fn run() {
             quicklinks::list_quicklinks,
             quicklinks::update_quicklink,
             quicklinks::delete_quicklink,
-            quicklinks::execute_quicklink
+            quicklinks::execute_quicklink,
+            system::get_applications,
+            system::get_default_application,
+            system::get_frontmost_application,
+            system::show_in_finder,
+            system::trash
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

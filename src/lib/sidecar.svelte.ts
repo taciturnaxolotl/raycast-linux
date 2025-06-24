@@ -166,6 +166,24 @@ class SidecarService {
 			return;
 		}
 
+		if (typedMessage.type.startsWith('system-')) {
+			const { requestId, ...params } = typedMessage.payload as {
+				requestId: string;
+				[key: string]: unknown;
+			};
+			const command = typedMessage.type.replace('system-', '').replace(/-/g, '_');
+			const responseType = `${typedMessage.type}-response`;
+			try {
+				const result = await invoke(command, params);
+				this.dispatchEvent(responseType, { requestId, result });
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.#log(`ERROR from ${command}: ${errorMessage}`);
+				this.dispatchEvent(responseType, { requestId, error: errorMessage });
+			}
+			return;
+		}
+
 		if (typedMessage.type.startsWith('clipboard-')) {
 			const { requestId, ...params } = typedMessage.payload as {
 				requestId: string;
