@@ -116,7 +116,7 @@
 			});
 
 			if (urlObj.protocol === 'raycast:') {
-				if (urlObj.host === 'oauth-callback' || urlObj.pathname.startsWith('/redirect')) {
+				if (urlObj.host === 'oauth' || urlObj.pathname.startsWith('/redirect')) {
 					const params = urlObj.searchParams;
 					const code = params.get('code');
 					const state = params.get('state');
