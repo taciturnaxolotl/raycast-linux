@@ -10,4 +10,6 @@ pub struct Snippet {
     pub content: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub times_used: i32,
+    pub last_used_at: DateTime<Utc>,
 }

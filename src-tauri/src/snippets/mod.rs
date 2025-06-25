@@ -5,6 +5,7 @@ pub mod types;
 
 use crate::error::AppError;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 use types::Snippet;
 
@@ -36,9 +37,9 @@ pub fn create_snippet(
 }
 
 #[tauri::command]
-pub fn list_snippets(app: AppHandle) -> Result<Vec<Snippet>, String> {
+pub fn list_snippets(app: AppHandle, search_term: Option<String>) -> Result<Vec<Snippet>, String> {
     app.state::<manager::SnippetManager>()
-        .list_snippets()
+        .list_snippets(search_term)
         .map_err(|e| e.to_string())
 }
 
@@ -60,6 +61,46 @@ pub fn delete_snippet(app: AppHandle, id: i64) -> Result<(), String> {
     app.state::<manager::SnippetManager>()
         .delete_snippet(id)
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn snippet_was_used(app: AppHandle, id: i64) -> Result<(), String> {
+    app.state::<manager::SnippetManager>()
+        .snippet_was_used(id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn paste_snippet_content(app: AppHandle, content: String) -> Result<(), String> {
+    let input_manager = app
+        .state::<Arc<dyn input_manager::InputManager>>()
+        .inner()
+        .clone();
+
+    let resolved = engine::parse_and_resolve_placeholders(&content);
+    let content_to_paste = resolved.content;
+
+    let chars_to_move_left = if let Some(pos) = resolved.cursor_pos {
+        content_to_paste.chars().count() - pos
+    } else {
+        0
+    };
+
+    std::thread::spawn(move || {
+        if let Err(e) = input_manager.inject_text(&content_to_paste) {
+            eprintln!("Failed to inject snippet content: {}", e);
+        }
+
+        if chars_to_move_left > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            if let Err(e) =
+                input_manager.inject_key_clicks(enigo::Key::LeftArrow, chars_to_move_left)
+            {
+                eprintln!("Failed to inject cursor movement: {}", e);
+            }
+        }
+    });
+    Ok(())
 }
 
 #[tauri::command]

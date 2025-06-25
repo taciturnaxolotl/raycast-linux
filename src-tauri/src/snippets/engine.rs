@@ -8,9 +8,9 @@ use std::thread;
 
 const BUFFER_SIZE: usize = 30;
 
-struct ResolvedSnippet {
-    content: String,
-    cursor_pos: Option<usize>,
+pub struct ResolvedSnippet {
+    pub content: String,
+    pub cursor_pos: Option<usize>,
 }
 
 pub struct ExpansionEngine {
@@ -64,7 +64,7 @@ impl ExpansionEngine {
             }
         }
 
-        if let Ok(snippets) = self.snippet_manager.list_snippets() {
+        if let Ok(snippets) = self.snippet_manager.list_snippets(None) {
             for snippet in snippets {
                 if buffer.ends_with(&snippet.keyword) {
                     let (keyword, content) = (snippet.keyword.clone(), snippet.content.clone());
@@ -76,56 +76,13 @@ impl ExpansionEngine {
         }
     }
 
-    fn parse_and_resolve_placeholders(&self, raw_content: &str) -> ResolvedSnippet {
-        let mut resolved_content = String::with_capacity(raw_content.len());
-        let mut cursor_pos: Option<usize> = None;
-        let mut last_end = 0;
-
-        for (start, _) in raw_content.match_indices('{') {
-            if start < last_end {
-                continue;
-            }
-            if let Some(end) = raw_content[start..].find('}') {
-                let placeholder = &raw_content[start + 1..start + end];
-
-                resolved_content.push_str(&raw_content[last_end..start]);
-
-                let replacement = match placeholder {
-                    "cursor" => {
-                        if cursor_pos.is_none() {
-                            cursor_pos = Some(resolved_content.chars().count());
-                        }
-                        String::new()
-                    }
-                    "clipboard" => Clipboard::new()
-                        .ok()
-                        .and_then(|mut c| c.get_text().ok())
-                        .unwrap_or_default(),
-                    "date" => Local::now().format("%d %b %Y").to_string(),
-                    "time" => Local::now().format("%H:%M").to_string(),
-                    "datetime" => Local::now().format("%d %b %Y at %H:%M").to_string(),
-                    "day" => Local::now().format("%A").to_string(),
-                    _ => raw_content[start..start + end + 1].to_string(),
-                };
-                resolved_content.push_str(&replacement);
-                last_end = start + end + 1;
-            }
-        }
-        resolved_content.push_str(&raw_content[last_end..]);
-
-        ResolvedSnippet {
-            content: resolved_content,
-            cursor_pos,
-        }
-    }
-
     fn expand_snippet(&self, keyword: &str, content: &str) {
         let mut backspaces = String::new();
         for _ in 0..keyword.len() {
             backspaces.push('\u{8}');
         }
 
-        let resolved = self.parse_and_resolve_placeholders(content);
+        let resolved = parse_and_resolve_placeholders(content);
         let content_to_paste = resolved.content;
 
         let chars_to_move_left = if let Some(pos) = resolved.cursor_pos {
@@ -157,5 +114,48 @@ impl ExpansionEngine {
 
         let mut buffer = self.buffer.lock().unwrap();
         buffer.clear();
+    }
+}
+
+pub fn parse_and_resolve_placeholders(raw_content: &str) -> ResolvedSnippet {
+    let mut resolved_content = String::with_capacity(raw_content.len());
+    let mut cursor_pos: Option<usize> = None;
+    let mut last_end = 0;
+
+    for (start, _) in raw_content.match_indices('{') {
+        if start < last_end {
+            continue;
+        }
+        if let Some(end) = raw_content[start..].find('}') {
+            let placeholder = &raw_content[start + 1..start + end];
+
+            resolved_content.push_str(&raw_content[last_end..start]);
+
+            let replacement = match placeholder {
+                "cursor" => {
+                    if cursor_pos.is_none() {
+                        cursor_pos = Some(resolved_content.chars().count());
+                    }
+                    String::new()
+                }
+                "clipboard" => Clipboard::new()
+                    .ok()
+                    .and_then(|mut c| c.get_text().ok())
+                    .unwrap_or_default(),
+                "date" => Local::now().format("%d %b %Y").to_string(),
+                "time" => Local::now().format("%H:%M").to_string(),
+                "datetime" => Local::now().format("%d %b %Y at %H:%M").to_string(),
+                "day" => Local::now().format("%A").to_string(),
+                _ => raw_content[start..start + end + 1].to_string(),
+            };
+            resolved_content.push_str(&replacement);
+            last_end = start + end + 1;
+        }
+    }
+    resolved_content.push_str(&raw_content[last_end..]);
+
+    ResolvedSnippet {
+        content: resolved_content,
+        cursor_pos,
     }
 }

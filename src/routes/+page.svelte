@@ -15,6 +15,7 @@
 	import { viewManager } from '$lib/viewManager.svelte';
 	import SnippetForm from '$lib/components/SnippetForm.svelte';
 	import ImportSnippets from '$lib/components/ImportSnippets.svelte';
+	import SearchSnippets from '$lib/components/SearchSnippets.svelte';
 
 	const storePlugin: PluginInfo = {
 		title: 'Discover Extensions',
@@ -36,6 +37,18 @@
 		commandName: 'index',
 		pluginPath: 'builtin:history',
 		icon: 'copy-clipboard-16',
+		preferences: [],
+		mode: 'view'
+	};
+
+	const searchSnippetsPlugin: PluginInfo = {
+		title: 'Search Snippets',
+		description: 'Search and manage your snippets',
+		pluginTitle: 'Snippets',
+		pluginName: 'Snippets',
+		commandName: 'search-snippets',
+		pluginPath: 'builtin:search-snippets',
+		icon: 'snippets-16',
 		preferences: [],
 		mode: 'view'
 	};
@@ -81,6 +94,7 @@
 		...pluginList,
 		storePlugin,
 		clipboardHistoryPlugin,
+		searchSnippetsPlugin,
 		createQuicklinkPlugin,
 		createSnippetPlugin,
 		importSnippetsPlugin
@@ -187,6 +201,8 @@
 	{/key}
 {:else if currentView === 'clipboard-history'}
 	<ClipboardHistoryView onBack={viewManager.showCommandPalette} />
+{:else if currentView === 'search-snippets'}
+	<SearchSnippets onBack={viewManager.showCommandPalette} />
 {:else if currentView === 'quicklink-form'}
 	<QuicklinkForm
 		quicklink={quicklinkToEdit}

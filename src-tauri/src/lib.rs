@@ -13,7 +13,7 @@ mod quicklinks;
 mod snippets;
 mod system;
 
-use crate::snippets::input_manager::EvdevInputManager;
+use crate::snippets::input_manager::{EvdevInputManager, InputManager};
 use crate::{app::App, cache::AppCache};
 use browser_extension::WsState;
 use frecency::FrecencyManager;
@@ -162,7 +162,8 @@ fn setup_input_listener(app: &tauri::AppHandle) {
     let snippet_manager_arc = Arc::new(snippet_manager);
 
     let input_manager = EvdevInputManager::new().unwrap();
-    let input_manager_arc = Arc::new(input_manager);
+    let input_manager_arc: Arc<dyn InputManager> = Arc::new(input_manager);
+    app.manage(input_manager_arc.clone());
 
     let engine = ExpansionEngine::new(snippet_manager_arc, input_manager_arc);
     thread::spawn(move || {
@@ -242,7 +243,9 @@ pub fn run() {
             snippets::list_snippets,
             snippets::update_snippet,
             snippets::delete_snippet,
-            snippets::import_snippets
+            snippets::import_snippets,
+            snippets::paste_snippet_content,
+            snippets::snippet_was_used
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

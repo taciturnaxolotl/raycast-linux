@@ -9,6 +9,7 @@ export type ViewState =
 	| 'settings'
 	| 'extensions-store'
 	| 'clipboard-history'
+	| 'search-snippets'
 	| 'quicklink-form'
 	| 'create-snippet-form'
 	| 'import-snippets';
@@ -46,6 +47,10 @@ class ViewManager {
 		this.currentView = 'clipboard-history';
 	};
 
+	showSearchSnippets = () => {
+		this.currentView = 'search-snippets';
+	};
+
 	showQuicklinkForm = (quicklink?: Quicklink) => {
 		this.quicklinkToEdit = quicklink;
 		this.currentView = 'quicklink-form';
@@ -67,6 +72,9 @@ class ViewManager {
 				return;
 			case 'builtin:history':
 				this.showClipboardHistory();
+				return;
+			case 'builtin:search-snippets':
+				this.showSearchSnippets();
 				return;
 			case 'builtin:create-quicklink':
 				this.showQuicklinkForm();
