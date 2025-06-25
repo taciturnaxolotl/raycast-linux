@@ -46,6 +46,32 @@ pub trait InputManager: Send + Sync {
     fn inject_key_clicks(&self, key: EnigoKey, count: usize) -> Result<()>;
 }
 
+fn with_clipboard_text<F>(text: &str, paste_action: F) -> Result<()>
+where
+    F: FnOnce() -> Result<()>,
+{
+    let _guard = InternalClipboardGuard::new();
+    let mut clipboard = Clipboard::new().map_err(|e| anyhow::anyhow!(e))?;
+    let original_content = clipboard.get_text().ok();
+
+    clipboard.set_text(text)?;
+    thread::sleep(std::time::Duration::from_millis(50));
+
+    let paste_result = paste_action();
+
+    thread::sleep(std::time::Duration::from_millis(50));
+
+    if let Some(original) = original_content {
+        if let Err(e) = clipboard.set_text(original) {
+            eprintln!("Failed to restore clipboard content: {}", e);
+        }
+    } else if let Err(e) = clipboard.set_text("") {
+        eprintln!("Failed to clear clipboard: {}", e);
+    }
+
+    paste_result
+}
+
 pub struct RdevInputManager;
 
 impl RdevInputManager {
@@ -90,34 +116,16 @@ impl InputManager for RdevInputManager {
 
     fn inject_text(&self, text: &str) -> Result<()> {
         if text.chars().all(|c| c == '\u{8}') {
+            return self.inject_key_clicks(EnigoKey::Backspace, text.len());
+        }
+
+        with_clipboard_text(text, || {
             let mut enigo = ENIGO.lock().unwrap();
-            for _ in 0..text.len() {
-                enigo.key(enigo::Key::Backspace, enigo::Direction::Click)?;
-            }
-            return Ok(());
-        }
-
-        let _guard = InternalClipboardGuard::new();
-        let mut clipboard = Clipboard::new().map_err(|e| anyhow::anyhow!(e))?;
-        let original_content = clipboard.get_text().ok();
-
-        clipboard.set_text(text)?;
-        thread::sleep(std::time::Duration::from_millis(50));
-
-        let mut enigo = ENIGO.lock().unwrap();
-        enigo.key(EnigoKey::Control, enigo::Direction::Press)?;
-        enigo.key(EnigoKey::Unicode('v'), enigo::Direction::Click)?;
-        enigo.key(EnigoKey::Control, enigo::Direction::Release)?;
-
-        thread::sleep(std::time::Duration::from_millis(50));
-
-        if let Some(original) = original_content {
-            clipboard.set_text(original)?;
-        } else {
-            clipboard.set_text("")?;
-        }
-
-        Ok(())
+            enigo.key(EnigoKey::Control, enigo::Direction::Press)?;
+            enigo.key(EnigoKey::Unicode('v'), enigo::Direction::Click)?;
+            enigo.key(EnigoKey::Control, enigo::Direction::Release)?;
+            Ok(())
+        })
     }
 
     fn inject_key_clicks(&self, key: EnigoKey, count: usize) -> Result<()> {
@@ -338,6 +346,7 @@ impl EvdevInputManager {
     fn enigo_to_evdev(key: EnigoKey) -> Option<KeyCode> {
         match key {
             EnigoKey::LeftArrow => Some(KeyCode::KEY_LEFT),
+            EnigoKey::Backspace => Some(KeyCode::KEY_BACKSPACE),
             _ => None,
         }
     }
@@ -436,53 +445,35 @@ impl InputManager for EvdevInputManager {
 
     fn inject_text(&self, text: &str) -> Result<()> {
         if text.chars().all(|c| c == '\u{8}') {
+            return self.inject_key_clicks(EnigoKey::Backspace, text.len());
+        }
+
+        with_clipboard_text(text, || {
             let mut device = self.virtual_device.lock().unwrap();
-            for _ in 0..text.len() {
-                self.inject_key_click(&mut *device, KeyCode::KEY_BACKSPACE)?;
-            }
-            return Ok(());
-        }
+            let syn = evdev::InputEvent::new(
+                evdev::EventType::SYNCHRONIZATION.0,
+                evdev::SynchronizationCode::SYN_REPORT.0,
+                0,
+            );
 
-        let _guard = InternalClipboardGuard::new();
-        let mut clipboard = Clipboard::new()?;
-        let original_content = clipboard.get_text().ok();
-
-        clipboard.set_text(text)?;
-        thread::sleep(Duration::from_millis(50));
-
-        let mut device = self.virtual_device.lock().unwrap();
-        let syn = evdev::InputEvent::new(
-            evdev::EventType::SYNCHRONIZATION.0,
-            evdev::SynchronizationCode::SYN_REPORT.0,
-            0,
-        );
-
-        device.emit(&[
-            evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_LEFTCTRL.0, 1),
-            syn.clone(),
-        ])?;
-        device.emit(&[
-            evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_V.0, 1),
-            syn.clone(),
-        ])?;
-        device.emit(&[
-            evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_V.0, 0),
-            syn.clone(),
-        ])?;
-        device.emit(&[
-            evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_LEFTCTRL.0, 0),
-            syn.clone(),
-        ])?;
-
-        thread::sleep(Duration::from_millis(50));
-
-        if let Some(original) = original_content {
-            clipboard.set_text(original)?;
-        } else {
-            clipboard.set_text("")?;
-        }
-
-        Ok(())
+            device.emit(&[
+                evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_LEFTCTRL.0, 1),
+                syn.clone(),
+            ])?;
+            device.emit(&[
+                evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_V.0, 1),
+                syn.clone(),
+            ])?;
+            device.emit(&[
+                evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_V.0, 0),
+                syn.clone(),
+            ])?;
+            device.emit(&[
+                evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_LEFTCTRL.0, 0),
+                syn.clone(),
+            ])?;
+            Ok(())
+        })
     }
 
     fn inject_key_clicks(&self, key: EnigoKey, count: usize) -> Result<()> {
