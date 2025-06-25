@@ -13,12 +13,13 @@ mod quicklinks;
 mod snippets;
 mod system;
 
-use crate::{app::App, cache::AppCache, snippets::input_manager::EvdevInputManager};
+use crate::{app::App, cache::AppCache};
 use browser_extension::WsState;
 use frecency::FrecencyManager;
 use quicklinks::QuicklinkManager;
 use selection::get_text;
-use snippets::input_manager::InputManager;
+use snippets::input_manager::{InputManager, RdevInputManager};
+use snippets::manager::SnippetManager;
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
@@ -156,7 +157,7 @@ fn setup_global_shortcut(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
 
 fn setup_input_listener() {
     thread::spawn(move || {
-        let manager = EvdevInputManager::new();
+        let manager = RdevInputManager::new();
         let callback = |event| {
             println!("[InputManager] Received Key: {:?}", event);
         };
@@ -244,6 +245,10 @@ pub fn run() {
 
             let frecency_manager = FrecencyManager::new(app.handle().clone())?;
             app.manage(frecency_manager);
+
+            let snippet_manager = SnippetManager::new(app.handle().clone())?;
+            snippet_manager.init_db()?;
+            app.manage(snippet_manager);
 
             setup_background_refresh();
             setup_global_shortcut(app)?;
