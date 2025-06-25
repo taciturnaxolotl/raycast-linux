@@ -1,5 +1,5 @@
 use anyhow::Result;
-use enigo::{Enigo, Keyboard};
+use enigo::{Enigo, Key as EnigoKey, Keyboard};
 use lazy_static::lazy_static;
 use rdev::Key;
 use std::sync::{Arc, Mutex};
@@ -26,6 +26,7 @@ pub enum InputEvent {
 pub trait InputManager: Send + Sync {
     fn start_listening(&self, callback: Box<dyn Fn(InputEvent) + Send + Sync>) -> Result<()>;
     fn inject_text(&self, text: &str) -> Result<()>;
+    fn inject_key_clicks(&self, key: EnigoKey, count: usize) -> Result<()>;
 }
 
 pub struct RdevInputManager;
@@ -94,6 +95,14 @@ impl InputManager for RdevInputManager {
 
         Ok(())
     }
+
+    fn inject_key_clicks(&self, key: EnigoKey, count: usize) -> Result<()> {
+        let mut enigo = ENIGO.lock().unwrap();
+        for _ in 0..count {
+            enigo.key(key, enigo::Direction::Click)?;
+        }
+        Ok(())
+    }
 }
 
 // this implementation for wayland, because wayland is a pain and rdev no worky
@@ -112,6 +121,7 @@ impl EvdevInputManager {
             KeyCode::KEY_TAB,
             KeyCode::KEY_SPACE,
             KeyCode::KEY_BACKSPACE,
+            KeyCode::KEY_LEFT,
         ]);
 
         let text: &str =
@@ -298,6 +308,13 @@ impl EvdevInputManager {
         thread::sleep(Duration::from_millis(10));
         Ok(())
     }
+
+    fn enigo_to_evdev(key: EnigoKey) -> Option<KeyCode> {
+        match key {
+            EnigoKey::LeftArrow => Some(KeyCode::KEY_LEFT),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -397,9 +414,17 @@ impl InputManager for EvdevInputManager {
             if ch == '\u{8}' {
                 self.inject_key_click(&mut *device, KeyCode::KEY_BACKSPACE)?;
             } else {
-            self.inject_char(&mut *device, ch)?;
-            self.inject_char(&mut *device, ch)?;
                 self.inject_char(&mut *device, ch)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn inject_key_clicks(&self, key: EnigoKey, count: usize) -> Result<()> {
+        if let Some(keycode) = Self::enigo_to_evdev(key) {
+            let mut device = self.virtual_device.lock().unwrap();
+            for _ in 0..count {
+                self.inject_key_click(&mut *device, keycode)?;
             }
         }
         Ok(())
