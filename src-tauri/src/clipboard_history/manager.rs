@@ -8,6 +8,7 @@ use chrono::Utc;
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection, Result as RusqliteResult};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
@@ -222,6 +223,7 @@ impl ClipboardHistoryManager {
 }
 
 pub static MANAGER: Lazy<Mutex<Option<ClipboardHistoryManager>>> = Lazy::new(|| Mutex::new(None));
+pub static INTERNAL_CLIPBOARD_CHANGE: AtomicBool = AtomicBool::new(false);
 
 pub fn init(app_handle: AppHandle) {
     let mut manager_guard = MANAGER.lock().unwrap();

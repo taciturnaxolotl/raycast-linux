@@ -13,6 +13,13 @@ pub fn start_monitoring(_app_handle: AppHandle) {
         let mut clipboard = arboard::Clipboard::new().unwrap();
 
         loop {
+            if super::manager::INTERNAL_CLIPBOARD_CHANGE
+                .load(std::sync::atomic::Ordering::SeqCst)
+            {
+                std::thread::sleep(Duration::from_millis(50));
+                continue;
+            }
+
             if let Ok(text) = clipboard.get_text() {
                 let text = text.trim();
                 if !text.is_empty() {

@@ -1,5 +1,5 @@
 mod encryption;
-mod manager;
+pub mod manager;
 mod monitor;
 mod types;
 
