@@ -230,7 +230,11 @@ pub fn run() {
             system::show_in_finder,
             system::trash,
             record_usage,
-            get_frecency_data
+            get_frecency_data,
+            snippets::create_snippet,
+            snippets::list_snippets,
+            snippets::update_snippet,
+            snippets::delete_snippet
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
