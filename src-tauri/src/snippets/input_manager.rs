@@ -1,8 +1,10 @@
+use crate::clipboard_history::manager::INTERNAL_CLIPBOARD_CHANGE;
 use anyhow::Result;
+use arboard::Clipboard;
 use enigo::{Enigo, Key as EnigoKey, Keyboard};
 use lazy_static::lazy_static;
 use rdev::Key;
-use std::sync::{Arc, Mutex};
+use std::sync::{atomic::Ordering, Arc, Mutex};
 use std::thread;
 
 #[cfg(target_os = "linux")]
@@ -21,6 +23,21 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub enum InputEvent {
     KeyPress(char),
+}
+
+struct InternalClipboardGuard;
+
+impl InternalClipboardGuard {
+    fn new() -> Self {
+        INTERNAL_CLIPBOARD_CHANGE.store(true, Ordering::SeqCst);
+        Self
+    }
+}
+
+impl Drop for InternalClipboardGuard {
+    fn drop(&mut self) {
+        INTERNAL_CLIPBOARD_CHANGE.store(false, Ordering::SeqCst);
+    }
 }
 
 pub trait InputManager: Send + Sync {
@@ -72,23 +89,32 @@ impl InputManager for RdevInputManager {
     }
 
     fn inject_text(&self, text: &str) -> Result<()> {
-        let mut enigo = ENIGO.lock().unwrap();
-        let mut buffer = String::new();
-
-        for c in text.chars() {
-            if c == '\u{8}' {
-                if !buffer.is_empty() {
-                    enigo.text(&buffer)?;
-                    buffer.clear();
-                }
+        if text.chars().all(|c| c == '\u{8}') {
+            let mut enigo = ENIGO.lock().unwrap();
+            for _ in 0..text.len() {
                 enigo.key(enigo::Key::Backspace, enigo::Direction::Click)?;
-            } else {
-                buffer.push(c);
             }
+            return Ok(());
         }
 
-        if !buffer.is_empty() {
-            enigo.text(&buffer)?;
+        let _guard = InternalClipboardGuard::new();
+        let mut clipboard = Clipboard::new().map_err(|e| anyhow::anyhow!(e))?;
+        let original_content = clipboard.get_text().ok();
+
+        clipboard.set_text(text)?;
+        thread::sleep(std::time::Duration::from_millis(50));
+
+        let mut enigo = ENIGO.lock().unwrap();
+        enigo.key(EnigoKey::Control, enigo::Direction::Press)?;
+        enigo.key(EnigoKey::Unicode('v'), enigo::Direction::Click)?;
+        enigo.key(EnigoKey::Control, enigo::Direction::Release)?;
+
+        thread::sleep(std::time::Duration::from_millis(50));
+
+        if let Some(original) = original_content {
+            clipboard.set_text(original)?;
+        } else {
+            clipboard.set_text("")?;
         }
 
         Ok(())
@@ -115,6 +141,8 @@ impl EvdevInputManager {
         let mut key_codes = HashSet::new();
         key_codes.extend([
             KeyCode::KEY_LEFTSHIFT,
+            KeyCode::KEY_LEFTCTRL,
+            KeyCode::KEY_V,
             KeyCode::KEY_ENTER,
             KeyCode::KEY_TAB,
             KeyCode::KEY_SPACE,
@@ -407,14 +435,53 @@ impl InputManager for EvdevInputManager {
     }
 
     fn inject_text(&self, text: &str) -> Result<()> {
-        let mut device = self.virtual_device.lock().unwrap();
-        for ch in text.chars() {
-            if ch == '\u{8}' {
+        if text.chars().all(|c| c == '\u{8}') {
+            let mut device = self.virtual_device.lock().unwrap();
+            for _ in 0..text.len() {
                 self.inject_key_click(&mut *device, KeyCode::KEY_BACKSPACE)?;
-            } else {
-                self.inject_char(&mut *device, ch)?;
             }
+            return Ok(());
         }
+
+        let _guard = InternalClipboardGuard::new();
+        let mut clipboard = Clipboard::new()?;
+        let original_content = clipboard.get_text().ok();
+
+        clipboard.set_text(text)?;
+        thread::sleep(Duration::from_millis(50));
+
+        let mut device = self.virtual_device.lock().unwrap();
+        let syn = evdev::InputEvent::new(
+            evdev::EventType::SYNCHRONIZATION.0,
+            evdev::SynchronizationCode::SYN_REPORT.0,
+            0,
+        );
+
+        device.emit(&[
+            evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_LEFTCTRL.0, 1),
+            syn.clone(),
+        ])?;
+        device.emit(&[
+            evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_V.0, 1),
+            syn.clone(),
+        ])?;
+        device.emit(&[
+            evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_V.0, 0),
+            syn.clone(),
+        ])?;
+        device.emit(&[
+            evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_LEFTCTRL.0, 0),
+            syn.clone(),
+        ])?;
+
+        thread::sleep(Duration::from_millis(50));
+
+        if let Some(original) = original_content {
+            clipboard.set_text(original)?;
+        } else {
+            clipboard.set_text("")?;
+        }
+
         Ok(())
     }
 
