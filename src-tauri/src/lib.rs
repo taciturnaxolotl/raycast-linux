@@ -10,13 +10,15 @@ mod filesystem;
 mod frecency;
 mod oauth;
 mod quicklinks;
+mod snippets;
 mod system;
 
-use crate::{app::App, cache::AppCache};
+use crate::{app::App, cache::AppCache, snippets::input_manager::EvdevInputManager};
 use browser_extension::WsState;
 use frecency::FrecencyManager;
 use quicklinks::QuicklinkManager;
 use selection::get_text;
+use snippets::input_manager::InputManager;
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
@@ -152,6 +154,18 @@ fn setup_global_shortcut(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
+fn setup_input_listener() {
+    thread::spawn(move || {
+        let manager = EvdevInputManager::new();
+        let callback = |event| {
+            println!("[InputManager] Received Key: {:?}", event);
+        };
+        if let Err(e) = manager.start_listening(Box::new(callback)) {
+            eprintln!("[InputManager] Failed to start: {}", e);
+        }
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -233,6 +247,7 @@ pub fn run() {
 
             setup_background_refresh();
             setup_global_shortcut(app)?;
+            setup_input_listener();
 
             Ok(())
         })
