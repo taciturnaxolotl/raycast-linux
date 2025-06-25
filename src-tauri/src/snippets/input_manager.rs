@@ -48,21 +48,21 @@ impl InputManager for RdevInputManager {
 
         thread::spawn(move || {
             let cb = move |event: rdev::Event| match event.event_type {
-                    rdev::EventType::KeyPress(key) => {
-                        if key == Key::ShiftLeft || key == Key::ShiftRight {
-                            *shift_clone_press.lock().unwrap() = true;
-                        }
-                        let is_shifted = *shift_clone_press.lock().unwrap();
-                        if let Some(ch) = key_to_char(&key, is_shifted) {
-                            callback_clone(InputEvent::KeyPress(ch));
-                        }
+                rdev::EventType::KeyPress(key) => {
+                    if key == Key::ShiftLeft || key == Key::ShiftRight {
+                        *shift_clone_press.lock().unwrap() = true;
                     }
-                    rdev::EventType::KeyRelease(key) => {
-                        if key == Key::ShiftLeft || key == Key::ShiftRight {
-                            *shift_clone_release.lock().unwrap() = false;
-                        }
+                    let is_shifted = *shift_clone_press.lock().unwrap();
+                    if let Some(ch) = key_to_char(&key, is_shifted) {
+                        callback_clone(InputEvent::KeyPress(ch));
                     }
-                    _ => (),
+                }
+                rdev::EventType::KeyRelease(key) => {
+                    if key == Key::ShiftLeft || key == Key::ShiftRight {
+                        *shift_clone_release.lock().unwrap() = false;
+                    }
+                }
+                _ => (),
             };
             if let Err(error) = rdev::listen(cb) {
                 eprintln!("rdev error: {:?}", error)

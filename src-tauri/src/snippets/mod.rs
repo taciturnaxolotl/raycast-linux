@@ -61,6 +61,7 @@ pub fn delete_snippet(app: AppHandle, id: i64) -> Result<(), String> {
         .delete_snippet(id)
         .map_err(|e| e.to_string())
 }
+
 #[tauri::command]
 pub fn import_snippets(app: AppHandle, json_content: String) -> Result<ImportResult, String> {
     let snippets: Vec<ImportSnippet> =

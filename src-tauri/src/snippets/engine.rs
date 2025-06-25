@@ -31,8 +31,8 @@ impl ExpansionEngine {
     pub fn start_listening(&self) -> anyhow::Result<()> {
         let engine = Arc::new(self.clone_for_thread());
         self.input_manager.start_listening(Box::new(move |event| {
-                engine.handle_key_press(event);
-            }))?;
+            engine.handle_key_press(event);
+        }))?;
         Ok(())
     }
 

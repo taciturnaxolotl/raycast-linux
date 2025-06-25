@@ -95,9 +95,9 @@ pub fn get_applications(_path: Option<String>) -> Result<Vec<Application>, Strin
         Ok(crate::get_installed_apps()
             .into_iter()
             .map(|app| Application {
-            name: app.name,
-            path: app.exec.unwrap_or_default(),
-            bundle_id: None,
+                name: app.name,
+                path: app.exec.unwrap_or_default(),
+                bundle_id: None,
             })
             .collect())
     }
@@ -118,15 +118,15 @@ pub fn get_applications(_path: Option<String>) -> Result<Vec<Application>, Strin
                     subkey.get_value("DisplayName"),
                     subkey.get_value("InstallLocation"),
                 ) {
-                     let name_str: String = name;
-                     let path_str: String = path;
-                     if !name_str.is_empty() && !path_str.is_empty() {
+                    let name_str: String = name;
+                    let path_str: String = path;
+                    if !name_str.is_empty() && !path_str.is_empty() {
                         apps.push(Application {
                             name: name_str,
                             path: path_str,
                             bundle_id: None,
                         });
-                     }
+                    }
                 }
             }
         }
