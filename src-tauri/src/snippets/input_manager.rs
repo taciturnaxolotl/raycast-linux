@@ -345,6 +345,7 @@ impl InputManager for EvdevInputManager {
                                     continue;
                                 }
 
+                                // evdev keycodes are offset by 8 from X11 keycodes
                                 let keycode = ev.code() + 8;
                                 let direction = match ev.value() {
                                     0 => xkb::KeyDirection::Up,
