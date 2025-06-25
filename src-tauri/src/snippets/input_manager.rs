@@ -44,7 +44,7 @@ fn with_clipboard_text<F>(text: &str, paste_action: F) -> Result<()>
 where
     F: FnOnce() -> Result<()>,
 {
-    const CLIPBOARD_PASTE_DELAY: Duration = Duration::from_millis(50);
+    const CLIPBOARD_PASTE_DELAY: Duration = Duration::from_millis(5);
     let _guard = InternalClipboardGuard::new();
 
     let mut clipboard = Clipboard::new().context("Failed to initialize clipboard")?;
@@ -238,7 +238,7 @@ impl EvdevInputManager {
         );
         device.emit(&[press, syn.clone()])?;
         device.emit(&[release, syn])?;
-        thread::sleep(Duration::from_millis(10));
+        thread::sleep(Duration::from_millis(2));
         Ok(())
     }
 
