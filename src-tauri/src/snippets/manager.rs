@@ -71,7 +71,9 @@ impl SnippetManager {
             })
         })?;
 
-        snippets_iter.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
+        snippets_iter
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| e.into())
     }
 
     pub fn update_snippet(

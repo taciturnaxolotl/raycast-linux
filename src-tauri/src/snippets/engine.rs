@@ -20,10 +20,7 @@ pub struct ExpansionEngine {
 }
 
 impl ExpansionEngine {
-    pub fn new(
-        snippet_manager: Arc<SnippetManager>,
-        input_manager: Arc<dyn InputManager>,
-    ) -> Self {
+    pub fn new(snippet_manager: Arc<SnippetManager>, input_manager: Arc<dyn InputManager>) -> Self {
         Self {
             buffer: Arc::new(Mutex::new(String::with_capacity(BUFFER_SIZE))),
             snippet_manager,
@@ -33,8 +30,7 @@ impl ExpansionEngine {
 
     pub fn start_listening(&self) -> anyhow::Result<()> {
         let engine = Arc::new(self.clone_for_thread());
-        self.input_manager
-            .start_listening(Box::new(move |event| {
+        self.input_manager.start_listening(Box::new(move |event| {
                 engine.handle_key_press(event);
             }))?;
         Ok(())

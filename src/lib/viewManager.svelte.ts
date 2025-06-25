@@ -10,7 +10,8 @@ export type ViewState =
 	| 'extensions-store'
 	| 'clipboard-history'
 	| 'quicklink-form'
-	| 'create-snippet-form';
+	| 'create-snippet-form'
+	| 'import-snippets';
 
 type OauthState = {
 	url: string;
@@ -52,6 +53,10 @@ class ViewManager {
 		this.currentView = 'create-snippet-form';
 	};
 
+	showImportSnippets = () => {
+		this.currentView = 'import-snippets';
+	};
+
 	runPlugin = (plugin: PluginInfo) => {
 		switch (plugin.pluginPath) {
 			case 'builtin:store':
@@ -65,6 +70,9 @@ class ViewManager {
 				return;
 			case 'builtin:create-snippet':
 				this.showCreateSnippetForm();
+				return;
+			case 'builtin:import-snippets':
+				this.showImportSnippets();
 				return;
 		}
 

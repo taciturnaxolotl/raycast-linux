@@ -92,11 +92,14 @@ pub fn get_applications(_path: Option<String>) -> Result<Vec<Application>, Strin
 
     #[cfg(target_os = "linux")]
     {
-        Ok(crate::get_installed_apps().into_iter().map(|app| Application {
+        Ok(crate::get_installed_apps()
+            .into_iter()
+            .map(|app| Application {
             name: app.name,
             path: app.exec.unwrap_or_default(),
             bundle_id: None,
-        }).collect())
+            })
+            .collect())
     }
 
     #[cfg(target_os = "windows")]
@@ -104,16 +107,25 @@ pub fn get_applications(_path: Option<String>) -> Result<Vec<Application>, Strin
         use winreg::enums::*;
         use winreg::RegKey;
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let uninstall = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall").map_err(|e| e.to_string())?;
+        let uninstall = hklm
+            .open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
+            .map_err(|e| e.to_string())?;
         let mut apps = Vec::new();
 
         for key in uninstall.enum_keys().filter_map(Result::ok) {
             if let Ok(subkey) = uninstall.open_subkey(key) {
-                if let (Ok(name), Ok(path)) = (subkey.get_value("DisplayName"), subkey.get_value("InstallLocation")) {
+                if let (Ok(name), Ok(path)) = (
+                    subkey.get_value("DisplayName"),
+                    subkey.get_value("InstallLocation"),
+                ) {
                      let name_str: String = name;
                      let path_str: String = path;
                      if !name_str.is_empty() && !path_str.is_empty() {
-                        apps.push(Application { name: name_str, path: path_str, bundle_id: None });
+                        apps.push(Application {
+                            name: name_str,
+                            path: path_str,
+                            bundle_id: None,
+                        });
                      }
                 }
             }
@@ -122,12 +134,13 @@ pub fn get_applications(_path: Option<String>) -> Result<Vec<Application>, Strin
     }
 }
 
-
 #[tauri::command]
 pub fn get_default_application(path: String) -> Result<Application, String> {
-    Err(format!("get_default_application for '{}' is not yet implemented for this platform.", path))
+    Err(format!(
+        "get_default_application for '{}' is not yet implemented for this platform.",
+        path
+    ))
 }
-
 
 #[tauri::command]
 pub fn get_frontmost_application() -> Result<Application, String> {

@@ -14,6 +14,7 @@
 	import QuicklinkForm from '$lib/components/QuicklinkForm.svelte';
 	import { viewManager } from '$lib/viewManager.svelte';
 	import SnippetForm from '$lib/components/SnippetForm.svelte';
+	import ImportSnippets from '$lib/components/ImportSnippets.svelte';
 
 	const storePlugin: PluginInfo = {
 		title: 'Discover Extensions',
@@ -63,13 +64,26 @@
 		mode: 'view'
 	};
 
+	const importSnippetsPlugin: PluginInfo = {
+		title: 'Import Snippets',
+		description: 'Import snippets from a JSON file',
+		pluginTitle: 'Snippets',
+		pluginName: 'Snippets',
+		commandName: 'import-snippets',
+		pluginPath: 'builtin:import-snippets',
+		icon: 'upload-16',
+		preferences: [],
+		mode: 'view'
+	};
+
 	const { pluginList, currentPreferences } = $derived(uiStore);
 	const allPlugins = $derived([
 		...pluginList,
 		storePlugin,
 		clipboardHistoryPlugin,
 		createQuicklinkPlugin,
-		createSnippetPlugin
+		createSnippetPlugin,
+		importSnippetsPlugin
 	]);
 
 	const { currentView, oauthState, oauthStatus, quicklinkToEdit } = $derived(viewManager);
@@ -180,4 +194,6 @@
 	/>
 {:else if currentView === 'create-snippet-form'}
 	<SnippetForm onBack={viewManager.showCommandPalette} onSave={viewManager.showCommandPalette} />
+{:else if currentView === 'import-snippets'}
+	<ImportSnippets onBack={viewManager.showCommandPalette} />
 {/if}

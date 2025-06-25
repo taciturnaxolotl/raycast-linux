@@ -35,8 +35,12 @@
     {
       "identifier": "http:default",
       "allow": [
-        { "url": "https://backend.raycast.com/api/v1/*" }
+        {
+          "url": "https://backend.raycast.com/api/v1/*"
+        }
       ]
-    }
+    },
+    "dialog:default",
+    "fs:default"
   ]
 }

@@ -58,8 +58,7 @@ impl FrecencyManager {
 
     pub fn get_frecency_data(&self) -> Result<Vec<FrecencyData>, AppError> {
         let db = self.db.lock().unwrap();
-        let mut stmt =
-            db.prepare("SELECT item_id, use_count, last_used_at FROM frecency")?;
+        let mut stmt = db.prepare("SELECT item_id, use_count, last_used_at FROM frecency")?;
         let data_iter = stmt.query_map([], |row| {
             Ok(FrecencyData {
                 item_id: row.get(0)?,
@@ -68,6 +67,8 @@ impl FrecencyManager {
             })
         })?;
 
-        data_iter.collect::<RusqliteResult<Vec<_>>>().map_err(|e| e.into())
+        data_iter
+            .collect::<RusqliteResult<Vec<_>>>()
+            .map_err(|e| e.into())
     }
 }

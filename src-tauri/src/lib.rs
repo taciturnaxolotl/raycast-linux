@@ -175,6 +175,8 @@ fn setup_input_listener(app: &tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
         .manage(WsState::default())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
@@ -239,7 +241,8 @@ pub fn run() {
             snippets::create_snippet,
             snippets::list_snippets,
             snippets::update_snippet,
-            snippets::delete_snippet
+            snippets::delete_snippet,
+            snippets::import_snippets
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

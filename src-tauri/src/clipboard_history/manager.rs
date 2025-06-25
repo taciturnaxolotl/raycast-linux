@@ -1,9 +1,7 @@
 use super::{
     encryption::{decrypt, encrypt, get_encryption_key},
     monitor::start_monitoring,
-    types::{
-        ClipboardItem, ContentType, INLINE_CONTENT_THRESHOLD_BYTES, PREVIEW_LENGTH_CHARS,
-    },
+    types::{ClipboardItem, ContentType, INLINE_CONTENT_THRESHOLD_BYTES, PREVIEW_LENGTH_CHARS},
 };
 use crate::error::AppError;
 use chrono::Utc;

@@ -47,8 +47,7 @@ impl InputManager for RdevInputManager {
         let callback_clone = callback.clone();
 
         thread::spawn(move || {
-            let cb = move |event: rdev::Event| {
-                match event.event_type {
+            let cb = move |event: rdev::Event| match event.event_type {
                     rdev::EventType::KeyPress(key) => {
                         if key == Key::ShiftLeft || key == Key::ShiftRight {
                             *shift_clone_press.lock().unwrap() = true;
@@ -64,7 +63,6 @@ impl InputManager for RdevInputManager {
                         }
                     }
                     _ => (),
-                }
             };
             if let Err(error) = rdev::listen(cb) {
                 eprintln!("rdev error: {:?}", error)
@@ -387,7 +385,7 @@ impl InputManager for EvdevInputManager {
                                     }
                                     _ => {
                                         xkb_state.update_key(keycode.into(), direction);
-                                    },
+                                    }
                                 }
                             }
                         }
