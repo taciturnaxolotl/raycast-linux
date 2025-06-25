@@ -20,7 +20,6 @@ use frecency::FrecencyManager;
 use quicklinks::QuicklinkManager;
 use selection::get_text;
 use snippets::engine::ExpansionEngine;
-use snippets::input_manager::{InputManager, RdevInputManager};
 use snippets::manager::SnippetManager;
 use std::process::Command;
 use std::sync::Arc;
