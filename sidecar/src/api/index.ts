@@ -81,12 +81,7 @@ export const getRaycastApi = () => {
 			if (currentPluginName) {
 				return preferencesStore.getPreferenceValues(currentPluginName, currentPluginPreferences);
 			}
-			return {
-				lang1: 'en',
-				lang2: 'zh-CN',
-				autoInput: true,
-				defaultAction: 'copy'
-			};
+			return {};
 		},
 		getSelectedFinderItems,
 		getSelectedText,
