@@ -10,6 +10,8 @@ use evdev::{uinput::VirtualDevice, KeyCode};
 #[cfg(target_os = "linux")]
 use std::collections::HashSet;
 #[cfg(target_os = "linux")]
+use std::time::Duration;
+#[cfg(target_os = "linux")]
 use xkbcommon::xkb;
 
 lazy_static! {
@@ -72,7 +74,24 @@ impl InputManager for RdevInputManager {
 
     fn inject_text(&self, text: &str) -> Result<()> {
         let mut enigo = ENIGO.lock().unwrap();
-        enigo.text(text)?;
+        let mut buffer = String::new();
+
+        for c in text.chars() {
+            if c == '\u{8}' {
+                if !buffer.is_empty() {
+                    enigo.text(&buffer)?;
+                    buffer.clear();
+                }
+                enigo.key(enigo::Key::Backspace, enigo::Direction::Click)?;
+            } else {
+                buffer.push(c);
+            }
+        }
+
+        if !buffer.is_empty() {
+            enigo.text(&buffer)?;
+        }
+
         Ok(())
     }
 }
@@ -228,28 +247,55 @@ impl EvdevInputManager {
             None => return Ok(()),
         };
 
-        let mut press_events = Vec::new();
-        if shift {
-            press_events.push(evdev::InputEvent::new(
-                evdev::EventType::KEY.0,
-                KeyCode::KEY_LEFTSHIFT.0,
-                1,
-            ));
-        }
-        press_events.push(evdev::InputEvent::new(evdev::EventType::KEY.0, key.0, 1));
-        device.emit(&press_events)?;
+        let syn = evdev::InputEvent::new(
+            evdev::EventType::SYNCHRONIZATION.0,
+            evdev::SynchronizationCode::SYN_REPORT.0,
+            0,
+        );
 
-        let mut release_events = Vec::new();
-        release_events.push(evdev::InputEvent::new(evdev::EventType::KEY.0, key.0, 0));
         if shift {
-            release_events.push(evdev::InputEvent::new(
-                evdev::EventType::KEY.0,
-                KeyCode::KEY_LEFTSHIFT.0,
-                0,
-            ));
+            device.emit(&[
+                evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_LEFTSHIFT.0, 1),
+                syn.clone(),
+            ])?;
         }
-        device.emit(&release_events)?;
 
+        device.emit(&[
+            evdev::InputEvent::new(evdev::EventType::KEY.0, key.0, 1),
+            syn.clone(),
+        ])?;
+        device.emit(&[
+            evdev::InputEvent::new(evdev::EventType::KEY.0, key.0, 0),
+            syn.clone(),
+        ])?;
+
+        if shift {
+            device.emit(&[
+                evdev::InputEvent::new(evdev::EventType::KEY.0, KeyCode::KEY_LEFTSHIFT.0, 0),
+                syn.clone(),
+            ])?;
+        }
+
+        thread::sleep(Duration::from_millis(10));
+        Ok(())
+    }
+
+    fn inject_key_click(&self, device: &mut VirtualDevice, key: KeyCode) -> Result<()> {
+        let syn = evdev::InputEvent::new(
+            evdev::EventType::SYNCHRONIZATION.0,
+            evdev::SynchronizationCode::SYN_REPORT.0,
+            0,
+        );
+        device.emit(&[
+            evdev::InputEvent::new(evdev::EventType::KEY.0, key.0, 1),
+            syn.clone(),
+        ])?;
+        device.emit(&[
+            evdev::InputEvent::new(evdev::EventType::KEY.0, key.0, 0),
+            syn.clone(),
+        ])?;
+
+        thread::sleep(Duration::from_millis(10));
         Ok(())
     }
 }
@@ -299,7 +345,6 @@ impl InputManager for EvdevInputManager {
                                     continue;
                                 }
 
-                                // evdev keycodes are offset by 8 from X11 keycodes
                                 let keycode = ev.code() + 8;
                                 let direction = match ev.value() {
                                     0 => xkb::KeyDirection::Up,
@@ -309,11 +354,16 @@ impl InputManager for EvdevInputManager {
 
                                 match direction {
                                     xkb::KeyDirection::Down => {
-                                        xkb_state.update_key(keycode.into(), xkb::KeyDirection::Down);
-                                        let utf8_str = xkb_state.key_get_utf8(keycode.into());
-                                        if !utf8_str.is_empty() {
-                                            for ch in utf8_str.chars() {
-                                                callback(InputEvent::KeyPress(ch));
+                                        xkb_state.update_key(keycode.into(), direction);
+                                        let keysym = xkb_state.key_get_one_sym(keycode.into());
+                                        if keysym == xkb::keysyms::KEY_BackSpace.into() {
+                                            callback(InputEvent::KeyPress('\u{8}'));
+                                        } else {
+                                            let utf8_str = xkb_state.key_get_utf8(keycode.into());
+                                            if !utf8_str.is_empty() {
+                                                for ch in utf8_str.chars() {
+                                                    callback(InputEvent::KeyPress(ch));
+                                                }
                                             }
                                         }
                                     }
@@ -343,11 +393,14 @@ impl InputManager for EvdevInputManager {
     fn inject_text(&self, text: &str) -> Result<()> {
         let mut device = self.virtual_device.lock().unwrap();
         for ch in text.chars() {
+            if ch == '\u{8}' {
+                self.inject_key_click(&mut *device, KeyCode::KEY_BACKSPACE)?;
+            } else {
             self.inject_char(&mut *device, ch)?;
+            self.inject_char(&mut *device, ch)?;
+                self.inject_char(&mut *device, ch)?;
+            }
         }
-        let syn_report =
-            evdev::InputEvent::new(evdev::EventType::SYNCHRONIZATION.0, evdev::SynchronizationCode::SYN_REPORT.0, 0);
-        device.emit(&[syn_report])?;
         Ok(())
     }
 }
