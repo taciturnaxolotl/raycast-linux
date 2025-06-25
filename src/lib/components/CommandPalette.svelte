@@ -206,7 +206,9 @@
 		<div class="relative flex w-full items-center">
 			<Input
 				class="w-full rounded-none border-none !bg-transparent pr-0 text-base"
-				placeholder={selectedQuicklinkForArgument ? '' : 'Search for extensions and commands...'}
+				placeholder={selectedQuicklinkForArgument
+					? selectedQuicklinkForArgument.name
+					: 'Search for extensions and commands...'}
 				bind:value={searchText}
 				bind:ref={searchInputEl}
 				autofocus
@@ -214,7 +216,9 @@
 
 			{#if selectedQuicklinkForArgument}
 				<div class="pointer-events-none absolute top-0 left-0 flex h-full w-full items-center">
-					<span class="whitespace-pre text-transparent">{searchText}</span>
+					<span class="whitespace-pre text-transparent"
+						>{searchText || selectedQuicklinkForArgument.name}</span
+					>
 					<span class="w-2"></span>
 					<div class="pointer-events-auto">
 						<div class="inline-grid items-center">
