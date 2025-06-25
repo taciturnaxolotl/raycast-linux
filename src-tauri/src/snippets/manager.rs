@@ -2,11 +2,12 @@ use crate::error::AppError;
 use crate::snippets::types::Snippet;
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection, Result as RusqliteResult};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager};
 
+#[derive(Clone)]
 pub struct SnippetManager {
-    db: Mutex<Connection>,
+    db: Arc<Mutex<Connection>>,
 }
 
 impl SnippetManager {
@@ -17,7 +18,9 @@ impl SnippetManager {
             .map_err(|_| AppError::DirectoryNotFound)?;
         let db_path = data_dir.join("snippets.sqlite");
         let db = Connection::open(db_path)?;
-        Ok(Self { db: Mutex::new(db) })
+        Ok(Self {
+            db: Arc::new(Mutex::new(db)),
+        })
     }
 
     pub fn init_db(&self) -> RusqliteResult<()> {

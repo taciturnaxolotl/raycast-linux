@@ -18,9 +18,11 @@ use browser_extension::WsState;
 use frecency::FrecencyManager;
 use quicklinks::QuicklinkManager;
 use selection::get_text;
+use snippets::engine::ExpansionEngine;
 use snippets::input_manager::{InputManager, RdevInputManager};
 use snippets::manager::SnippetManager;
 use std::process::Command;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use tauri::{Emitter, Manager};
@@ -155,14 +157,17 @@ fn setup_global_shortcut(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
-fn setup_input_listener() {
+fn setup_input_listener(app: &tauri::AppHandle) {
+    let snippet_manager = app.state::<SnippetManager>().inner().clone();
+    let snippet_manager_arc = Arc::new(snippet_manager);
+
+    let input_manager = RdevInputManager::new();
+    let input_manager_arc = Arc::new(input_manager);
+
+    let engine = ExpansionEngine::new(snippet_manager_arc, input_manager_arc);
     thread::spawn(move || {
-        let manager = RdevInputManager::new();
-        let callback = |event| {
-            println!("[InputManager] Received Key: {:?}", event);
-        };
-        if let Err(e) = manager.start_listening(Box::new(callback)) {
-            eprintln!("[InputManager] Failed to start: {}", e);
+        if let Err(e) = engine.start_listening() {
+            eprintln!("[ExpansionEngine] Failed to start: {}", e);
         }
     });
 }
@@ -256,7 +261,7 @@ pub fn run() {
 
             setup_background_refresh();
             setup_global_shortcut(app)?;
-            setup_input_listener();
+            setup_input_listener(app.handle());
 
             Ok(())
         })

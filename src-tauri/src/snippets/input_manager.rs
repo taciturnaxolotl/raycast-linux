@@ -1,13 +1,20 @@
 use anyhow::Result;
+use enigo::{Enigo, Keyboard};
+use lazy_static::lazy_static;
 use rdev::Key;
+use std::sync::Mutex;
 use std::thread;
 
-#[derive(Debug)]
+lazy_static! {
+    static ref ENIGO: Mutex<Enigo> = Mutex::new(Enigo::new(&enigo::Settings::default()).unwrap());
+}
+
+#[derive(Debug, Clone)]
 pub enum InputEvent {
     KeyPress(Key),
 }
 
-pub trait InputManager {
+pub trait InputManager: Send + Sync {
     fn start_listening(&self, callback: Box<dyn Fn(InputEvent) + Send>) -> Result<()>;
     fn inject_text(&self, text: &str) -> Result<()>;
 }
@@ -35,8 +42,10 @@ impl InputManager for RdevInputManager {
         Ok(())
     }
 
-    fn inject_text(&self, _text: &str) -> Result<()> {
-        unimplemented!()
+    fn inject_text(&self, text: &str) -> Result<()> {
+        let mut enigo = ENIGO.lock().unwrap();
+        enigo.text(text)?;
+        Ok(())
     }
 }
 
@@ -69,7 +78,6 @@ impl InputManager for EvdevInputManager {
         }
 
         for mut device in devices {
-            let cb = callback.as_ref();
             thread::spawn(move || {
                 loop {
                     match device.fetch_events() {
@@ -94,5 +102,59 @@ impl InputManager for EvdevInputManager {
 
     fn inject_text(&self, _text: &str) -> Result<()> {
         unimplemented!()
+    }
+}
+
+pub fn key_to_char(key: &Key) -> Option<char> {
+    match key {
+        Key::KeyA => Some('a'),
+        Key::KeyB => Some('b'),
+        Key::KeyC => Some('c'),
+        Key::KeyD => Some('d'),
+        Key::KeyE => Some('e'),
+        Key::KeyF => Some('f'),
+        Key::KeyG => Some('g'),
+        Key::KeyH => Some('h'),
+        Key::KeyI => Some('i'),
+        Key::KeyJ => Some('j'),
+        Key::KeyK => Some('k'),
+        Key::KeyL => Some('l'),
+        Key::KeyM => Some('m'),
+        Key::KeyN => Some('n'),
+        Key::KeyO => Some('o'),
+        Key::KeyP => Some('p'),
+        Key::KeyQ => Some('q'),
+        Key::KeyR => Some('r'),
+        Key::KeyS => Some('s'),
+        Key::KeyT => Some('t'),
+        Key::KeyU => Some('u'),
+        Key::KeyV => Some('v'),
+        Key::KeyW => Some('w'),
+        Key::KeyX => Some('x'),
+        Key::KeyY => Some('y'),
+        Key::KeyZ => Some('z'),
+        Key::Num0 => Some('0'),
+        Key::Num1 => Some('1'),
+        Key::Num2 => Some('2'),
+        Key::Num3 => Some('3'),
+        Key::Num4 => Some('4'),
+        Key::Num5 => Some('5'),
+        Key::Num6 => Some('6'),
+        Key::Num7 => Some('7'),
+        Key::Num8 => Some('8'),
+        Key::Num9 => Some('9'),
+        Key::Space => Some(' '),
+        Key::Slash => Some('/'),
+        Key::Dot => Some('.'),
+        Key::Comma => Some(','),
+        Key::Minus => Some('-'),
+        Key::Equal => Some('='),
+        Key::LeftBracket => Some('['),
+        Key::RightBracket => Some(']'),
+        Key::BackSlash => Some('\\'),
+        Key::SemiColon => Some(';'),
+        Key::Quote => Some('\''),
+        Key::BackQuote => Some('`'),
+        _ => None,
     }
 }

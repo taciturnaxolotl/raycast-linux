@@ -4441,6 +4441,7 @@ dependencies = [
  "hex",
  "image",
  "keyring",
+ "lazy_static",
  "once_cell",
  "rand 0.9.1",
  "rayon",
