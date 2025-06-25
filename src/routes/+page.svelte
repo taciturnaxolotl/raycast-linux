@@ -13,6 +13,7 @@
 	import ClipboardHistoryView from '$lib/components/ClipboardHistoryView.svelte';
 	import QuicklinkForm from '$lib/components/QuicklinkForm.svelte';
 	import { viewManager } from '$lib/viewManager.svelte';
+	import SnippetForm from '$lib/components/SnippetForm.svelte';
 
 	const storePlugin: PluginInfo = {
 		title: 'Discover Extensions',
@@ -50,12 +51,25 @@
 		mode: 'view'
 	};
 
+	const createSnippetPlugin: PluginInfo = {
+		title: 'Create Snippet',
+		description: 'Create a new snippet',
+		pluginTitle: 'Snippets',
+		pluginName: 'Snippets',
+		commandName: 'create-snippet',
+		pluginPath: 'builtin:create-snippet',
+		icon: 'snippets-16',
+		preferences: [],
+		mode: 'view'
+	};
+
 	const { pluginList, currentPreferences } = $derived(uiStore);
 	const allPlugins = $derived([
 		...pluginList,
 		storePlugin,
 		clipboardHistoryPlugin,
-		createQuicklinkPlugin
+		createQuicklinkPlugin,
+		createSnippetPlugin
 	]);
 
 	const { currentView, oauthState, oauthStatus, quicklinkToEdit } = $derived(viewManager);
@@ -164,4 +178,6 @@
 		onBack={viewManager.showCommandPalette}
 		onSave={viewManager.showCommandPalette}
 	/>
+{:else if currentView === 'create-snippet-form'}
+	<SnippetForm onBack={viewManager.showCommandPalette} onSave={viewManager.showCommandPalette} />
 {/if}

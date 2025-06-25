@@ -9,7 +9,8 @@ export type ViewState =
 	| 'settings'
 	| 'extensions-store'
 	| 'clipboard-history'
-	| 'quicklink-form';
+	| 'quicklink-form'
+	| 'create-snippet-form';
 
 type OauthState = {
 	url: string;
@@ -47,6 +48,10 @@ class ViewManager {
 		this.currentView = 'quicklink-form';
 	};
 
+	showCreateSnippetForm = () => {
+		this.currentView = 'create-snippet-form';
+	};
+
 	runPlugin = (plugin: PluginInfo) => {
 		switch (plugin.pluginPath) {
 			case 'builtin:store':
@@ -57,6 +62,9 @@ class ViewManager {
 				return;
 			case 'builtin:create-quicklink':
 				this.showQuicklinkForm();
+				return;
+			case 'builtin:create-snippet':
+				this.showCreateSnippetForm();
 				return;
 		}
 

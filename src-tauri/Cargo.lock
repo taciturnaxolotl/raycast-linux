@@ -4467,6 +4467,7 @@ dependencies = [
  "trash",
  "url",
  "uuid",
+ "xkbcommon 0.8.0",
  "zbus",
  "zip",
 ]
