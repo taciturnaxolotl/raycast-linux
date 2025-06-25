@@ -4,6 +4,7 @@
 	import { ArrowLeft } from '@lucide/svelte';
 	import type { UINode } from '$lib/types';
 	import NodeRenderer from '../NodeRenderer.svelte';
+	import LoadingIndicator from '../LoadingIndicator.svelte';
 
 	type Props = {
 		rootNode: UINode | undefined;
@@ -26,7 +27,7 @@
 	const viewType = $derived(rootNode?.type);
 	const placeholder = $derived((rootNode?.props.searchBarPlaceholder as string) ?? 'Search...');
 	const searchBarAccessoryId = $derived(rootNode?.namedChildren?.searchBarAccessory);
-	const isLoading = $derived(rootNode?.props.isLoading as boolean | undefined);
+	const isLoading = $derived((rootNode?.props.isLoading as boolean) ?? false);
 </script>
 
 <header class="relative flex h-12 shrink-0 items-center px-2">
@@ -54,9 +55,5 @@
 		{/if}
 	</div>
 
-	<div class="bg-muted absolute right-0 bottom-0 left-0 h-[2px]">
-		{#if isLoading}
-			<div class="raycast-loader h-full w-full"></div>
-		{/if}
-	</div>
+	<LoadingIndicator {isLoading} />
 </header>

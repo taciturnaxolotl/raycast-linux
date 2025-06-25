@@ -10,6 +10,7 @@
 	import ImageLightbox from './extensions/ImageLightbox.svelte';
 	import CategoryFilter from './extensions/CategoryFilter.svelte';
 	import { extensionsStore } from './extensions/store.svelte';
+	import LoadingIndicator from './LoadingIndicator.svelte';
 
 	type Props = {
 		onBack: () => void;
@@ -96,11 +97,7 @@
 			/>
 			<CategoryFilter />
 		{/if}
-		<div class="bg-muted absolute right-0 bottom-0 left-0 h-[2px]">
-			{#if extensionsStore.isLoading && !selectedExtension}
-				<div class="raycast-loader h-full w-full"></div>
-			{/if}
-		</div>
+		<LoadingIndicator isLoading={extensionsStore.isLoading && !selectedExtension} />
 	</header>
 
 	{#if selectedExtension}
