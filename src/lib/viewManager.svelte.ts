@@ -23,6 +23,7 @@ type OauthState = {
 class ViewManager {
 	currentView = $state<ViewState>('command-palette');
 	quicklinkToEdit = $state<Quicklink | undefined>(undefined);
+	snippetsForImport = $state<any[] | null>(null);
 
 	oauthState: OauthState = $state(null);
 	oauthStatus: 'initial' | 'authorizing' | 'success' | 'error' = $state('initial');
@@ -30,6 +31,7 @@ class ViewManager {
 	showCommandPalette = () => {
 		this.currentView = 'command-palette';
 		uiStore.setCurrentRunningPlugin(null);
+		this.snippetsForImport = null;
 	};
 
 	showSettings = () => {
@@ -53,7 +55,8 @@ class ViewManager {
 		this.currentView = 'create-snippet-form';
 	};
 
-	showImportSnippets = () => {
+	showImportSnippets = (snippets?: any[]) => {
+		this.snippetsForImport = snippets ?? null;
 		this.currentView = 'import-snippets';
 	};
 
@@ -100,7 +103,21 @@ class ViewManager {
 			const urlObj = new URL(url);
 
 			if (urlObj.protocol === 'raycast:') {
-				if (urlObj.host === 'oauth' || urlObj.pathname.startsWith('/redirect')) {
+				if (urlObj.host === 'snippets' && urlObj.pathname === '/import') {
+					const snippetParams = urlObj.searchParams.getAll('snippet');
+					const snippets = snippetParams
+						.map((param) => {
+							try {
+								return JSON.parse(decodeURIComponent(param));
+							} catch (e) {
+								console.error('Failed to parse snippet JSON:', e);
+								return null;
+							}
+						})
+						.filter((s): s is object => s !== null);
+
+					this.showImportSnippets(snippets.length > 0 ? snippets : undefined);
+				} else if (urlObj.host === 'oauth' || urlObj.pathname.startsWith('/redirect')) {
 					const params = urlObj.searchParams;
 					const code = params.get('code');
 					const state = params.get('state');

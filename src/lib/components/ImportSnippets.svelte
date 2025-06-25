@@ -6,12 +6,20 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { ArrowLeft, CheckCircle, Info, ArrowRight, Loader2 } from '@lucide/svelte';
 	import ActionBar from '$lib/components/nodes/shared/ActionBar.svelte';
+	import { onMount } from 'svelte';
+
+	type SnippetToImport = {
+		name: string;
+		text: string;
+		keyword: string;
+	};
 
 	type Props = {
 		onBack: () => void;
+		snippetsToImport?: SnippetToImport[] | null;
 	};
 
-	let { onBack }: Props = $props();
+	let { onBack, snippetsToImport = null }: Props = $props();
 
 	type ImportResult = {
 		snippetsAdded: number;
@@ -21,6 +29,24 @@
 	let importState: 'idle' | 'importing' | 'result' | 'error' = $state('idle');
 	let result = $state<ImportResult | null>(null);
 	let error = $state<string | null>(null);
+
+	async function importFromData(snippets: SnippetToImport[]) {
+		try {
+			importState = 'importing';
+			error = null;
+			const jsonContent = JSON.stringify(snippets);
+			const importResult = await invoke<ImportResult>('import_snippets', { jsonContent });
+			result = importResult;
+			importState = 'result';
+		} catch (e) {
+			const err = e instanceof Error ? e.message : String(e);
+			error = err.startsWith('Command import_snippets failed:')
+				? err.substring('Command import_snippets failed:'.length).trim()
+				: err;
+
+			importState = 'error';
+		}
+	}
 
 	async function selectAndImportFile() {
 		try {
@@ -45,6 +71,12 @@
 			importState = 'error';
 		}
 	}
+
+	onMount(() => {
+		if (snippetsToImport && snippetsToImport.length > 0) {
+			importFromData(snippetsToImport);
+		}
+	});
 </script>
 
 <div class="text-foreground flex h-screen flex-col">
@@ -65,12 +97,16 @@
 		</div>
 		<h1 class="mb-2 text-4xl font-bold">Import Snippets</h1>
 
-		<p class="mb-4 text-lg text-white/70">
-			Learn more about supported JSON format <a
-				href="https://manual.raycast.com/snippets/how-to-import-snippets"
-				class="font-medium text-white hover:underline">here</a
-			>.
-		</p>
+		{#if importState === 'idle' && !snippetsToImport}
+			<p class="mb-4 text-lg text-white/70">
+				Learn more about supported JSON format <a
+					href="https://manual.raycast.com/snippets/how-to-import-snippets"
+					class="font-medium text-white hover:underline">here</a
+				>.
+			</p>
+		{:else if importState === 'importing'}
+			<p class="mb-4 text-lg text-white/70">Importing snippets...</p>
+		{/if}
 
 		{#if importState === 'result' && result}
 			<div class="my-4 space-y-3 text-left text-sm">
@@ -111,8 +147,12 @@
 				<Button
 					class="bg-white/10 text-white hover:bg-white/20"
 					onclick={() => {
-						importState = 'idle';
-						error = null;
+						if (snippetsToImport) {
+							importFromData(snippetsToImport);
+						} else {
+							importState = 'idle';
+							error = null;
+						}
 					}}
 				>
 					Try Again
@@ -121,7 +161,7 @@
 				<Button
 					class="bg-white/10 text-white hover:bg-white/20"
 					onclick={selectAndImportFile}
-					disabled={importState === 'importing'}
+					disabled={importState === 'importing' || !!snippetsToImport}
 				>
 					{#if importState === 'importing'}
 						<Loader2 class="mr-2 size-4 animate-spin" />

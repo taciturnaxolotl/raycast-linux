@@ -86,7 +86,8 @@
 		importSnippetsPlugin
 	]);
 
-	const { currentView, oauthState, oauthStatus, quicklinkToEdit } = $derived(viewManager);
+	const { currentView, oauthState, oauthStatus, quicklinkToEdit, snippetsForImport } =
+		$derived(viewManager);
 
 	onMount(() => {
 		sidecarService.setOnGoBackToPluginList(viewManager.showCommandPalette);
@@ -195,5 +196,5 @@
 {:else if currentView === 'create-snippet-form'}
 	<SnippetForm onBack={viewManager.showCommandPalette} onSave={viewManager.showCommandPalette} />
 {:else if currentView === 'import-snippets'}
-	<ImportSnippets onBack={viewManager.showCommandPalette} />
+	<ImportSnippets onBack={viewManager.showCommandPalette} snippetsToImport={snippetsForImport} />
 {/if}
