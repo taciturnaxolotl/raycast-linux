@@ -19,6 +19,54 @@
 	let content = $state('');
 	let error = $state('');
 
+	const VALID_PLACEHOLDERS_NO_CURSOR = new Set(['clipboard', 'date', 'time', 'datetime', 'day']);
+
+	const parsedContent = $derived.by(() => {
+		if (!content) return [];
+
+		const parts: { text: string; highlightType: 'text' | 'valid-bracket' | 'invalid-bracket' }[] =
+			[];
+		let lastIndex = 0;
+		const regex = /({([a-zA-Z_]+?)})/g;
+		let match;
+		let cursorFoundAndValid = false;
+
+		while ((match = regex.exec(content)) !== null) {
+			if (match.index > lastIndex) {
+				parts.push({
+					text: content.substring(lastIndex, match.index),
+					highlightType: 'text'
+				});
+			}
+
+			const placeholderName = match[2];
+			let currentBracketHighlightType: 'valid-bracket' | 'invalid-bracket' = 'invalid-bracket';
+
+			if (placeholderName === 'cursor') {
+				if (!cursorFoundAndValid) {
+					currentBracketHighlightType = 'valid-bracket';
+					cursorFoundAndValid = true;
+				} else {
+					currentBracketHighlightType = 'invalid-bracket';
+				}
+			} else if (VALID_PLACEHOLDERS_NO_CURSOR.has(placeholderName)) {
+				currentBracketHighlightType = 'valid-bracket';
+			}
+
+			parts.push({ text: '{', highlightType: currentBracketHighlightType });
+			parts.push({ text: placeholderName, highlightType: 'text' });
+			parts.push({ text: '}', highlightType: currentBracketHighlightType });
+
+			lastIndex = regex.lastIndex;
+		}
+
+		if (lastIndex < content.length) {
+			parts.push({ text: content.substring(lastIndex), highlightType: 'text' });
+		}
+
+		return parts;
+	});
+
 	async function handleSave() {
 		if (!name.trim() || !keyword.trim() || !content.trim()) {
 			error = 'All fields are required.';
@@ -74,12 +122,30 @@
 
 			<div class="grid grid-cols-[120px_1fr] items-start gap-4">
 				<label for="content" class="pt-2 text-right text-sm text-gray-400">Snippet</label>
-				<Textarea
-					id="content"
-					placeholder="Enter your snippet content here..."
-					bind:value={content}
-					class="min-h-32 font-mono"
-				/>
+				<div class="grid w-full">
+					<div
+						aria-hidden="true"
+						class="pointer-events-none col-start-1 row-start-1 min-h-32 w-full rounded-md border-transparent bg-transparent px-3 py-2 font-mono text-sm break-words whitespace-pre-wrap"
+					>
+						{#each parsedContent as part}
+							<span
+								class:text-blue-300={part.highlightType === 'valid-bracket'}
+								class:text-red-400={part.highlightType === 'invalid-bracket'}
+								class:text-foreground={part.highlightType === 'text'}
+							>
+								{part.text}
+							</span>
+						{/each}
+						<span>&#x200B;</span>
+					</div>
+					<Textarea
+						id="content"
+						placeholder="Enter your snippet content... e.g. Hello {'{'}clipboard}!"
+						bind:value={content}
+						class="caret-foreground col-start-1 row-start-1 min-h-32 resize-none !bg-transparent font-mono text-transparent"
+						spellcheck={false}
+					/>
+				</div>
 			</div>
 
 			{#if error}
