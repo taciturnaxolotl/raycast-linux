@@ -16,6 +16,7 @@
 	import SnippetForm from '$lib/components/SnippetForm.svelte';
 	import ImportSnippets from '$lib/components/ImportSnippets.svelte';
 	import SearchSnippets from '$lib/components/SearchSnippets.svelte';
+	import { getCurrentWindow } from '@tauri-apps/api/window';
 
 	const storePlugin: PluginInfo = {
 		title: 'Discover Extensions',
@@ -137,6 +138,14 @@
 			event.preventDefault();
 			viewManager.showSettings();
 			return;
+		}
+
+		if (event.key === 'Escape') {
+			if (currentView === 'command-palette') {
+				event.preventDefault();
+				getCurrentWindow().hide();
+				console.log('hide');
+			}
 		}
 	}
 

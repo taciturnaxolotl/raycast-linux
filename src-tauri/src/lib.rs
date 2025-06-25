@@ -274,16 +274,23 @@ pub fn run() {
         .build(tauri::generate_context!()).unwrap();
 
         app.run(|app, event| {
-            if let tauri::RunEvent::WindowEvent {
-                event: tauri::WindowEvent::CloseRequested { api, .. },
-                ..
-            } = event
-            {
-                api.prevent_close();
-                app.get_webview_window("main")
-                    .unwrap()
-                    .hide()
-                    .expect("To hide the window");
-            }    
+            if let tauri::RunEvent::WindowEvent { label, event, .. } = event {
+                if label == "main" {
+                    match event {
+                        tauri::WindowEvent::CloseRequested { api, .. } => {
+                            api.prevent_close();
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.hide();
+                            }
+                        }
+                        tauri::WindowEvent::Focused(false) => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.hide();
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
         });
 }
