@@ -12,7 +12,8 @@ export type ViewState =
 	| 'search-snippets'
 	| 'quicklink-form'
 	| 'create-snippet-form'
-	| 'import-snippets';
+	| 'import-snippets'
+	| 'file-search';
 
 type OauthState = {
 	url: string;
@@ -65,6 +66,10 @@ class ViewManager {
 		this.currentView = 'import-snippets';
 	};
 
+	showFileSearch = () => {
+		this.currentView = 'file-search';
+	};
+
 	runPlugin = (plugin: PluginInfo) => {
 		switch (plugin.pluginPath) {
 			case 'builtin:store':
@@ -84,6 +89,9 @@ class ViewManager {
 				return;
 			case 'builtin:import-snippets':
 				this.showImportSnippets();
+				return;
+			case 'builtin:file-search':
+				this.showFileSearch();
 				return;
 		}
 

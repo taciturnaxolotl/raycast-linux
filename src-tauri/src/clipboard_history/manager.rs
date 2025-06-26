@@ -8,7 +8,7 @@ use chrono::Utc;
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection, Result as RusqliteResult};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 

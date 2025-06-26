@@ -12,6 +12,7 @@ mod oauth;
 mod quicklinks;
 mod snippets;
 mod system;
+mod file_search;
 
 use crate::snippets::input_manager::{EvdevInputManager, InputManager};
 use crate::{app::App, cache::AppCache};
@@ -140,7 +141,7 @@ fn setup_global_shortcut(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
             .with_handler(move |_app, shortcut, event| {
                 println!("Shortcut: {:?}, Event: {:?}", shortcut, event);
                 if shortcut == &spotlight_shortcut && event.state() == ShortcutState::Pressed {
-                    let spotlight_window = handle.get_webview_window("raycast-linux").unwrap();
+                    let spotlight_window = handle.get_webview_window("main").unwrap();
                     println!("Spotlight window: {:?}", spotlight_window);
                     if spotlight_window.is_visible().unwrap_or(false) {
                         spotlight_window.hide().unwrap();
@@ -245,7 +246,8 @@ pub fn run() {
             snippets::delete_snippet,
             snippets::import_snippets,
             snippets::paste_snippet_content,
-            snippets::snippet_was_used
+            snippets::snippet_was_used,
+            file_search::search_files
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -264,6 +266,9 @@ pub fn run() {
             let snippet_manager = SnippetManager::new(app.handle().clone())?;
             snippet_manager.init_db()?;
             app.manage(snippet_manager);
+
+            let app_handle_for_file_search = app.handle().clone();
+            file_search::init(app_handle_for_file_search);
 
             setup_background_refresh();
             setup_global_shortcut(app)?;

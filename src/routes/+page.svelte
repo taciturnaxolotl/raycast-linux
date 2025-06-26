@@ -16,6 +16,7 @@
 	import SnippetForm from '$lib/components/SnippetForm.svelte';
 	import ImportSnippets from '$lib/components/ImportSnippets.svelte';
 	import SearchSnippets from '$lib/components/SearchSnippets.svelte';
+	import FileSearchView from '$lib/components/FileSearchView.svelte';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 
 	const storePlugin: PluginInfo = {
@@ -90,6 +91,18 @@
 		mode: 'view'
 	};
 
+	const fileSearchPlugin: PluginInfo = {
+		title: 'Search Files',
+		description: 'Find files and folders on your computer',
+		pluginTitle: 'File Search',
+		pluginName: 'File Search',
+		commandName: 'index',
+		pluginPath: 'builtin:file-search',
+		icon: 'search-16',
+		preferences: [],
+		mode: 'view'
+	};
+
 	const { pluginList, currentPreferences } = $derived(uiStore);
 	const allPlugins = $derived([
 		...pluginList,
@@ -98,7 +111,8 @@
 		searchSnippetsPlugin,
 		createQuicklinkPlugin,
 		createSnippetPlugin,
-		importSnippetsPlugin
+		importSnippetsPlugin,
+		fileSearchPlugin
 	]);
 
 	const { currentView, oauthState, oauthStatus, quicklinkToEdit, snippetsForImport } =
@@ -222,4 +236,6 @@
 	<SnippetForm onBack={viewManager.showCommandPalette} onSave={viewManager.showCommandPalette} />
 {:else if currentView === 'import-snippets'}
 	<ImportSnippets onBack={viewManager.showCommandPalette} snippetsToImport={snippetsForImport} />
+{:else if currentView === 'file-search'}
+	<FileSearchView onBack={viewManager.showCommandPalette} />
 {/if}
