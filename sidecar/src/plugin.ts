@@ -130,15 +130,7 @@ interface LaunchProps {
 
 export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'): void => {
 	let pluginName = 'unknown';
-	let preferences: Array<{
-		name: string;
-		title: string;
-		description?: string;
-		type: 'textfield' | 'dropdown' | 'checkbox' | 'directory';
-		required?: boolean;
-		default?: string | boolean;
-		data?: Array<{ title: string; value: string }>;
-	}> = [];
+	let preferences: Preference[] = [];
 
 	if (!pluginPath) {
 		throw new Error('No plugin specified.');
@@ -153,7 +145,11 @@ export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'
 		try {
 			const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 			pluginName = packageJson.name || path.basename(pluginDir);
-			preferences = packageJson.preferences || [];
+			const pluginPreferences = packageJson.preferences || [];
+			const allCommandPreferences = (packageJson.commands || []).flatMap(
+				(cmd: { preferences?: Preference[] }) => cmd.preferences || []
+			);
+			preferences = [...pluginPreferences, ...allCommandPreferences];
 		} catch (error) {
 			writeLog(`Error reading plugin package.json: ${error}`);
 		}
