@@ -3,6 +3,7 @@ pub mod input_manager;
 pub mod manager;
 pub mod types;
 
+use crate::clipboard_history;
 use crate::error::AppError;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -72,12 +73,20 @@ pub fn snippet_was_used(app: AppHandle, id: i64) -> Result<(), String> {
 
 #[tauri::command]
 pub fn paste_snippet_content(app: AppHandle, content: String) -> Result<(), String> {
+    let snippet_manager = app.state::<manager::SnippetManager>().inner();
+    let clipboard_manager = clipboard_history::manager::MANAGER.lock().unwrap();
     let input_manager = app
         .state::<Arc<dyn input_manager::InputManager>>()
         .inner()
         .clone();
 
-    let resolved = engine::parse_and_resolve_placeholders(&content);
+    let resolved = engine::parse_and_resolve_placeholders(
+        &content,
+        snippet_manager,
+        clipboard_manager.as_ref(),
+    )
+    .map_err(|e| e.to_string())?;
+
     let content_to_paste = resolved.content;
 
     let chars_to_move_left = if let Some(pos) = resolved.cursor_pos {

@@ -6,7 +6,7 @@ use super::{
 use crate::error::AppError;
 use chrono::Utc;
 use once_cell::sync::Lazy;
-use rusqlite::{params, Connection, Result as RusqliteResult};
+use rusqlite::{params, Connection, OptionalExtension, Result as RusqliteResult};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
@@ -16,6 +16,31 @@ pub struct ClipboardHistoryManager {
     db: Mutex<Connection>,
     key: [u8; 32],
     pub image_dir: PathBuf,
+}
+
+fn row_to_clipboard_item(row: &rusqlite::Row, key: &[u8; 32]) -> RusqliteResult<ClipboardItem> {
+    let conditional_encrypted_content: Option<String> = row.get(10)?;
+    let content_value = conditional_encrypted_content.and_then(|cec| decrypt(&cec, key).ok());
+
+    let encrypted_preview: Option<String> = row.get(9)?;
+    let preview = encrypted_preview.and_then(|ep| decrypt(&ep, key).ok());
+
+    let first_ts: i64 = row.get(4)?;
+    let last_ts: i64 = row.get(5)?;
+
+    Ok(ClipboardItem {
+        id: row.get(0)?,
+        hash: row.get(1)?,
+        content_type: ContentType::from_str(&row.get::<_, String>(2)?).unwrap_or(ContentType::Text),
+        content_value,
+        preview,
+        content_size_bytes: row.get(8)?,
+        source_app_name: row.get(3)?,
+        first_copied_at: chrono::DateTime::from_timestamp(first_ts, 0).unwrap_or_default(),
+        last_copied_at: chrono::DateTime::from_timestamp(last_ts, 0).unwrap_or_default(),
+        times_copied: row.get(6)?,
+        is_pinned: row.get::<_, i32>(7)? == 1,
+    })
 }
 
 impl ClipboardHistoryManager {
@@ -136,32 +161,8 @@ impl ClipboardHistoryManager {
         let params_ref: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|b| b.as_ref()).collect();
 
         let mut stmt = db.prepare(&query)?;
-        let items_iter = stmt.query_map(&params_ref[..], |row| {
-            let conditional_encrypted_content: Option<String> = row.get(10)?;
-            let content_value =
-                conditional_encrypted_content.and_then(|cec| decrypt(&cec, &self.key).ok());
-
-            let encrypted_preview: Option<String> = row.get(9)?;
-            let preview = encrypted_preview.and_then(|ep| decrypt(&ep, &self.key).ok());
-
-            let first_ts: i64 = row.get(4)?;
-            let last_ts: i64 = row.get(5)?;
-
-            Ok(ClipboardItem {
-                id: row.get(0)?,
-                hash: row.get(1)?,
-                content_type: ContentType::from_str(&row.get::<_, String>(2)?)
-                    .unwrap_or(ContentType::Text),
-                content_value,
-                preview,
-                content_size_bytes: row.get(8)?,
-                source_app_name: row.get(3)?,
-                first_copied_at: chrono::DateTime::from_timestamp(first_ts, 0).unwrap_or_default(),
-                last_copied_at: chrono::DateTime::from_timestamp(last_ts, 0).unwrap_or_default(),
-                times_copied: row.get(6)?,
-                is_pinned: row.get::<_, i32>(7)? == 1,
-            })
-        })?;
+        let key = self.key;
+        let items_iter = stmt.query_map(&params_ref[..], |row| row_to_clipboard_item(row, &key))?;
 
         let mut all_items = items_iter.collect::<Result<Vec<_>, _>>()?;
 
@@ -181,6 +182,21 @@ impl ClipboardHistoryManager {
         }
 
         Ok(all_items)
+    }
+
+    pub fn get_content_by_offset(&self, offset: u32) -> Result<Option<String>, AppError> {
+        let db = self.db.lock().unwrap();
+        let res: rusqlite::Result<String> = db.query_row(
+            "SELECT encrypted_content FROM clipboard_history ORDER BY last_copied_at DESC LIMIT 1 OFFSET ?",
+            params![offset],
+            |row| row.get(0),
+        );
+
+        match res {
+            Ok(encrypted) => Ok(Some(decrypt(&encrypted, &self.key)?)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
     }
 
     pub fn get_item_content(&self, id: i64) -> Result<String, AppError> {

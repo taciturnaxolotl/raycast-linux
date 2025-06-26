@@ -6,13 +6,13 @@ pub mod clipboard_history;
 mod desktop;
 mod error;
 mod extensions;
+mod file_search;
 mod filesystem;
 mod frecency;
 mod oauth;
 mod quicklinks;
 mod snippets;
 mod system;
-mod file_search;
 
 use crate::snippets::input_manager::{EvdevInputManager, InputManager};
 use crate::{app::App, cache::AppCache};
@@ -276,26 +276,27 @@ pub fn run() {
 
             Ok(())
         })
-        .build(tauri::generate_context!()).unwrap();
+        .build(tauri::generate_context!())
+        .unwrap();
 
-        app.run(|app, event| {
-            if let tauri::RunEvent::WindowEvent { label, event, .. } = event {
-                if label == "main" {
-                    match event {
-                        tauri::WindowEvent::CloseRequested { api, .. } => {
-                            api.prevent_close();
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.hide();
-                            }
+    app.run(|app, event| {
+        if let tauri::RunEvent::WindowEvent { label, event, .. } = event {
+            if label == "main" {
+                match event {
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        api.prevent_close();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.hide();
                         }
-                        tauri::WindowEvent::Focused(false) => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.hide();
-                            }
-                        }
-                        _ => {}
                     }
+                    tauri::WindowEvent::Focused(false) => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.hide();
+                        }
+                    }
+                    _ => {}
                 }
             }
-        });
+        }
+    });
 }

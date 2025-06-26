@@ -19,49 +19,122 @@
 	let content = $state('');
 	let error = $state('');
 
-	const VALID_PLACEHOLDERS_NO_CURSOR = new Set(['clipboard', 'date', 'time', 'datetime', 'day']);
+	type ParsedPart = {
+		text: string;
+		type: 'text' | 'valid-bracket' | 'invalid-bracket' | 'valid-name' | 'invalid-name';
+	};
+
+	const PLACEHOLDER_REGEX =
+		/\{(?<name>\w+)(?<attributes>(?:\s+\w+=(?:"[^"]*"|\S+))*)?(?<modifiers>(?:\s*\|\s*[\w%-]+)*)\}/g;
+
+	const VALID_PLACEHOLDERS = new Set([
+		'clipboard',
+		'snippet',
+		'cursor',
+		'date',
+		'time',
+		'datetime',
+		'day',
+		'uuid'
+	]);
+	const VALID_MODIFIERS = new Set([
+		'uppercase',
+		'lowercase',
+		'trim',
+		'percent-encode',
+		'json-stringify'
+	]);
+	const VALID_ATTRIBUTES: Record<string, Set<string>> = {
+		clipboard: new Set(['offset']),
+		snippet: new Set(['name']),
+		date: new Set(['offset', 'format']),
+		time: new Set(['offset', 'format']),
+		datetime: new Set(['offset', 'format']),
+		day: new Set(['offset', 'format'])
+	};
+	const ATTRIBUTE_REGEX = /\s*(?<key>\w+)\s*=\s*"(?:[^"]*)"/g;
+
+	function parseAttributes(attrStr: string | undefined): Record<string, string> {
+		if (!attrStr) return {};
+		const attributes: Record<string, string> = {};
+		for (const match of attrStr.matchAll(ATTRIBUTE_REGEX)) {
+			if (match.groups) {
+				attributes[match.groups.key] = 'dummy';
+			}
+		}
+		return attributes;
+	}
+
+	function parseModifiers(modStr: string | undefined): string[] {
+		if (!modStr) return [];
+		return modStr
+			.split('|')
+			.map((s) => s.trim())
+			.filter(Boolean);
+	}
+
+	function validatePlaceholder(
+		name: string,
+		attributes: Record<string, string>,
+		modifiers: string[]
+	): boolean {
+		if (!VALID_PLACEHOLDERS.has(name)) return false;
+
+		const validAttrsForPlaceholder = VALID_ATTRIBUTES[name] || new Set();
+		for (const attrName in attributes) {
+			if (!validAttrsForPlaceholder.has(attrName)) return false;
+		}
+
+		for (const mod of modifiers) {
+			if (!VALID_MODIFIERS.has(mod)) return false;
+		}
+
+		return true;
+	}
 
 	const parsedContent = $derived.by(() => {
 		if (!content) return [];
 
-		const parts: { text: string; highlightType: 'text' | 'valid-bracket' | 'invalid-bracket' }[] =
-			[];
+		const parts: ParsedPart[] = [];
 		let lastIndex = 0;
-		const regex = /({([a-zA-Z_]+?)})/g;
-		let match;
-		let cursorFoundAndValid = false;
+		let cursorCount = 0;
 
-		while ((match = regex.exec(content)) !== null) {
-			if (match.index > lastIndex) {
+		for (const match of content.matchAll(PLACEHOLDER_REGEX)) {
+			if (match.index! > lastIndex) {
 				parts.push({
 					text: content.substring(lastIndex, match.index),
-					highlightType: 'text'
+					type: 'text'
 				});
 			}
 
-			const placeholderName = match[2];
-			let currentBracketHighlightType: 'valid-bracket' | 'invalid-bracket' = 'invalid-bracket';
+			const placeholderName = match.groups!.name;
+			const attributes = parseAttributes(match.groups!.attributes);
+			const modifiers = parseModifiers(match.groups!.modifiers);
+
+			let isValid = validatePlaceholder(placeholderName, attributes, modifiers);
 
 			if (placeholderName === 'cursor') {
-				if (!cursorFoundAndValid) {
-					currentBracketHighlightType = 'valid-bracket';
-					cursorFoundAndValid = true;
-				} else {
-					currentBracketHighlightType = 'invalid-bracket';
+				cursorCount++;
+				if (cursorCount > 1) {
+					isValid = false;
 				}
-			} else if (VALID_PLACEHOLDERS_NO_CURSOR.has(placeholderName)) {
-				currentBracketHighlightType = 'valid-bracket';
 			}
 
-			parts.push({ text: '{', highlightType: currentBracketHighlightType });
-			parts.push({ text: placeholderName, highlightType: 'text' });
-			parts.push({ text: '}', highlightType: currentBracketHighlightType });
+			const bracketType = isValid ? 'valid-bracket' : 'invalid-bracket';
+			const nameType = isValid ? 'valid-name' : 'invalid-name';
 
-			lastIndex = regex.lastIndex;
+			parts.push({ text: '{', type: bracketType });
+			parts.push({
+				text: match[0].slice(1, -1),
+				type: nameType
+			});
+			parts.push({ text: '}', type: bracketType });
+
+			lastIndex = match.index! + match[0].length;
 		}
 
 		if (lastIndex < content.length) {
-			parts.push({ text: content.substring(lastIndex), highlightType: 'text' });
+			parts.push({ text: content.substring(lastIndex), type: 'text' });
 		}
 
 		return parts;
@@ -129,18 +202,18 @@
 					>
 						{#each parsedContent as part}
 							<span
-								class:text-blue-300={part.highlightType === 'valid-bracket'}
-								class:text-red-400={part.highlightType === 'invalid-bracket'}
-								class:text-foreground={part.highlightType === 'text'}
+								class:text-blue-400={part.type === 'valid-bracket'}
+								class:text-red-400={part.type === 'invalid-bracket' || part.type === 'invalid-name'}
+								class:text-foreground={part.type === 'text' || part.type === 'valid-name'}
 							>
 								{part.text}
 							</span>
 						{/each}
-						<span>&#x200B;</span>
+						<span>​</span>
 					</div>
 					<Textarea
 						id="content"
-						placeholder="Enter your snippet content... e.g. Hello {'{'}clipboard}!"
+						placeholder="Enter your snippet content... e.g. Hello {'{'}clipboard | uppercase}!"
 						bind:value={content}
 						class="caret-foreground col-start-1 row-start-1 min-h-32 resize-none !bg-transparent font-mono text-transparent"
 						spellcheck={false}

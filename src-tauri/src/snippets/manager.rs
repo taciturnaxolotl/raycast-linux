@@ -169,4 +169,30 @@ impl SnippetManager {
             Ok(None)
         }
     }
+
+    pub fn find_snippet_by_name(&self, name: &str) -> Result<Option<Snippet>, AppError> {
+        let db = self.db.lock().unwrap();
+        let mut stmt = db.prepare("SELECT id, name, keyword, content, created_at, updated_at, times_used, last_used_at FROM snippets WHERE name = ?1 ORDER BY updated_at DESC LIMIT 1")?;
+        let mut rows = stmt.query_map(params![name], |row| {
+            let created_at_ts: i64 = row.get(4)?;
+            let updated_at_ts: i64 = row.get(5)?;
+            let last_used_at_ts: i64 = row.get(7)?;
+            Ok(Snippet {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                keyword: row.get(2)?,
+                content: row.get(3)?,
+                created_at: DateTime::from_timestamp(created_at_ts, 0).unwrap_or_default(),
+                updated_at: DateTime::from_timestamp(updated_at_ts, 0).unwrap_or_default(),
+                times_used: row.get(6)?,
+                last_used_at: DateTime::from_timestamp(last_used_at_ts, 0).unwrap_or_default(),
+            })
+        })?;
+
+        if let Some(row) = rows.next() {
+            Ok(Some(row?))
+        } else {
+            Ok(None)
+        }
+    }
 }
