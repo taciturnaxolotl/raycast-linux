@@ -121,7 +121,7 @@ export const PreferenceSchema = z.object({
 	name: z.string(),
 	title: z.string().optional(),
 	description: z.string().optional(),
-	type: z.enum(['textfield', 'dropdown', 'checkbox', 'directory']),
+	type: z.enum(['textfield', 'password', 'checkbox', 'dropdown', 'appPicker', 'file', 'directory']),
 	required: z.boolean().optional(),
 	default: z.union([z.string(), z.boolean()]).optional(),
 	data: z

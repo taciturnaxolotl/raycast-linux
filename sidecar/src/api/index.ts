@@ -27,6 +27,7 @@ import { showHUD } from './hud';
 import { BrowserExtensionAPI } from './browserExtension';
 import { Clipboard } from './clipboard';
 import * as OAuth from './oauth';
+import type { Preference } from '@raycast-linux/protocol';
 
 const Image = {
 	Mask: {
@@ -36,20 +37,9 @@ const Image = {
 };
 
 let currentPluginName: string | null = null;
-let currentPluginPreferences: Array<{
-	name: string;
-	title: string;
-	description?: string;
-	type: 'textfield' | 'dropdown' | 'checkbox' | 'directory';
-	required?: boolean;
-	default?: string | boolean;
-	data?: Array<{ title: string; value: string }>;
-}> = [];
+let currentPluginPreferences: Preference[] = [];
 
-export const setCurrentPlugin = (
-	pluginName: string,
-	preferences?: typeof currentPluginPreferences
-) => {
+export const setCurrentPlugin = (pluginName: string, preferences?: Preference[]) => {
 	currentPluginName = pluginName;
 	currentPluginPreferences = preferences || [];
 };

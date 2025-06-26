@@ -7,6 +7,9 @@
 	import BaseList from './BaseList.svelte';
 	import { Button } from './ui/button';
 	import path from 'path';
+	import { open as openDialog } from '@tauri-apps/plugin-dialog';
+	import { appsStore } from '$lib/apps.svelte';
+	import PasswordInput from './PasswordInput.svelte';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -30,6 +33,7 @@
 	let selectedIndex = $state(0);
 	let preferenceValues = $state<Record<string, unknown>>({});
 	let searchText = $state('');
+	const { apps } = $derived(appsStore);
 
 	$effect(() => {
 		// This effect syncs the local preference values with the prop.
@@ -135,6 +139,16 @@
 	function getPreferenceValue(pref: Preference): unknown {
 		return (preferenceValues as Record<string, unknown>)[pref.name] ?? pref.default ?? '';
 	}
+
+	async function browse(type: 'file' | 'directory', prefName: string) {
+		const result = await openDialog({
+			directory: type === 'directory',
+			multiple: false
+		});
+		if (typeof result === 'string') {
+			handlePreferenceChange(prefName, result);
+		}
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -222,6 +236,13 @@
 											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
 										placeholder={pref.default as string}
 									/>
+								{:else if pref.type === 'password'}
+									<PasswordInput
+										value={getPreferenceValue(pref) as string}
+										onchange={(e) =>
+											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
+										placeholder="••••••••••••"
+									/>
 								{:else if pref.type === 'checkbox'}
 									<label class="flex items-center gap-2">
 										<Checkbox
@@ -250,13 +271,37 @@
 											{/each}
 										</Select.Content>
 									</Select.Root>
-								{:else if pref.type === 'directory'}
-									<Input
-										value={getPreferenceValue(pref) as string}
-										onchange={(e) =>
-											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
-										placeholder={pref.default as string}
-									/>
+								{:else if pref.type === 'appPicker'}
+									<Select.Root
+										value={(getPreferenceValue(pref) as string) || undefined}
+										onValueChange={(value) => handlePreferenceChange(pref.name, value)}
+									>
+										<Select.Trigger class="w-full">
+											{@const selectedApp = apps.find((a) => a.exec === getPreferenceValue(pref))}
+											{selectedApp?.name ?? 'Select Application'}
+										</Select.Trigger>
+										<Select.Content>
+											{#each apps as app (app.exec)}
+												<Select.Item value={app.exec}>{app.name}</Select.Item>
+											{/each}
+										</Select.Content>
+									</Select.Root>
+								{:else if pref.type === 'file' || pref.type === 'directory'}
+									<div class="flex items-center gap-2">
+										<Input
+											value={getPreferenceValue(pref) as string}
+											onchange={(e) =>
+												handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
+											placeholder={pref.default as string}
+											class="flex-grow"
+										/>
+										<Button
+											variant="outline"
+											onclick={() => browse(pref.type as 'file' | 'directory', pref.name)}
+										>
+											Browse...
+										</Button>
+									</div>
 								{/if}
 							</div>
 						{/each}
