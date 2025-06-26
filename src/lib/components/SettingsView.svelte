@@ -219,91 +219,105 @@
 				{#if preferencesToShow.length > 0}
 					<div class="max-w-md space-y-6">
 						{#each preferencesToShow as pref (pref.name)}
-							<div class="space-y-2">
-								<div class="text-sm font-medium">
-									{pref.title}
-									{#if pref.required}<span class="text-red-500">*</span>{/if}
-								</div>
-
-								{#if pref.description}
-									<p class="text-muted-foreground text-xs">{pref.description}</p>
-								{/if}
-
-								{#if pref.type === 'textfield'}
-									<Input
-										value={getPreferenceValue(pref) as string}
-										onchange={(e) =>
-											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
-										placeholder={pref.default as string}
-									/>
-								{:else if pref.type === 'password'}
-									<PasswordInput
-										value={getPreferenceValue(pref) as string}
-										onchange={(e) =>
-											handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
-										placeholder="••••••••••••"
-									/>
-								{:else if pref.type === 'checkbox'}
+							{#if pref.type === 'checkbox'}
+								<div class="space-y-2">
+									{#if pref.title}
+										<div class="text-sm font-medium">
+											{pref.title}
+											{#if pref.required}<span class="text-red-500">*</span>{/if}
+										</div>
+									{/if}
+									{#if pref.description}
+										<p class="text-muted-foreground text-xs">{pref.description}</p>
+									{/if}
 									<label class="flex items-center gap-2">
 										<Checkbox
 											checked={getPreferenceValue(pref) as boolean}
 											onCheckedChange={(checked) => handlePreferenceChange(pref.name, checked)}
 										/>
-										<span class="text-sm">{pref.title}</span>
+										<span class="text-sm">{pref.label}</span>
 									</label>
-								{:else if pref.type === 'dropdown' && pref.data}
-									<Select.Root
-										value={getPreferenceValue(pref) as string}
-										onValueChange={(value) => handlePreferenceChange(pref.name, value)}
-										type="single"
-									>
-										<Select.Trigger
-											class="bg-background border-border w-full rounded border px-3 py-2 text-sm"
-										>
-											{@const preference = pref.data.find(
-												(option) => option.value === getPreferenceValue(pref)
-											)}
-											{preference?.title ?? pref.default}
-										</Select.Trigger>
-										<Select.Content>
-											{#each pref.data as option (option.value)}
-												<Select.Item value={option.value}>{option.title}</Select.Item>
-											{/each}
-										</Select.Content>
-									</Select.Root>
-								{:else if pref.type === 'appPicker'}
-									<Select.Root
-										value={(getPreferenceValue(pref) as string) || undefined}
-										onValueChange={(value) => handlePreferenceChange(pref.name, value)}
-									>
-										<Select.Trigger class="w-full">
-											{@const selectedApp = apps.find((a) => a.exec === getPreferenceValue(pref))}
-											{selectedApp?.name ?? 'Select Application'}
-										</Select.Trigger>
-										<Select.Content>
-											{#each apps as app (app.exec)}
-												<Select.Item value={app.exec}>{app.name}</Select.Item>
-											{/each}
-										</Select.Content>
-									</Select.Root>
-								{:else if pref.type === 'file' || pref.type === 'directory'}
-									<div class="flex items-center gap-2">
+								</div>
+							{:else}
+								<div class="space-y-2">
+									<div class="text-sm font-medium">
+										{pref.title}
+										{#if pref.required}<span class="text-red-500">*</span>{/if}
+									</div>
+
+									{#if pref.description}
+										<p class="text-muted-foreground text-xs">{pref.description}</p>
+									{/if}
+
+									{#if pref.type === 'textfield'}
 										<Input
 											value={getPreferenceValue(pref) as string}
 											onchange={(e) =>
 												handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
 											placeholder={pref.default as string}
-											class="flex-grow"
 										/>
-										<Button
-											variant="outline"
-											onclick={() => browse(pref.type as 'file' | 'directory', pref.name)}
+									{:else if pref.type === 'password'}
+										<PasswordInput
+											value={getPreferenceValue(pref) as string}
+											onchange={(e) =>
+												handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
+											placeholder="••••••••••••"
+										/>
+									{:else if pref.type === 'dropdown' && pref.data}
+										<Select.Root
+											value={getPreferenceValue(pref) as string}
+											onValueChange={(value) => handlePreferenceChange(pref.name, value)}
+											type="single"
 										>
-											Browse...
-										</Button>
-									</div>
-								{/if}
-							</div>
+											<Select.Trigger
+												class="bg-background border-border w-full rounded border px-3 py-2 text-sm"
+											>
+												{@const preference = pref.data.find(
+													(option) => option.value === getPreferenceValue(pref)
+												)}
+												{preference?.title ?? pref.default}
+											</Select.Trigger>
+											<Select.Content>
+												{#each pref.data as option (option.value)}
+													<Select.Item value={option.value}>{option.title}</Select.Item>
+												{/each}
+											</Select.Content>
+										</Select.Root>
+									{:else if pref.type === 'appPicker'}
+										<Select.Root
+											value={(getPreferenceValue(pref) as string) || undefined}
+											onValueChange={(value) => handlePreferenceChange(pref.name, value)}
+											type="single"
+										>
+											<Select.Trigger class="w-full">
+												{@const selectedApp = apps.find((a) => a.exec === getPreferenceValue(pref))}
+												{selectedApp?.name ?? 'Select Application'}
+											</Select.Trigger>
+											<Select.Content>
+												{#each apps as app (app.exec)}
+													<Select.Item value={app.exec}>{app.name}</Select.Item>
+												{/each}
+											</Select.Content>
+										</Select.Root>
+									{:else if pref.type === 'file' || pref.type === 'directory'}
+										<div class="flex items-center gap-2">
+											<Input
+												value={getPreferenceValue(pref) as string}
+												onchange={(e) =>
+													handlePreferenceChange(pref.name, (e.target as HTMLInputElement)?.value)}
+												placeholder={pref.default as string}
+												class="flex-grow"
+											/>
+											<Button
+												variant="outline"
+												onclick={() => browse(pref.type as 'file' | 'directory', pref.name)}
+											>
+												Browse...
+											</Button>
+										</div>
+									{/if}
+								</div>
+							{/if}
 						{/each}
 					</div>
 				{:else}

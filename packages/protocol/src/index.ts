@@ -117,11 +117,10 @@ const LogMessageSchema = z.object({
 export const SidecarMessageSchema = z.union([BatchUpdateSchema, CommandSchema, LogMessageSchema]);
 export type SidecarMessage = z.infer<typeof SidecarMessageSchema>;
 
-export const PreferenceSchema = z.object({
+const BasePreferenceSchema = z.object({
 	name: z.string(),
 	title: z.string().optional(),
 	description: z.string().optional(),
-	type: z.enum(['textfield', 'password', 'checkbox', 'dropdown', 'appPicker', 'file', 'directory']),
 	required: z.boolean().optional(),
 	default: z.union([z.string(), z.boolean()]).optional(),
 	data: z
@@ -133,6 +132,16 @@ export const PreferenceSchema = z.object({
 		)
 		.optional()
 });
+
+export const PreferenceSchema = z.discriminatedUnion('type', [
+	BasePreferenceSchema.extend({
+		type: z.literal('checkbox'),
+		label: z.string()
+	}),
+	BasePreferenceSchema.extend({
+		type: z.enum(['textfield', 'password', 'dropdown', 'appPicker', 'file', 'directory'])
+	})
+]);
 export type Preference = z.infer<typeof PreferenceSchema>;
 
 export const PluginInfoSchema = z.object({
