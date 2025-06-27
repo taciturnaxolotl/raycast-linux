@@ -4,6 +4,7 @@ import { uiStore } from '$lib/ui.svelte';
 import { CommandSchema, SidecarMessageWithPluginsSchema } from '@raycast-linux/protocol';
 import { invoke } from '@tauri-apps/api/core';
 import { appCacheDir, appLocalDataDir } from '@tauri-apps/api/path';
+import { listen } from '@tauri-apps/api/event';
 
 type OauthState = {
 	url: string;
@@ -18,6 +19,7 @@ class SidecarService {
 	#unpackr = new Unpackr();
 	#onGoBackToPluginList: (() => void) | null = null;
 	#browserExtensionConnectionInterval: ReturnType<typeof setInterval> | null = null;
+	#aiEventUnlisten: (() => void)[] = [];
 
 	oauthState: OauthState = $state(null);
 	logs: string[] = $state([]);
@@ -55,6 +57,7 @@ class SidecarService {
 			this.#log(`Sidecar spawned with PID: ${this.#sidecarChild.pid}`);
 
 			this.requestPluginList();
+			this.#setupAiEventListeners();
 
 			this.#browserExtensionConnectionInterval = setInterval(async () => {
 				try {
@@ -80,6 +83,29 @@ class SidecarService {
 		if (this.#browserExtensionConnectionInterval) {
 			clearInterval(this.#browserExtensionConnectionInterval);
 			this.#browserExtensionConnectionInterval = null;
+		}
+		this.#aiEventUnlisten.forEach((unlisten) => unlisten());
+		this.#aiEventUnlisten = [];
+	};
+
+	#setupAiEventListeners = async () => {
+		try {
+			const chunkUnlisten = await listen('ai-stream-chunk', (event) => {
+				console.log(event.payload);
+				this.dispatchEvent('ai-stream-chunk', event.payload as object);
+			});
+
+			const endUnlisten = await listen('ai-stream-end', (event) => {
+				this.dispatchEvent('ai-stream-end', event.payload as object);
+			});
+
+			const errorUnlisten = await listen('ai-stream-error', (event) => {
+				this.dispatchEvent('ai-stream-error', event.payload as object);
+			});
+
+			this.#aiEventUnlisten.push(chunkUnlisten, endUnlisten, errorUnlisten);
+		} catch (error) {
+			this.#log(`Error setting up AI event listeners: ${error}`);
 		}
 	};
 
@@ -163,6 +189,35 @@ class SidecarService {
 				this.#log(`ERROR: Failed to open '${target}': ${err}`);
 				console.error(`Failed to open '${target}':`, err);
 			});
+			return;
+		}
+
+		if (typedMessage.type === 'ai-ask-stream') {
+			const { requestId, prompt, options } = typedMessage.payload as {
+				requestId: string;
+				prompt: string;
+				options: {
+					model?: string;
+					creativity?: string;
+					modelMappings?: Record<string, string>;
+				};
+			};
+
+			try {
+				await invoke('ai_ask_stream', {
+					requestId,
+					prompt,
+					options: {
+						model: options.model,
+						creativity: options.creativity,
+						model_mappings: options.modelMappings || {}
+					}
+				});
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.#log(`ERROR from AI ask stream: ${errorMessage}`);
+				this.dispatchEvent('ai-stream-error', { requestId, error: errorMessage });
+			}
 			return;
 		}
 

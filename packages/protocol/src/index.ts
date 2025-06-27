@@ -1,3 +1,4 @@
+export * from './ai';
 export * from './api';
 export * from './command';
 export * from './common';

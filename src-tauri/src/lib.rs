@@ -1,3 +1,4 @@
+mod ai;
 mod app;
 mod browser_extension;
 mod cache;
@@ -14,8 +15,10 @@ mod quicklinks;
 mod snippets;
 mod system;
 
+use crate::ai::{ai_ask_stream, AskOptions};
 use crate::snippets::input_manager::{EvdevInputManager, InputManager};
 use crate::{app::App, cache::AppCache};
+use ai::AiUsageManager;
 use browser_extension::WsState;
 use frecency::FrecencyManager;
 use quicklinks::QuicklinkManager;
@@ -247,7 +250,12 @@ pub fn run() {
             snippets::import_snippets,
             snippets::paste_snippet_content,
             snippets::snippet_was_used,
-            file_search::search_files
+            file_search::search_files,
+            ai::set_ai_api_key,
+            ai::is_ai_api_key_set,
+            ai::clear_ai_api_key,
+            ai::ai_ask_stream,
+            ai::get_ai_usage_history
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -269,6 +277,10 @@ pub fn run() {
 
             let app_handle_for_file_search = app.handle().clone();
             file_search::init(app_handle_for_file_search);
+
+            let ai_usage_manager = AiUsageManager::new(app.handle())?;
+            ai_usage_manager.init_db()?;
+            app.manage(ai_usage_manager);
 
             setup_background_refresh();
             setup_global_shortcut(app)?;

@@ -10,6 +10,7 @@ pub enum AppError {
     ClipboardHistory(String),
     Frecency(String),
     FileSearch(String),
+    Ai(String),
 }
 
 impl From<io::Error> for AppError {
@@ -53,6 +54,7 @@ impl std::fmt::Display for AppError {
             AppError::ClipboardHistory(msg) => write!(f, "Clipboard history error: {}", msg),
             AppError::Frecency(msg) => write!(f, "Frecency error: {}", msg),
             AppError::FileSearch(msg) => write!(f, "File search error: {}", msg),
+            AppError::Ai(msg) => write!(f, "AI error: {}", msg),
         }
     }
 }

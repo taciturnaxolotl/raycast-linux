@@ -19,7 +19,8 @@ import {
 	getDefaultApplication,
 	getFrontmostApplication,
 	showInFinder,
-	trash
+	trash,
+	AI as AIConstant
 } from './environment';
 import { preferencesStore } from '../preferences';
 import { showToast } from './toast';
@@ -27,6 +28,7 @@ import { showHUD } from './hud';
 import { BrowserExtensionAPI } from './browserExtension';
 import { Clipboard } from './clipboard';
 import * as OAuth from './oauth';
+import { AI } from './ai';
 import type { Preference } from '@raycast-linux/protocol';
 
 const Image = {
@@ -56,6 +58,10 @@ export const getRaycastApi = () => {
 		LaunchType,
 		Toast,
 		OAuth,
+		AI: {
+			...AI,
+			...AIConstant
+		},
 		Action,
 		ActionPanel,
 		Detail,

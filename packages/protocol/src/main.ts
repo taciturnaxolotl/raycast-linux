@@ -19,6 +19,12 @@ import {
 	SystemShowInFinderMessageSchema,
 	SystemTrashMessageSchema
 } from './api';
+import {
+	AiAskStreamMessageSchema,
+	AiStreamChunkMessageSchema,
+	AiStreamEndMessageSchema,
+	AiStreamErrorMessageSchema
+} from './ai';
 import { CommandSchema } from './command';
 import { ShowHudMessageSchema } from './hud';
 import { GoBackToPluginListSchema, PluginListSchema, PreferenceValuesSchema } from './plugin';
@@ -62,6 +68,10 @@ export const SidecarMessageWithPluginsSchema = z.union([
 	SystemGetDefaultApplicationMessageSchema,
 	SystemGetFrontmostApplicationMessageSchema,
 	SystemShowInFinderMessageSchema,
-	SystemTrashMessageSchema
+	SystemTrashMessageSchema,
+	AiAskStreamMessageSchema,
+	AiStreamChunkMessageSchema,
+	AiStreamEndMessageSchema,
+	AiStreamErrorMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

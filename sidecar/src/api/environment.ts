@@ -20,6 +20,7 @@ export interface FileSystemItem {
 }
 
 export const BrowserExtension = { name: 'BrowserExtension' };
+export const AI = { name: 'AI' };
 
 export const environment = {
 	appearance: 'dark' as const,
@@ -36,6 +37,9 @@ export const environment = {
 	canAccess: (feature: { name: string }): boolean => {
 		if (feature && feature.name === 'BrowserExtension') {
 			return browserExtensionState.isConnected;
+		}
+		if (feature && feature.name === 'AI') {
+			return true;
 		}
 		return true;
 	}

@@ -7,6 +7,7 @@ import { preferencesStore } from './preferences';
 import type { RaycastInstance } from './types';
 import { handleResponse } from './api/rpc';
 import { handleOAuthResponse, handleTokenResponse } from './api/oauth';
+import { handleAiStreamChunk, handleAiStreamEnd, handleAiStreamError } from './api/ai';
 
 process.on('unhandledRejection', (reason: unknown) => {
 	writeLog(`--- UNHANDLED PROMISE REJECTION ---`);
@@ -31,12 +32,32 @@ rl.on('line', (line) => {
 				};
 
 				if (command.action === 'oauth-authorize-response') {
-					handleOAuthResponse(state!, code!, state, error);
+					if (state && code) {
+						handleOAuthResponse(requestId, code, state, error);
+					}
 				} else if (command.action.startsWith('oauth-')) {
 					handleTokenResponse(requestId, result, error);
 				} else {
 					handleResponse(requestId, result, error);
 				}
+				return;
+			}
+
+			if (command.action === 'ai-stream-chunk') {
+				const payload = command.payload as { requestId: string; text: string };
+				handleAiStreamChunk(payload);
+				return;
+			}
+
+			if (command.action === 'ai-stream-end') {
+				const payload = command.payload as { requestId: string; full_text: string };
+				handleAiStreamEnd(payload);
+				return;
+			}
+
+			if (command.action === 'ai-stream-error') {
+				const payload = command.payload as { requestId: string; error: string };
+				handleAiStreamError(payload);
 				return;
 			}
 
