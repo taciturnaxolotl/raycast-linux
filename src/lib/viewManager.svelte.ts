@@ -26,6 +26,7 @@ class ViewManager {
 	currentView = $state<ViewState>('command-palette');
 	quicklinkToEdit = $state<Quicklink | undefined>(undefined);
 	snippetsForImport = $state<any[] | null>(null);
+	commandToConfirm = $state<PluginInfo | null>(null);
 
 	oauthState: OauthState = $state(null);
 	oauthStatus: 'initial' | 'authorizing' | 'success' | 'error' = $state('initial');
@@ -34,6 +35,7 @@ class ViewManager {
 		this.currentView = 'command-palette';
 		uiStore.setCurrentRunningPlugin(null);
 		this.snippetsForImport = null;
+		this.commandToConfirm = null;
 	};
 
 	showSettings = () => {
@@ -114,12 +116,42 @@ class ViewManager {
 		}
 	};
 
-	handleDeepLink = (url: string) => {
+	handleDeepLink = (url: string, allPlugins: PluginInfo[]) => {
 		try {
 			const urlObj = new URL(url);
-
 			if (urlObj.protocol === 'raycast:') {
-				if (urlObj.host === 'snippets' && urlObj.pathname === '/import') {
+				if (urlObj.host === 'extensions') {
+					const parts = urlObj.pathname.split('/').filter(Boolean);
+					if (parts.length === 3) {
+						const [authorOrOwner, extensionName, commandName] = parts;
+
+						const foundPlugin = allPlugins.find((p) => {
+							if (authorOrOwner === 'raycast') {
+								return (
+									p.owner === 'raycast' &&
+									p.pluginName === extensionName &&
+									p.commandName === commandName
+								);
+							} else {
+								const authorMatch =
+									(typeof p.author === 'string' && p.author === authorOrOwner) ||
+									(typeof p.author === 'object' && p.author?.name === authorOrOwner);
+								const ownerMatch = p.owner === authorOrOwner;
+								return (
+									(authorMatch || ownerMatch) &&
+									p.pluginName === extensionName &&
+									p.commandName === commandName
+								);
+							}
+						});
+
+						if (foundPlugin) {
+							this.commandToConfirm = foundPlugin;
+						} else {
+							console.error('Command from deeplink not found:', url);
+						}
+					}
+				} else if (urlObj.host === 'snippets' && urlObj.pathname === '/import') {
 					const snippetParams = urlObj.searchParams.getAll('snippet');
 					const snippets = snippetParams
 						.map((param) => {
@@ -170,6 +202,17 @@ class ViewManager {
 			console.error('Error parsing deep link:', error);
 			this.showCommandPalette();
 		}
+	};
+
+	confirmRunCommand = () => {
+		if (this.commandToConfirm) {
+			this.runPlugin(this.commandToConfirm);
+			this.commandToConfirm = null;
+		}
+	};
+
+	cancelRunCommand = () => {
+		this.commandToConfirm = null;
 	};
 }
 

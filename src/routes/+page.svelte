@@ -18,89 +18,97 @@
 	import SearchSnippets from '$lib/components/SearchSnippets.svelte';
 	import FileSearchView from '$lib/components/FileSearchView.svelte';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
+	import CommandDeeplinkConfirm from '$lib/components/CommandDeeplinkConfirm.svelte';
 
 	const storePlugin: PluginInfo = {
-		title: 'Discover Extensions',
+		title: 'Store',
 		description: 'Browse and install new extensions from the Store',
-		pluginTitle: 'Store',
-		pluginName: 'Store',
-		commandName: 'index',
+		pluginTitle: 'Raycast',
+		pluginName: 'raycast',
+		commandName: 'store',
 		pluginPath: 'builtin:store',
 		icon: 'store-16',
 		preferences: [],
-		mode: 'view'
+		mode: 'view',
+		owner: 'raycast'
 	};
 
 	const clipboardHistoryPlugin: PluginInfo = {
 		title: 'Clipboard History',
 		description: 'View, search, and manage your clipboard history',
-		pluginTitle: 'Clipboard History',
-		pluginName: 'Clipboard History',
-		commandName: 'index',
+		pluginTitle: 'Raycast',
+		pluginName: 'clipboard-history',
+		commandName: 'clipboard-history',
 		pluginPath: 'builtin:history',
 		icon: 'copy-clipboard-16',
 		preferences: [],
-		mode: 'view'
+		mode: 'view',
+		owner: 'raycast'
 	};
 
 	const searchSnippetsPlugin: PluginInfo = {
 		title: 'Search Snippets',
 		description: 'Search and manage your snippets',
 		pluginTitle: 'Snippets',
-		pluginName: 'Snippets',
+		pluginName: 'snippets',
 		commandName: 'search-snippets',
 		pluginPath: 'builtin:search-snippets',
 		icon: 'snippets-16',
 		preferences: [],
-		mode: 'view'
+		mode: 'view',
+		owner: 'raycast'
 	};
 
 	const createQuicklinkPlugin: PluginInfo = {
 		title: 'Create Quicklink',
 		description: 'Create a new Quicklink',
-		pluginTitle: 'Quicklinks',
-		pluginName: 'Quicklinks',
+		pluginTitle: 'Raycast',
+		pluginName: 'raycast',
 		commandName: 'create-quicklink',
 		pluginPath: 'builtin:create-quicklink',
 		icon: 'link-16',
 		preferences: [],
-		mode: 'view'
+		mode: 'view',
+		owner: 'raycast'
 	};
 
 	const createSnippetPlugin: PluginInfo = {
 		title: 'Create Snippet',
 		description: 'Create a new snippet',
-		pluginTitle: 'Snippets',
-		pluginName: 'Snippets',
+		pluginTitle: 'Raycast',
+		pluginName: 'snippets',
 		commandName: 'create-snippet',
 		pluginPath: 'builtin:create-snippet',
 		icon: 'snippets-16',
 		preferences: [],
-		mode: 'view'
+		mode: 'view',
+		owner: 'raycast'
 	};
 
 	const importSnippetsPlugin: PluginInfo = {
 		title: 'Import Snippets',
 		description: 'Import snippets from a JSON file',
-		pluginTitle: 'Snippets',
-		pluginName: 'Snippets',
+		pluginTitle: 'Raycast',
+		pluginName: 'snippets',
 		commandName: 'import-snippets',
 		pluginPath: 'builtin:import-snippets',
 		icon: 'upload-16',
 		preferences: [],
-		mode: 'view'
+		mode: 'view',
+		owner: 'raycast'
 	};
 
 	const fileSearchPlugin: PluginInfo = {
 		title: 'Search Files',
 		description: 'Find files and folders on your computer',
-		pluginTitle: 'File Search',
-		pluginName: 'File Search',
-		commandName: 'index',
+		pluginTitle: 'Raycast',
+		pluginName: 'file-search',
+		commandName: 'search-files',
 		pluginPath: 'builtin:file-search',
 		icon: 'search-16',
 		preferences: [],
-		mode: 'view'
+		mode: 'view',
+		owner: 'raycast'
 	};
 
 	const { pluginList, currentPreferences } = $derived(uiStore);
@@ -115,8 +123,14 @@
 		fileSearchPlugin
 	]);
 
-	const { currentView, oauthState, oauthStatus, quicklinkToEdit, snippetsForImport } =
-		$derived(viewManager);
+	const {
+		currentView,
+		oauthState,
+		oauthStatus,
+		quicklinkToEdit,
+		snippetsForImport,
+		commandToConfirm
+	} = $derived(viewManager);
 
 	onMount(() => {
 		sidecarService.setOnGoBackToPluginList(viewManager.showCommandPalette);
@@ -124,7 +138,7 @@
 
 		const unlisten = listen<string>('deep-link', (event) => {
 			console.log('Received deep link:', event.payload);
-			viewManager.handleDeepLink(event.payload);
+			viewManager.handleDeepLink(event.payload, allPlugins);
 		});
 
 		return () => {
@@ -189,6 +203,14 @@
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
+
+{#if commandToConfirm}
+	<CommandDeeplinkConfirm
+		plugin={commandToConfirm}
+		on:confirm={viewManager.confirmRunCommand}
+		on:cancel={viewManager.cancelRunCommand}
+	/>
+{/if}
 
 {#if oauthState}
 	<OAuthView

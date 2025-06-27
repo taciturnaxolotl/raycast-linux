@@ -63,6 +63,8 @@ export const discoverPlugins = (): PluginInfo[] => {
 					title?: string;
 					description?: string;
 					icon?: string;
+					author?: string | { name: string };
+					owner?: string;
 					commands?: Array<{
 						name: string;
 						title?: string;
@@ -92,7 +94,9 @@ export const discoverPlugins = (): PluginInfo[] => {
 							icon: command.icon || packageJson.icon,
 							preferences: packageJson.preferences,
 							commandPreferences: command.preferences,
-							mode: command.mode
+							mode: command.mode,
+							author: packageJson.author,
+							owner: packageJson.owner
 						});
 					} else {
 						writeLog(`Command file ${commandFilePath} not found for command ${command.name}`);
