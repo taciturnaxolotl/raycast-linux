@@ -28,6 +28,7 @@ class ViewManager {
 	quicklinkToEdit = $state<Quicklink | undefined>(undefined);
 	snippetsForImport = $state<any[] | null>(null);
 	commandToConfirm = $state<PluginInfo | null>(null);
+	pluginToSelectInSettings = $state<string | undefined>(undefined);
 
 	oauthState: OauthState = $state(null);
 	oauthStatus: 'initial' | 'authorizing' | 'success' | 'error' = $state('initial');
@@ -37,10 +38,12 @@ class ViewManager {
 		uiStore.setCurrentRunningPlugin(null);
 		this.snippetsForImport = null;
 		this.commandToConfirm = null;
+		this.pluginToSelectInSettings = undefined;
 	};
 
-	showSettings = () => {
+	showSettings = (pluginName?: string) => {
 		this.currentView = 'settings';
+		this.pluginToSelectInSettings = pluginName;
 	};
 
 	showExtensions = () => {

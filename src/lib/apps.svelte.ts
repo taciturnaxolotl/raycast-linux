@@ -1,10 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
+import { frecencyStore } from './frecency.svelte';
 
 type App = { name: string; comment?: string; exec: string; icon_path?: string };
 
 class AppsStore {
-	apps = $state<App[]>([]);
+	rawApps = $state<App[]>([]);
 	isLoading = $state(true);
+	apps = $derived(this.rawApps.filter((app) => !frecencyStore.hiddenItemIds.includes(app.exec)));
 
 	constructor() {
 		this.fetchApps();
@@ -13,10 +15,10 @@ class AppsStore {
 	async fetchApps() {
 		this.isLoading = true;
 		try {
-			this.apps = await invoke<App[]>('get_installed_apps');
+			this.rawApps = await invoke<App[]>('get_installed_apps');
 		} catch (e) {
 			console.error('Failed to fetch installed apps:', e);
-			this.apps = [];
+			this.rawApps = [];
 		} finally {
 			this.isLoading = false;
 		}

@@ -12,6 +12,7 @@
 	import PasswordInput from './PasswordInput.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import AiSettingsView from './AiSettingsView.svelte';
+	import { viewManager } from '$lib/viewManager.svelte';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -31,6 +32,8 @@
 
 	let { plugins, onBack, onSavePreferences, onGetPreferences, currentPreferences }: Props =
 		$props();
+
+	const { pluginToSelectInSettings } = $derived(viewManager);
 
 	let selectedIndex = $state(0);
 	let preferenceValues = $state<Record<string, unknown>>({});
@@ -117,6 +120,17 @@
 	$effect(() => {
 		if (selectedItem) {
 			onGetPreferences(selectedItem.data.pluginName);
+		}
+	});
+
+	$effect(() => {
+		if (pluginToSelectInSettings) {
+			const index = displayItems.findIndex(
+				(item) => item.type === 'extension' && item.data.pluginName === pluginToSelectInSettings
+			);
+			if (index > -1) {
+				selectedIndex = index;
+			}
 		}
 	});
 

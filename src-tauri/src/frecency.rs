@@ -40,6 +40,10 @@ impl FrecencyManager {
             )",
             [],
         )?;
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS hidden_items (item_id TEXT PRIMARY KEY)",
+            [],
+        )?;
         Ok(())
     }
 
@@ -69,6 +73,31 @@ impl FrecencyManager {
 
         data_iter
             .collect::<RusqliteResult<Vec<_>>>()
+            .map_err(|e| e.into())
+    }
+
+    pub fn delete_frecency_entry(&self, item_id: String) -> Result<(), AppError> {
+        let db = self.db.lock().unwrap();
+        db.execute("DELETE FROM frecency WHERE item_id = ?", params![item_id])?;
+        Ok(())
+    }
+
+    pub fn hide_item(&self, item_id: String) -> Result<(), AppError> {
+        let db = self.db.lock().unwrap();
+        db.execute(
+            "INSERT OR IGNORE INTO hidden_items (item_id) VALUES (?)",
+            params![item_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_hidden_item_ids(&self) -> Result<Vec<String>, AppError> {
+        let db = self.db.lock().unwrap();
+        let mut stmt = db.prepare("SELECT item_id FROM hidden_items")?;
+        let ids_iter = stmt.query_map([], |row| row.get(0))?;
+
+        ids_iter
+            .collect::<RusqliteResult<Vec<String>>>()
             .map_err(|e| e.into())
     }
 }

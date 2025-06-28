@@ -13,6 +13,14 @@
 	import { quicklinksStore, type Quicklink } from '$lib/quicklinks.svelte';
 	import { appsStore } from '$lib/apps.svelte';
 	import { frecencyStore } from '$lib/frecency.svelte';
+	import ActionBar from './nodes/shared/ActionBar.svelte';
+	import { Button } from './ui/button';
+	import { Kbd } from './ui/kbd';
+	import ActionMenu from './nodes/shared/ActionMenu.svelte';
+	import * as DropdownMenu from './ui/dropdown-menu';
+	import { Separator } from './ui/separator';
+	import { shortcutToText } from '$lib/renderKey';
+	import { viewManager } from '$lib/viewManager.svelte';
 
 	type Props = {
 		plugins: PluginInfo[];
@@ -131,10 +139,12 @@
 		return items;
 	});
 
+	const selectedItem = $derived(displayItems[selectedIndex]);
+
 	$effect(() => {
-		const selectedItem = displayItems[selectedIndex];
-		if (selectedItem?.type === 'quicklink' && selectedItem.data.link.includes('{argument}')) {
-			selectedQuicklinkForArgument = selectedItem.data;
+		const item = displayItems[selectedIndex];
+		if (item?.type === 'quicklink' && item.data.link.includes('{argument}')) {
+			selectedQuicklinkForArgument = item.data;
 		} else {
 			selectedQuicklinkForArgument = null;
 		}
@@ -159,8 +169,10 @@
 		resetState();
 	}
 
-	async function handleEnter(item: UnifiedItem) {
-		frecencyStore.recordUsage(item.id);
+	async function handleEnter() {
+		if (!selectedItem) return;
+		const item = selectedItem;
+		await frecencyStore.recordUsage(item.id);
 
 		switch (item.type) {
 			case 'calculator':
@@ -199,7 +211,73 @@
 			searchInputEl?.focus();
 		}
 	}
+
+	async function handleResetRanking() {
+		if (selectedItem) {
+			const itemToReset = selectedItem;
+			await frecencyStore.deleteEntry(itemToReset.id);
+		}
+	}
+
+	function handleCopyDeeplink() {
+		if (selectedItem?.type !== 'plugin') return;
+		const plugin = selectedItem.data as PluginInfo;
+		const authorOrOwner =
+			plugin.owner === 'raycast'
+				? 'raycast'
+				: typeof plugin.author === 'string'
+					? plugin.author
+					: (plugin.author?.name ?? 'unknown');
+
+		const deeplink = `raycast://extensions/${authorOrOwner}/${plugin.pluginName}/${plugin.commandName}`;
+		writeText(deeplink);
+	}
+
+	function handleConfigureCommand() {
+		if (selectedItem?.type !== 'plugin') return;
+		const plugin = selectedItem.data as PluginInfo;
+		viewManager.showSettings(plugin.pluginName);
+	}
+
+	function handleCopyAppName() {
+		if (selectedItem?.type !== 'app') return;
+		writeText(selectedItem.data.name);
+	}
+
+	function handleCopyAppPath() {
+		if (selectedItem?.type !== 'app') return;
+		writeText(selectedItem.data.exec);
+	}
+
+	async function handleHideApp() {
+		if (selectedItem?.type !== 'app') return;
+		const itemToHide = selectedItem;
+		await frecencyStore.hideItem(itemToHide.id);
+	}
+
+	async function handleKeyDown(e: KeyboardEvent) {
+		if (!selectedItem) return;
+
+		const keyMap: Record<string, (() => void) | (() => Promise<void>) | undefined> = {
+			'C-S-c': selectedItem.type === 'plugin' ? handleCopyDeeplink : undefined,
+			'C-S-,': selectedItem.type === 'plugin' ? handleConfigureCommand : undefined,
+			'C-.': selectedItem.type === 'app' ? handleCopyAppName : undefined,
+			'C-S-.': selectedItem.type === 'app' ? handleCopyAppPath : undefined,
+			'C-h': selectedItem.type === 'app' ? handleHideApp : undefined
+		};
+
+		const shortcut = `${e.metaKey ? 'M-' : ''}${e.ctrlKey ? 'C-' : ''}${e.shiftKey ? 'S-' : ''}${e.key.toLowerCase()}`;
+		const action =
+			keyMap[shortcut.replace('meta', 'M').replace('control', 'C').replace('shift', 'S')];
+
+		if (action) {
+			e.preventDefault();
+			await action();
+		}
+	}
 </script>
+
+<svelte:window onkeydown={handleKeyDown} />
 
 <main class="bg-background text-foreground flex h-screen flex-col">
 	<header class="flex h-12 shrink-0 items-center border-b px-2">
@@ -305,4 +383,64 @@
 			{/snippet}
 		</BaseList>
 	</div>
+
+	{#if selectedItem}
+		<ActionBar>
+			{#snippet primaryAction({ props })}
+				{@const primaryActionText =
+					selectedItem.type === 'app'
+						? 'Open Application'
+						: selectedItem.type === 'quicklink'
+							? 'Open Quicklink'
+							: 'Open Command'}
+				<Button {...props} onclick={handleEnter}>
+					{primaryActionText}
+					<Kbd>⏎</Kbd>
+				</Button>
+			{/snippet}
+			{#snippet actions()}
+				<ActionMenu>
+					{#if selectedItem.type === 'plugin'}
+						<DropdownMenu.Item onclick={handleResetRanking}>Reset Ranking</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item onclick={handleCopyDeeplink}>
+							Copy Deeplink
+							<DropdownMenu.Shortcut>
+								{shortcutToText({ key: 'c', modifiers: ['ctrl', 'shift'] })}
+							</DropdownMenu.Shortcut>
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item onclick={handleConfigureCommand}>
+							Configure Command
+							<DropdownMenu.Shortcut>
+								{shortcutToText({ key: ',', modifiers: ['ctrl', 'shift'] })}
+							</DropdownMenu.Shortcut>
+						</DropdownMenu.Item>
+					{:else if selectedItem.type === 'app'}
+						<DropdownMenu.Item onclick={handleResetRanking}>Reset Ranking</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item onclick={handleCopyAppName}>
+							Copy Name
+							<DropdownMenu.Shortcut>
+								{shortcutToText({ key: '.', modifiers: ['ctrl'] })}
+							</DropdownMenu.Shortcut>
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={handleCopyAppPath}>
+							Copy Path
+							<DropdownMenu.Shortcut>
+								{shortcutToText({ key: '.', modifiers: ['ctrl', 'shift'] })}
+							</DropdownMenu.Shortcut>
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item onclick={handleHideApp}>
+							Hide Application
+							<DropdownMenu.Shortcut>
+								{shortcutToText({ key: 'h', modifiers: ['ctrl'] })}
+							</DropdownMenu.Shortcut>
+						</DropdownMenu.Item>
+					{/if}
+				</ActionMenu>
+			{/snippet}
+		</ActionBar>
+	{/if}
 </main>

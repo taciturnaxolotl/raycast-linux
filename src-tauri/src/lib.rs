@@ -15,7 +15,6 @@ mod quicklinks;
 mod snippets;
 mod system;
 
-use crate::ai::{ai_ask_stream, AskOptions};
 use crate::snippets::input_manager::{EvdevInputManager, InputManager};
 use crate::{app::App, cache::AppCache};
 use ai::AiUsageManager;
@@ -116,6 +115,27 @@ fn record_usage(app: tauri::AppHandle, item_id: String) -> Result<(), String> {
 fn get_frecency_data(app: tauri::AppHandle) -> Result<Vec<frecency::FrecencyData>, String> {
     app.state::<FrecencyManager>()
         .get_frecency_data()
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_frecency_entry(app: tauri::AppHandle, item_id: String) -> Result<(), String> {
+    app.state::<FrecencyManager>()
+        .delete_frecency_entry(item_id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn hide_item(app: tauri::AppHandle, item_id: String) -> Result<(), String> {
+    app.state::<FrecencyManager>()
+        .hide_item(item_id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_hidden_item_ids(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    app.state::<FrecencyManager>()
+        .get_hidden_item_ids()
         .map_err(|e| e.to_string())
 }
 
@@ -243,6 +263,9 @@ pub fn run() {
             system::trash,
             record_usage,
             get_frecency_data,
+            delete_frecency_entry,
+            hide_item,
+            get_hidden_item_ids,
             snippets::create_snippet,
             snippets::list_snippets,
             snippets::update_snippet,
