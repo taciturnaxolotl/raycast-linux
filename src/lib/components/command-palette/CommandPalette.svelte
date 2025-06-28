@@ -32,14 +32,16 @@
 	let argumentInputEl: HTMLInputElement | null = $state(null);
 	let selectedQuicklinkForArgument: Quicklink | null = $state(null);
 
-	const { displayItems } = useCommandPaletteItems({
-		searchText: () => searchText,
-		plugins: () => plugins,
-		installedApps: () => installedApps,
-		quicklinks: () => quicklinks,
-		frecencyData: () => frecencyData,
-		selectedQuicklinkForArgument: () => selectedQuicklinkForArgument
-	});
+	const { displayItems } = $derived.by(
+		useCommandPaletteItems({
+			searchText: () => searchText,
+			plugins: () => plugins,
+			installedApps: () => installedApps,
+			quicklinks: () => quicklinks,
+			frecencyData: () => frecencyData,
+			selectedQuicklinkForArgument: () => selectedQuicklinkForArgument
+		})
+	);
 
 	const selectedItem = $derived(displayItems[selectedIndex]);
 

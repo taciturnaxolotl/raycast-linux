@@ -86,6 +86,7 @@ export function useCommandPaletteItems({
 				score: 0,
 				fuseScore: result.score
 			}));
+			console.log(items);
 		} else {
 			items = allSearchableItems.map((item) => ({ ...item, score: 0, fuseScore: 1 }));
 		}
@@ -124,7 +125,9 @@ export function useCommandPaletteItems({
 		return items;
 	});
 
-	return { displayItems };
+	return () => ({
+		displayItems
+	});
 }
 
 type UseCommandPaletteActionsArgs = {
