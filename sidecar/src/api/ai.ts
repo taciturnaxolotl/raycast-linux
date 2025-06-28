@@ -151,6 +151,7 @@ export function ask(prompt: string, options: AskOptions = {}): AskResult {
 
 export const AI = {
 	ask,
+	Model,
 	Creativity: {
 		none: 'none' as const,
 		low: 'low' as const,
