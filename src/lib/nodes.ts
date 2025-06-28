@@ -3,9 +3,6 @@ import type { UINode } from './types';
 import Action from '$lib/components/nodes/actions/Action.svelte';
 import ActionPanel from '$lib/components/nodes/ActionPanel.svelte';
 import ActionPanelSection from '$lib/components/nodes/ActionPanelSection.svelte';
-import ActionCopyToClipboard from '$lib/components/nodes/actions/CopyToClipboard.svelte';
-import ActionOpenInBrowser from '$lib/components/nodes/actions/OpenInBrowser.svelte';
-import ActionPush from '$lib/components/nodes/actions/ActionPush.svelte';
 import Detail from '$lib/components/nodes/detail/Detail.svelte';
 import Metadata from '$lib/components/nodes/detail/Metadata.svelte';
 import MetadataLabel from '$lib/components/nodes/detail/MetadataLabel.svelte';
@@ -33,9 +30,9 @@ export const componentMap = new Map<
 	['Action', Action],
 	['ActionPanel', ActionPanel],
 	['ActionPanel.Section', ActionPanelSection],
-	['Action.CopyToClipboard', ActionCopyToClipboard],
-	['Action.OpenInBrowser', ActionOpenInBrowser],
-	['Action.Push', ActionPush],
+	['Action.CopyToClipboard', Action],
+	['Action.OpenInBrowser', Action],
+	['Action.Push', Action],
 	['Detail', Detail],
 	['Detail.Metadata', Metadata],
 	['Detail.Metadata.Label', MetadataLabel],
