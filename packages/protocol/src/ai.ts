@@ -45,3 +45,11 @@ export const AiStreamErrorMessageSchema = z.object({
 	type: z.literal('ai-stream-error'),
 	payload: AiStreamErrorPayloadSchema
 });
+
+export const AiCanAccessPayloadSchema = z.object({
+	requestId: z.string()
+});
+export const AiCanAccessMessageSchema = z.object({
+	type: z.literal('ai-can-access'),
+	payload: AiCanAccessPayloadSchema
+});

@@ -8,6 +8,7 @@ export const toasts = new Map<number, Toast>();
 export const browserExtensionState = {
 	isConnected: false
 };
+export const aiContext = { hasAccess: false };
 
 let instanceCounter = 0;
 export const getNextInstanceId = (): number => ++instanceCounter;

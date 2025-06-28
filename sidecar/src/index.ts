@@ -66,12 +66,13 @@ rl.on('line', (line) => {
 					sendPluginList();
 					break;
 				case 'run-plugin': {
-					const { pluginPath, mode } = command.payload as {
+					const { pluginPath, mode, aiAccessStatus } = command.payload as {
 						pluginPath?: string;
 						commandName?: string;
 						mode?: 'view' | 'no-view';
+						aiAccessStatus: boolean;
 					};
-					runPlugin(pluginPath, mode);
+					runPlugin(pluginPath, mode, aiAccessStatus);
 					break;
 				}
 				case 'get-preferences': {

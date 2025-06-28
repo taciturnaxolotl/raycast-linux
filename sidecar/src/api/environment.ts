@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import { writeOutput } from '../io';
 import type { Application } from './types';
 import { config } from '../config';
-import { browserExtensionState } from '../state';
+import { browserExtensionState, aiContext } from '../state';
 import { sendRequest } from './rpc';
 
 const supportPath = config.supportDir;
@@ -39,7 +39,7 @@ export const environment = {
 			return browserExtensionState.isConnected;
 		}
 		if (feature && feature.name === 'AI') {
-			return true;
+			return aiContext.hasAccess;
 		}
 		return true;
 	}

@@ -213,6 +213,15 @@ pub fn clear_ai_api_key() -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub fn ai_can_access(app: tauri::AppHandle) -> Result<bool, String> {
+    let settings = get_ai_settings(app)?;
+    if !settings.enabled {
+        return Ok(false);
+    }
+    is_ai_api_key_set()
+}
+
 pub struct AiUsageManager {
     db: Mutex<Connection>,
 }

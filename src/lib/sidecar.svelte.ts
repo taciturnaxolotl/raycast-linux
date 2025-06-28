@@ -221,6 +221,20 @@ class SidecarService {
 			return;
 		}
 
+		if (typedMessage.type === 'ai-can-access') {
+			const { requestId } = typedMessage.payload as { requestId: string };
+			const responseType = 'ai-can-access-response';
+			try {
+				const result = await invoke('ai_can_access');
+				this.dispatchEvent(responseType, { requestId, result });
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.#log(`ERROR from ai_can_access: ${errorMessage}`);
+				this.dispatchEvent(responseType, { requestId, error: errorMessage });
+			}
+			return;
+		}
+
 		if (typedMessage.type.startsWith('system-')) {
 			const { requestId, ...params } = typedMessage.payload as {
 				requestId: string;

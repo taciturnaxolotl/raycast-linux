@@ -257,7 +257,8 @@ pub fn run() {
             ai::ai_ask_stream,
             ai::get_ai_usage_history,
             ai::get_ai_settings,
-            ai::set_ai_settings
+            ai::set_ai_settings,
+            ai::ai_can_access
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

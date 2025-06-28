@@ -21,6 +21,7 @@ import {
 } from './api';
 import {
 	AiAskStreamMessageSchema,
+	AiCanAccessMessageSchema,
 	AiStreamChunkMessageSchema,
 	AiStreamEndMessageSchema,
 	AiStreamErrorMessageSchema
@@ -72,6 +73,7 @@ export const SidecarMessageWithPluginsSchema = z.union([
 	AiAskStreamMessageSchema,
 	AiStreamChunkMessageSchema,
 	AiStreamEndMessageSchema,
-	AiStreamErrorMessageSchema
+	AiStreamErrorMessageSchema,
+	AiCanAccessMessageSchema
 ]);
 export type SidecarMessageWithPlugins = z.infer<typeof SidecarMessageWithPluginsSchema>;

@@ -2,6 +2,7 @@ import type { PluginInfo } from '@raycast-linux/protocol';
 import { uiStore } from '$lib/ui.svelte';
 import { sidecarService } from '$lib/sidecar.svelte';
 import type { Quicklink } from './quicklinks.svelte';
+import { invoke } from '@tauri-apps/api/core';
 
 export type ViewState =
 	| 'command-palette'
@@ -72,7 +73,7 @@ class ViewManager {
 		this.currentView = 'file-search';
 	};
 
-	runPlugin = (plugin: PluginInfo) => {
+	runPlugin = async (plugin: PluginInfo) => {
 		switch (plugin.pluginPath) {
 			case 'builtin:store':
 				this.showExtensions();
@@ -98,10 +99,14 @@ class ViewManager {
 		}
 
 		uiStore.setCurrentRunningPlugin(plugin);
+
+		const hasAiAccess = await invoke<boolean>('ai_can_access');
+
 		sidecarService.dispatchEvent('run-plugin', {
 			pluginPath: plugin.pluginPath,
 			commandName: plugin.commandName,
-			mode: plugin.mode
+			mode: plugin.mode,
+			aiAccessStatus: hasAiAccess
 		});
 
 		if (plugin.mode !== 'no-view') {

@@ -9,6 +9,7 @@ import type { PluginInfo, Preference } from '@raycast-linux/protocol';
 import { environment } from './api/environment';
 import { config } from './config';
 import * as ReactJsxRuntime from 'react/jsx-runtime';
+import { aiContext } from './state';
 
 const createPluginRequire =
 	() =>
@@ -132,7 +133,11 @@ interface LaunchProps {
 	launchType: typeof environment.launchType;
 }
 
-export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'): void => {
+export const runPlugin = (
+	pluginPath?: string,
+	mode: 'view' | 'no-view' = 'view',
+	aiAccessStatus: boolean
+): void => {
 	let pluginName = 'unknown';
 	let preferences: Preference[] = [];
 
@@ -140,6 +145,7 @@ export const runPlugin = (pluginPath?: string, mode: 'view' | 'no-view' = 'view'
 		throw new Error('No plugin specified.');
 	}
 
+	aiContext.hasAccess = aiAccessStatus;
 	const scriptText = loadPlugin(pluginPath);
 
 	const pluginDir = path.dirname(pluginPath);
