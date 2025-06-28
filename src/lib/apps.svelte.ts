@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { frecencyStore } from './frecency.svelte';
 
-type App = { name: string; comment?: string; exec: string; icon_path?: string };
+export type App = { name: string; comment?: string; exec: string; icon_path?: string };
 
 class AppsStore {
 	rawApps = $state<App[]>([]);

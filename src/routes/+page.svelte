@@ -5,7 +5,7 @@
 	import type { PluginInfo } from '@raycast-linux/protocol';
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
-	import CommandPalette from '$lib/components/CommandPalette.svelte';
+	import CommandPalette from '$lib/components/command-palette/CommandPalette.svelte';
 	import PluginRunner from '$lib/components/PluginRunner.svelte';
 	import Extensions from '$lib/components/Extensions.svelte';
 	import OAuthView from '$lib/components/OAuthView.svelte';
