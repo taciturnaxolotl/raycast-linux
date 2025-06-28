@@ -5,7 +5,12 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
 	import PasswordInput from './PasswordInput.svelte';
-	import { Model } from '../../../sidecar/src/api/ai';
+	import { uiStore } from '$lib/ui.svelte';
+
+	type AiSettings = {
+		enabled: boolean;
+		modelAssociations: Record<string, string>;
+	};
 
 	let aiEnabled = $state(false);
 	let apiKey = $state('');
@@ -13,16 +18,52 @@
 	let isApiKeySet = $state(false);
 
 	async function loadSettings() {
-		isApiKeySet = await invoke('is_ai_api_key_set');
-		// TODO: Load aiEnabled and modelAssociations from storage
+		try {
+			isApiKeySet = await invoke('is_ai_api_key_set');
+			const settings = await invoke<AiSettings>('get_ai_settings');
+			aiEnabled = settings.enabled;
+			modelAssociations = settings.modelAssociations ?? {};
+		} catch (error) {
+			console.error('Failed to load AI settings:', error);
+			uiStore.toasts.set(Date.now(), {
+				id: Date.now(),
+				title: 'Failed to load AI settings',
+				message: String(error),
+				style: 'FAILURE'
+			});
+		}
 	}
 
 	async function saveSettings() {
-		if (apiKey) {
-			await invoke('set_ai_api_key', { key: apiKey });
+		try {
+			if (apiKey) {
+				await invoke('set_ai_api_key', { key: apiKey });
+				apiKey = '';
+			}
+
+			const settingsToSave: AiSettings = {
+				enabled: aiEnabled,
+				modelAssociations: modelAssociations
+			};
+
+			await invoke('set_ai_settings', { settings: settingsToSave });
+
+			uiStore.toasts.set(Date.now(), {
+				id: Date.now(),
+				title: 'AI Settings Saved',
+				style: 'SUCCESS'
+			});
+
+			await loadSettings();
+		} catch (error) {
+			console.error('Failed to save AI settings:', error);
+			uiStore.toasts.set(Date.now(), {
+				id: Date.now(),
+				title: 'Failed to save AI settings',
+				message: String(error),
+				style: 'FAILURE'
+			});
 		}
-		// TODO: Save aiEnabled and modelAssociations to storage
-		await loadSettings();
 	}
 
 	async function clearApiKey() {
@@ -66,14 +107,13 @@
 			Associate Raycast AI models with specific models available through OpenRouter.
 		</p>
 		<div class="grid grid-cols-[auto_1fr] items-center gap-4">
-			{#each Object.entries(Model) as [raycastModel, openRouterModel] (raycastModel)}
+			{#each Object.entries(modelAssociations) as [raycastModel, openRouterModel] (raycastModel)}
 				<span class="text-sm font-medium">{raycastModel}</span>
 				<Input
-					value={modelAssociations[raycastModel] ?? openRouterModel}
+					value={openRouterModel}
 					onchange={(e) => {
 						modelAssociations[raycastModel] = (e.target as HTMLInputElement)?.value;
 					}}
-					placeholder={openRouterModel}
 					class="w-full"
 				/>
 			{/each}

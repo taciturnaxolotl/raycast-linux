@@ -6,8 +6,7 @@ export const AiAskStreamPayloadSchema = z.object({
 	options: z
 		.object({
 			model: z.string().optional(),
-			creativity: z.string().optional(),
-			modelMappings: z.record(z.string(), z.string()).optional()
+			creativity: z.string().optional()
 		})
 		.optional()
 });

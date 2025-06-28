@@ -1,54 +1,53 @@
 import { EventEmitter } from 'events';
-import { writeLog, writeOutput } from '../io';
-import { inspect } from 'util';
-
-export const Model = {
-	'OpenAI_GPT4.1': 'openai/gpt-4.1',
-	'OpenAI_GPT4.1-mini': 'openai/gpt-4.1-mini',
-	'OpenAI_GPT4.1-nano': 'openai/gpt-4.1-nano',
-	OpenAI_GPT4: 'openai/gpt-4',
-	'OpenAI_GPT4-turbo': 'openai/gpt-4-turbo',
-	OpenAI_GPT4o: 'openai/gpt-4o',
-	'OpenAI_GPT4o-mini': 'openai/gpt-4o-mini',
-	OpenAI_o3: 'openai/o3',
-	'OpenAI_o4-mini': 'openai/o4-mini',
-	OpenAI_o1: 'openai/o1',
-	'OpenAI_o3-mini': 'openai/o3-mini',
-	Anthropic_Claude_Haiku: 'anthropic/claude-3-haiku',
-	Anthropic_Claude_Sonnet: 'anthropic/claude-3-sonnet',
-	'Anthropic_Claude_Sonnet_3.7': 'anthropic/claude-3.7-sonnet',
-	Anthropic_Claude_Opus: 'anthropic/claude-3-opus',
-	Anthropic_Claude_4_Sonnet: 'anthropic/claude-sonnet-4',
-	Anthropic_Claude_4_Opus: 'anthropic/claude-opus-4',
-	Perplexity_Sonar: 'perplexity/sonar',
-	Perplexity_Sonar_Pro: 'perplexity/sonar-pro',
-	Perplexity_Sonar_Reasoning: 'perplexity/sonar-reasoning',
-	Perplexity_Sonar_Reasoning_Pro: 'perplexity/sonar-reasoning-pro',
-	Llama4_Scout: 'meta-llama/llama-4-scout',
-	'Llama3.3_70B': 'meta-llama/llama-3.3-70b-instruct',
-	'Llama3.1_8B': 'meta-llama/llama-3.1-8b-instruct',
-	'Llama3.1_405B': 'meta-llama/llama-3.1-405b-instruct',
-	Mistral_Nemo: 'mistralai/mistral-nemo',
-	Mistral_Large: 'mistralai/mistral-large',
-	Mistral_Medium: 'mistralai/mistral-medium-3',
-	Mistral_Small: 'mistralai/mistral-small',
-	Mistral_Codestral: 'mistralai/codestral-2501',
-	'DeepSeek_R1_Distill_Llama_3.3_70B': 'deepseek/deepseek-r1-distill-llama-70b',
-	DeepSeek_R1: 'deepseek/deepseek-r1',
-	DeepSeek_V3: 'deepseek/deepseek-chat',
-	'Google_Gemini_2.5_Pro': 'google/gemini-2.5-pro',
-	'Google_Gemini_2.5_Flash': 'google/gemini-2.5-flash',
-	'Google_Gemini_2.0_Flash': 'google/gemini-2.0-flash-001',
-	xAI_Grok_3: 'x-ai/grok-3',
-	xAI_Grok_3_Mini: 'x-ai/grok-3-mini',
-	xAI_Grok_2: 'x-ai/grok-2-1212'
-} as const;
+import { writeOutput } from '../io';
 
 export type Creativity = 'none' | 'low' | 'medium' | 'high' | 'maximum' | number;
 
+export enum Model {
+	'OpenAI_GPT4.1' = 'OpenAI_GPT4.1',
+	'OpenAI_GPT4.1-mini' = 'OpenAI_GPT4.1-mini',
+	'OpenAI_GPT4.1-nano' = 'OpenAI_GPT4.1-nano',
+	OpenAI_GPT4 = 'OpenAI_GPT4',
+	'OpenAI_GPT4-turbo' = 'OpenAI_GPT4-turbo',
+	OpenAI_GPT4o = 'OpenAI_GPT4o',
+	'OpenAI_GPT4o-mini' = 'OpenAI_GPT4o-mini',
+	OpenAI_o3 = 'OpenAI_o3',
+	'OpenAI_o4-mini' = 'OpenAI_o4-mini',
+	OpenAI_o1 = 'OpenAI_o1',
+	'OpenAI_o3-mini' = 'OpenAI_o3-mini',
+	Anthropic_Claude_Haiku = 'Anthropic_Claude_Haiku',
+	Anthropic_Claude_Sonnet = 'Anthropic_Claude_Sonnet',
+	'Anthropic_Claude_Sonnet_3.7' = 'Anthropic_Claude_Sonnet_3.7',
+	Anthropic_Claude_Opus = 'Anthropic_Claude_Opus',
+	Anthropic_Claude_4_Sonnet = 'Anthropic_Claude_4_Sonnet',
+	Anthropic_Claude_4_Opus = 'Anthropic_Claude_4_Opus',
+	Perplexity_Sonar = 'Perplexity_Sonar',
+	Perplexity_Sonar_Pro = 'Perplexity_Sonar_Pro',
+	Perplexity_Sonar_Reasoning = 'Perplexity_Sonar_Reasoning',
+	Perplexity_Sonar_Reasoning_Pro = 'Perplexity_Sonar_Reasoning_Pro',
+	Llama4_Scout = 'Llama4_Scout',
+	'Llama3.3_70B' = 'Llama3.3_70B',
+	'Llama3.1_8B' = 'Llama3.1_8B',
+	'Llama3.1_405B' = 'Llama3.1_405B',
+	Mistral_Nemo = 'Mistral_Nemo',
+	Mistral_Large = 'Mistral_Large',
+	Mistral_Medium = 'Mistral_Medium',
+	Mistral_Small = 'Mistral_Small',
+	Mistral_Codestral = 'Mistral_Codestral',
+	'DeepSeek_R1_Distill_Llama_3.3_70B' = 'DeepSeek_R1_Distill_Llama_3.3_70B',
+	DeepSeek_R1 = 'DeepSeek_R1',
+	DeepSeek_V3 = 'DeepSeek_V3',
+	'Google_Gemini_2.5_Pro' = 'Google_Gemini_2.5_Pro',
+	'Google_Gemini_2.5_Flash' = 'Google_Gemini_2.5_Flash',
+	'Google_Gemini_2.0_Flash' = 'Google_Gemini_2.0_Flash',
+	xAI_Grok_3 = 'xAI_Grok_3',
+	xAI_Grok_3_Mini = 'xAI_Grok_3_Mini',
+	xAI_Grok_2 = 'xAI_Grok_2'
+}
+
 export interface AskOptions {
 	creativity?: Creativity;
-	model?: keyof typeof Model;
+	model?: string;
 	signal?: AbortSignal;
 }
 
@@ -89,11 +88,6 @@ export function handleAiStreamError(data: { requestId: string; error: string }) 
 export function ask(prompt: string, options: AskOptions = {}): AskResult {
 	const emitter = new EventEmitter();
 	const requestId = crypto.randomUUID();
-
-	const modelMappings: Record<string, string> = {};
-	if (options.model && Model[options.model]) {
-		modelMappings[options.model] = Model[options.model];
-	}
 
 	let fullText = '';
 	let isResolved = false;
@@ -142,8 +136,7 @@ export function ask(prompt: string, options: AskOptions = {}): AskResult {
 				prompt,
 				options: {
 					model: options.model,
-					creativity: options.creativity,
-					modelMappings
+					creativity: options.creativity
 				}
 			}
 		});
@@ -158,7 +151,6 @@ export function ask(prompt: string, options: AskOptions = {}): AskResult {
 
 export const AI = {
 	ask,
-	Model,
 	Creativity: {
 		none: 'none' as const,
 		low: 'low' as const,
