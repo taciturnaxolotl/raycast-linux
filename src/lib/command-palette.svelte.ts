@@ -1,10 +1,9 @@
 import type { PluginInfo } from '@raycast-linux/protocol';
 import { invoke } from '@tauri-apps/api/core';
 import Fuse from 'fuse.js';
-import { create, all } from 'mathjs';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import type { Quicklink } from '$lib/quicklinks.svelte';
-import { frecencyStore } from '$lib/frecency.svelte';
+import { frecencyStore } from './frecency.svelte';
 import { viewManager } from './viewManager.svelte';
 import type { App } from './apps.svelte';
 
@@ -23,8 +22,6 @@ type UseCommandPaletteItemsArgs = {
 	frecencyData: () => { itemId: string; useCount: number; lastUsedAt: number }[];
 	selectedQuicklinkForArgument: () => Quicklink | null;
 };
-
-const math = create(all);
 
 export function useCommandPaletteItems({
 	searchText,
@@ -59,21 +56,58 @@ export function useCommandPaletteItems({
 		})
 	);
 
-	const calculatorResult = $derived.by(() => {
+	let calculatorResult = $state<{ value: string; type: string } | null>(null);
+	let calculationId = 0;
+
+	$effect(() => {
 		const term = searchText();
+		calculationId++;
+		const currentCalculationId = calculationId;
+
 		if (!term.trim() || selectedQuicklinkForArgument()) {
-			return null;
+			calculatorResult = null;
+			return;
 		}
 
-		try {
-			const result = math.evaluate(term.trim());
-			if (typeof result === 'function' || typeof result === 'undefined') return null;
-			const resultString = math.format(result, { precision: 14 });
-			if (resultString === term.trim()) return null;
-			return { value: resultString, type: math.typeOf(result) };
-		} catch {
-			return null;
-		}
+		(async () => {
+			try {
+				const resultJson = await invoke<string>('calculate_soulver', { expression: term.trim() });
+
+				if (currentCalculationId !== calculationId) {
+					return; // Stale request
+				}
+
+				const result = JSON.parse(resultJson) as {
+					value: string;
+					type: string;
+					error?: string;
+				};
+
+				if (result.error) {
+					console.error('Soulver error:', result.error);
+					calculatorResult = null;
+					return;
+				}
+
+				if (result.type === 'none' || !result.value) {
+					calculatorResult = null;
+					return;
+				}
+
+				if (result.value === term.trim()) {
+					calculatorResult = null;
+					return;
+				}
+
+				calculatorResult = { value: result.value, type: result.type };
+			} catch (e) {
+				if (currentCalculationId !== calculationId) {
+					return; // Stale request
+				}
+				console.error('Soulver invocation failed:', e);
+				calculatorResult = null;
+			}
+		})();
 	});
 
 	const displayItems = $derived.by(() => {
@@ -86,7 +120,6 @@ export function useCommandPaletteItems({
 				score: 0,
 				fuseScore: result.score
 			}));
-			console.log(items);
 		} else {
 			items = allSearchableItems.map((item) => ({ ...item, score: 0, fuseScore: 1 }));
 		}
