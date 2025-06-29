@@ -58,7 +58,12 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "externalBin": ["binaries/app"]
+    "externalBin": ["binaries/app"],
+    "resources": [
+      "SoulverWrapper/Vendor/SoulverCore-linux/libSoulverCoreDynamic.so",
+      "SoulverWrapper/Vendor/SoulverCore-linux/SoulverCore_SoulverCore.resources",
+      "SoulverWrapper/.build/release/libSoulverWrapper.so"
+    ]
   },
   "plugins": {
     "deep-link": {
