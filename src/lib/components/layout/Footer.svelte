@@ -1,9 +1,9 @@
 <script lang="ts">
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Kbd } from '../ui/kbd';
-	import { keyEventMatches, type KeyboardShortcut } from '$lib/props';
-	import { shortcutToText } from '$lib/renderKey';
+	import { keyEventMatches, type KeyboardShortcut as KeyboardShortcutType } from '$lib/props';
 	import type { Toast } from '$lib/ui.svelte';
+	import KeyboardShortcut from '../KeyboardShortcut.svelte';
 
 	type Props = {
 		toast: Toast;
@@ -17,7 +17,7 @@
 		const availableActions: {
 			type: 'primary' | 'secondary';
 			title: string;
-			shortcut?: KeyboardShortcut;
+			shortcut?: KeyboardShortcutType;
 		}[] = [];
 
 		if (toast?.primaryAction) {
@@ -88,7 +88,9 @@
 				<DropdownMenu.Item onselect={() => handleActionSelect(action.type)}>
 					{action.title}
 					{#if action.shortcut}
-						<DropdownMenu.Shortcut>{shortcutToText(action.shortcut)}</DropdownMenu.Shortcut>
+						<DropdownMenu.Shortcut>
+							<KeyboardShortcut shortcut={action.shortcut} />
+						</DropdownMenu.Shortcut>
 					{/if}
 				</DropdownMenu.Item>
 			{/each}

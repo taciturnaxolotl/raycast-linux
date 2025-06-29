@@ -42,6 +42,7 @@
       ]
     },
     "dialog:default",
-    "fs:default"
+    "fs:default",
+    "os:default"
   ]
 }

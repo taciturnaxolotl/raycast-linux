@@ -7,10 +7,10 @@
 	import ListItemBase from './nodes/shared/ListItemBase.svelte';
 	import { Kbd } from './ui/kbd';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { shortcutToText } from '$lib/renderKey';
 	import ActionBar from './nodes/shared/ActionBar.svelte';
 	import ActionMenu from './nodes/shared/ActionMenu.svelte';
 	import BaseList from './BaseList.svelte';
+	import KeyboardShortcut from './KeyboardShortcut.svelte';
 
 	type Props = {
 		onBack: () => void;
@@ -245,7 +245,7 @@
 								<Trash class="mr-2 size-4" />
 								<span>Delete</span>
 								<DropdownMenu.Shortcut>
-									{shortcutToText({ key: 'x', modifiers: ['ctrl'] })}
+									<KeyboardShortcut shortcut={{ key: 'x', modifiers: ['ctrl'] }} />
 								</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
 						</ActionMenu>

@@ -8,11 +8,11 @@
 	import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 	import { Kbd } from './ui/kbd';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { shortcutToText } from '$lib/renderKey';
 	import ActionBar from './nodes/shared/ActionBar.svelte';
 	import ActionMenu from './nodes/shared/ActionMenu.svelte';
 	import BaseList from './BaseList.svelte';
 	import { open } from '@tauri-apps/plugin-shell';
+	import KeyboardShortcut from './KeyboardShortcut.svelte';
 
 	type Props = {
 		onBack: () => void;
@@ -189,7 +189,7 @@
 				<ActionBar>
 					{#snippet primaryAction({ props })}
 						<Button {...props} onclick={() => handleOpen(selectedItem)}>
-							Open <Kbd>⏎</Kbd>
+							Open <KeyboardShortcut shortcut={{ key: 'enter', modifiers: [] }} />
 						</Button>
 					{/snippet}
 					{#snippet actions()}
@@ -198,14 +198,14 @@
 								<Eye class="mr-2 size-4" />
 								<span>Show in File Manager</span>
 								<DropdownMenu.Shortcut>
-									{shortcutToText({ key: 'Enter', modifiers: ['cmd'] })}
+									<KeyboardShortcut shortcut={{ key: 'Enter', modifiers: ['cmd'] }} />
 								</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
 							<DropdownMenu.Item onclick={() => handleCopyPath(selectedItem)}>
 								<Copy class="mr-2 size-4" />
 								<span>Copy Path</span>
 								<DropdownMenu.Shortcut>
-									{shortcutToText({ key: 'c', modifiers: ['ctrl'] })}
+									<KeyboardShortcut shortcut={{ key: 'c', modifiers: ['ctrl'] }} />
 								</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
 							<DropdownMenu.Separator />
@@ -213,7 +213,7 @@
 								<Trash class="mr-2 size-4" />
 								<span>Move to Trash</span>
 								<DropdownMenu.Shortcut>
-									{shortcutToText({ key: 'x', modifiers: ['ctrl'] })}
+									<KeyboardShortcut shortcut={{ key: 'x', modifiers: ['ctrl'] }} />
 								</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
 						</ActionMenu>

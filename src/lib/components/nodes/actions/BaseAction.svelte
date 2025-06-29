@@ -1,15 +1,15 @@
 <script lang="ts">
-	import type { KeyboardShortcut } from '$lib/props/actions';
+	import type { KeyboardShortcut as KeyboardShortcutType } from '$lib/props/actions';
 	import { DropdownMenuItem, DropdownMenuShortcut } from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
-	import { shortcutToText } from '$lib/renderKey';
 	import type { ImageLike } from '$lib/props';
 	import Icon from '$lib/components/Icon.svelte';
 	import { Kbd } from '$lib/components/ui/kbd';
+	import KeyboardShortcut from '$lib/components/KeyboardShortcut.svelte';
 
 	type Props = {
 		title: string;
-		shortcut?: KeyboardShortcut | null;
+		shortcut?: KeyboardShortcutType | null;
 		icon?: ImageLike;
 		isPrimaryAction?: boolean;
 		isSecondaryAction?: boolean;
@@ -41,14 +41,16 @@
 		{title}
 		{#if isPrimaryAction}
 			<DropdownMenuShortcut>
-				{shortcutToText({ key: 'enter', modifiers: [] })}
+				<KeyboardShortcut shortcut={{ key: 'enter', modifiers: [] }} />
 			</DropdownMenuShortcut>
 		{:else if isSecondaryAction}
 			<DropdownMenuShortcut>
-				{shortcutToText({ key: 'enter', modifiers: ['ctrl'] })}
+				<KeyboardShortcut shortcut={{ key: 'enter', modifiers: ['ctrl'] }} />
 			</DropdownMenuShortcut>
 		{:else if shortcut}
-			<DropdownMenuShortcut>{shortcutToText(shortcut)}</DropdownMenuShortcut>
+			<DropdownMenuShortcut>
+				<KeyboardShortcut {shortcut} />
+			</DropdownMenuShortcut>
 		{/if}
 	</DropdownMenuItem>
 {/if}

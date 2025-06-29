@@ -3,7 +3,7 @@
 	import type { WithChildren } from 'bits-ui';
 
 	const style = tv({
-		base: 'inline-flex place-items-center justify-center gap-1 rounded-md p-0.5',
+		base: 'inline-flex place-items-center justify-center gap-1 rounded-md p-0.5 font-sans',
 		variants: {
 			variant: {
 				outline: 'border-border bg-transparent text-muted-foreground border',
@@ -12,7 +12,7 @@
 			},
 			size: {
 				sm: 'min-w-6 gap-1.5 p-0.5 px-1 text-sm',
-				default: 'gap-1.5 p-1 px-2',
+				default: 'min-w-6 gap-1.5 p-1 text-xs',
 				lg: 'min-w-9 gap-2 p-1 px-3 text-lg'
 			}
 		}

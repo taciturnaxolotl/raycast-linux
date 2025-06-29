@@ -4,6 +4,7 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import type { Snippet } from 'svelte';
 	import { setContext } from 'svelte';
+	import KeyboardShortcut from '$lib/components/KeyboardShortcut.svelte';
 
 	type Props = {
 		children: Snippet;
@@ -33,7 +34,8 @@
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
 			<Button {...props} variant="ghost" size="sm">
-				Actions <Kbd>⌘ K</Kbd>
+				Actions
+				<KeyboardShortcut shortcut={{ key: 'k', modifiers: ['cmd'] }} />
 			</Button>
 		{/snippet}
 	</DropdownMenu.Trigger>
