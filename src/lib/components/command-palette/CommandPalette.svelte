@@ -58,6 +58,12 @@
 		argumentInputEl?.focus();
 	}
 
+	async function setSearchText(text: string) {
+		searchText = text;
+		await tick();
+		searchInputEl?.focus();
+	}
+
 	const actions = useCommandPaletteActions({
 		selectedItem: () => selectedItem,
 		onRunPlugin,
@@ -222,5 +228,5 @@
 		</BaseList>
 	</div>
 
-	<CommandPaletteActionBar {selectedItem} {actions} />
+	<CommandPaletteActionBar {selectedItem} {actions} {setSearchText} />
 </main>

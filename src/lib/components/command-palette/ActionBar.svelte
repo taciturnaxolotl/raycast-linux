@@ -18,20 +18,25 @@
 			handleCopyAppPath: () => void;
 			handleHideApp: () => Promise<void>;
 		};
+		setSearchText: (text: string) => void;
 	};
 
-	let { selectedItem, actions: barActions }: Props = $props();
+	let { selectedItem, actions: barActions, setSearchText }: Props = $props();
+
+	const primaryActionText = $derived(
+		selectedItem?.type &&
+			{
+				calculator: 'Copy Answer',
+				plugin: 'Open Command',
+				app: 'Open Application',
+				quicklink: 'Open Quicklink'
+			}[selectedItem?.type]
+	);
 </script>
 
 {#if selectedItem}
 	<ActionBar>
 		{#snippet primaryAction({ props })}
-			{@const primaryActionText =
-				selectedItem.type === 'app'
-					? 'Open Application'
-					: selectedItem.type === 'quicklink'
-						? 'Open Quicklink'
-						: 'Open Command'}
 			<Button {...props} onclick={barActions?.handleEnter}>
 				{primaryActionText}
 				<Kbd>⏎</Kbd>
@@ -39,7 +44,20 @@
 		{/snippet}
 		{#snippet actions()}
 			<ActionMenu>
-				{#if selectedItem.type === 'plugin'}
+				{#if selectedItem.type === 'calculator'}
+					<DropdownMenu.Item onclick={barActions.handleEnter}>
+						Copy Answer
+						<DropdownMenu.Shortcut>
+							{shortcutToText({ key: 'c', modifiers: ['ctrl', 'shift'] })}
+						</DropdownMenu.Shortcut>
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => setSearchText(selectedItem.data.result)}>
+						Put Answer in Search Bar
+						<DropdownMenu.Shortcut>
+							{shortcutToText({ key: 'enter', modifiers: ['ctrl', 'shift'] })}
+						</DropdownMenu.Shortcut>
+					</DropdownMenu.Item>
+				{:else if selectedItem.type === 'plugin'}
 					<DropdownMenu.Item onclick={barActions.handleResetRanking}
 						>Reset Ranking</DropdownMenu.Item
 					>
