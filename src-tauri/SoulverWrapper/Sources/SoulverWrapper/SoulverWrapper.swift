@@ -13,7 +13,6 @@ struct SoulverResult: Codable {
     }
 }
 
-
 @MainActor
 private var globalCalculator: Calculator?
 
@@ -28,18 +27,20 @@ public func initialize_soulver(resourcesPath: UnsafePointer<CChar>) {
     let pathString = String(cString: resourcesPath)
     let resourcesURL = URL(fileURLWithPath: pathString)
     
-    guard let soulverResourceBundle = SoulverCore.ResourceBundle(url: resourcesURL) else {
+    guard SoulverCore.ResourceBundle(url: resourcesURL) != nil else {
         print("❌ Soulver Wrapper: Failed to create SoulverCore.ResourceBundle from path: \(pathString)")
         return
     }
     
-    let customization = EngineCustomization(
-        resourcesBundle: soulverResourceBundle,
-        locale: .autoupdatingCurrent
-    )
+    var customization = EngineCustomization.standard
+    
+    let currencyProvider = RaycastCurrencyProvider()
+    customization.currencyRateProvider = currencyProvider
+    
+    currencyProvider.startUpdating()
     
     globalCalculator = Calculator(customization: customization)
-    print("✅ Soulver calculator initialized with EngineCustomization using SoulverCore.ResourceBundle at \(resourcesURL.path)")
+    print("✅ Soulver calculator initialized and currency provider has started updating.")
 }
 
 @MainActor
