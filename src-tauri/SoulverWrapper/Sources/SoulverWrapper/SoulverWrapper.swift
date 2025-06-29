@@ -77,10 +77,8 @@ public func evaluate(expression: UnsafePointer<CChar>) -> UnsafeMutablePointer<C
          }
          return nil
     }
-    
-    let resultType = String(describing: result.evaluationResult.equivalentTokenType)
 
-    let soulverResult = SoulverResult(value: result.stringValue, type: resultType)
+    let soulverResult = SoulverResult(value: result.stringValue, type: formatResult(result: result.evaluationResult, customization: calculator.customization))
     
     if let jsonData = try? encoder.encode(soulverResult),
        let jsonString = String(data: jsonData, encoding: .utf8) {
