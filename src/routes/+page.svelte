@@ -19,7 +19,6 @@
 	import FileSearchView from '$lib/components/FileSearchView.svelte';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 	import CommandDeeplinkConfirm from '$lib/components/CommandDeeplinkConfirm.svelte';
-	import { invoke } from '@tauri-apps/api/core';
 
 	const storePlugin: PluginInfo = {
 		title: 'Store',
@@ -201,10 +200,6 @@
 	function onExtensionInstalled() {
 		sidecarService.requestPluginList();
 	}
-
-	invoke('calculate_soulver', {
-		expression: '1+1'
-	}).then(console.log);
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
