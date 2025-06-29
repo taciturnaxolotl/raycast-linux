@@ -6,13 +6,13 @@
 		base: 'inline-flex place-items-center justify-center gap-1 rounded-md p-0.5',
 		variants: {
 			variant: {
-				outline: 'border-border bg-background text-muted-foreground border',
+				outline: 'border-border bg-transparent text-muted-foreground border',
 				secondary: 'bg-secondary text-muted-foreground',
 				primary: 'bg-primary text-primary-foreground'
 			},
 			size: {
 				sm: 'min-w-6 gap-1.5 p-0.5 px-1 text-sm',
-				default: 'min-w-8 gap-1.5 p-1 px-2',
+				default: 'gap-1.5 p-1 px-2',
 				lg: 'min-w-9 gap-2 p-1 px-3 text-lg'
 			}
 		}
