@@ -3,8 +3,8 @@ pub mod manager;
 pub mod types;
 pub mod watcher;
 
-use tauri::{AppHandle, Manager, State};
 use manager::FileSearchManager;
+use tauri::{AppHandle, Manager, State};
 
 #[tauri::command]
 pub fn search_files(

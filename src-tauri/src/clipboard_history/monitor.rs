@@ -13,9 +13,7 @@ pub fn start_monitoring(_app_handle: AppHandle) {
         let mut clipboard = arboard::Clipboard::new().unwrap();
 
         loop {
-            if super::manager::INTERNAL_CLIPBOARD_CHANGE
-                .load(std::sync::atomic::Ordering::SeqCst)
-            {
+            if super::manager::INTERNAL_CLIPBOARD_CHANGE.load(std::sync::atomic::Ordering::SeqCst) {
                 std::thread::sleep(Duration::from_millis(50));
                 continue;
             }
