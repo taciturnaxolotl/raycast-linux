@@ -39,7 +39,7 @@
 			</Button>
 		{/snippet}
 	</DropdownMenu.Trigger>
-	<DropdownMenu.Content>
+	<DropdownMenu.Content class="w-80">
 		{@render children()}
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
