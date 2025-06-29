@@ -169,10 +169,9 @@
 		}
 
 		if (event.key === 'Escape') {
-			if (currentView === 'command-palette') {
+			if (currentView === 'command-palette' && !event.defaultPrevented) {
 				event.preventDefault();
 				getCurrentWindow().hide();
-				console.log('hide');
 			}
 		}
 	}

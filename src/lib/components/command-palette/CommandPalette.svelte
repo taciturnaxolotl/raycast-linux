@@ -89,6 +89,13 @@
 	}
 
 	async function handleKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && searchText) {
+			e.preventDefault();
+			searchText = '';
+			await tick();
+			searchInputEl?.focus();
+		}
+
 		if (!selectedItem) return;
 
 		const keyMap = {
@@ -109,8 +116,6 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleKeyDown} />
-
 <main class="bg-background text-foreground flex h-screen flex-col">
 	<header class="flex h-12 shrink-0 items-center border-b px-2">
 		<div class="relative flex w-full items-center">
@@ -121,6 +126,7 @@
 					: 'Search for extensions and commands...'}
 				bind:value={searchText}
 				bind:ref={searchInputEl}
+				onkeydown={handleKeyDown}
 				autofocus
 			/>
 
